@@ -39,11 +39,11 @@ has strategic_success_count => (
 
 # Plans.
 has plans => (
-    isa     => 'HashRef[TAEB::AI::Plan]',
+    isa     => 'HashRef[TAEB::AI::Planar::Plan]',
     default => sub { {} },
 );
 has current_plan => (
-    isa     => 'Maybe[TAEB::AI::Plan]',
+    isa     => 'Maybe[TAEB::AI::Planar::Plan]',
     default => undef,
 );
 # A plan counts as potentially abandoned if it doesn't strategy-fail
@@ -52,26 +52,26 @@ has current_plan => (
 # abandoned. This variable holds the current potentially abandoned
 # plan, if there is one.
 has abandoned_plan => (
-    isa     => 'Maybe[TAEB::AI::Plan]',
+    isa     => 'Maybe[TAEB::AI::Planar::Plan]',
     default => undef,
 );
 has abandoned_tactical_plan => (
-    isa     => 'Maybe[TAEB::AI::Plan::Tactical]',
+    isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
     default => undef,
 );
 # This list is separate merely for efficiency reasons.
 has tactical_plans => (
-    isa     => 'HashRef[TAEB::AI::Plan::Tactical]',
+    isa     => 'HashRef[TAEB::AI::Planar::Plan::Tactical]',
     default => sub { {} },
 );
 has current_tactical_plan => (
-    isa     => 'Maybe[TAEB::AI::Plan::Tactical]',
+    isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
     default => undef,
 );
 # Storing plans by the object they refer to speeds up certain
 # operations.
 has plan_index_by_object => (
-    isa     => 'HashRef[ArrayRef[TAEB::AI::Plan]]',
+    isa     => 'HashRef[ArrayRef[TAEB::AI::Planar::Plan]]',
     default => sub { {} },
 );
 # Plans sometimes need to store per-AI persistent data, mostly for
@@ -154,13 +154,13 @@ sub add_possible_move {
 # Resources.
 use constant resource_types => qw/Hitpoints Nutrition Time Zorkmids/;
 has resources => (
-    isa     => 'HashRef[TAEB::AI::Resource]',
+    isa     => 'HashRef[TAEB::AI::Planar::Resource]',
     default => sub {
 	my $self = shift;
 	my %resources = ();
 	for my $type (resource_types) {
 	    require "TAEB/AI/Resource/$type.pm";
-	    $resources{$type} = "TAEB::AI::Resource::$type"->new;
+	    $resources{$type} = "TAEB::AI::Planar::Resource::$type"->new;
 	}
 	return \%resources;
     },
@@ -174,7 +174,8 @@ has resources => (
 # now and then?), but is necessary for decent performance. The current
 # level is recalculated every step.
 has tactics_map => (
-    isa     => 'HashRef[ArrayRef[ArrayRef[TAEB::AI::TacticsMapEntry]]]',
+    isa     =>
+        'HashRef[ArrayRef[ArrayRef[TAEB::AI::Planar::TacticsMapEntry]]]',
     default => sub { {} },
 );
 
@@ -321,7 +322,7 @@ sub next_action {
     # is, then it almost certainly isn't an action (and even if it
     # were, we have to do something in that situation, not that it
     # should ever be allowed to happen in the first place).
-    if($action->isa('TAEB::AI::Plan::Tactical')) {
+    if($action->isa('TAEB::AI::Planar::Plan::Tactical')) {
 	# It's a tactical plan.
 	$self->currently($plan->description . ' > ' .
 			 $action->description);
@@ -825,7 +826,7 @@ sub create_plan {
     my $name = shift;
     my $arg  = shift;
     my $planname = shift;
-    my $pkg = "TAEB::AI::Plan::$name";
+    my $pkg = "TAEB::AI::Planar::Plan::$name";
     my $plan = $pkg->new;
     defined $arg and $plan->set_arg($arg);
     $plan->name($planname);
@@ -844,6 +845,7 @@ sub create_plan {
     }
 }
 
+# TODO: Replace this with something that actually works
 sub institute {
     my $self = shift;
     $self->SUPER::institute;
@@ -853,7 +855,7 @@ sub institute {
     # them right now. (This also helps to catch compile errors in the
     # plans, in addition to speeding up plan creation.)
     # TODO: Make this work even after install
-    my @planfiles = glob 'lib/TAEB/AI/Plan/*.pm';
+    my @planfiles = glob 'lib/TAEB/AI/Planar/Plan/*.pm';
     # Unfortunately, the 'extends' mechanism in Moose seems to confuse
     # require slightly, such that base classes mustn't be required
     # twice or they end up being loaded twice and getting confused.

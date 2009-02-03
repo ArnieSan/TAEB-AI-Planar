@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::Eliminate;
+package TAEB::AI::Planar::Plan::Eliminate;
 use TAEB::OO;
-extends 'TAEB::AI::Plan';
+extends 'TAEB::AI::Planar::Plan';
 
 # We take a monster as argument.
 has monster => (

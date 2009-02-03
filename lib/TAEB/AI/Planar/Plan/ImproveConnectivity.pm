@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::ImproveConnectivity;
+package TAEB::AI::Planar::Plan::ImproveConnectivity;
 use TAEB::OO;
 use TAEB::Util qw/vi2delta/;
-extends 'TAEB::AI::Plan';
+extends 'TAEB::AI::Planar::Plan';
 
 # Returns true if this tile is blocked for the purpose of searching.
 # Tiles are searchable if they have exactly 3 blocked orthogonal

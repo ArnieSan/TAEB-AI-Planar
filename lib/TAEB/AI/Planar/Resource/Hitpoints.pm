@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-package TAEB::AI::Resource::Hitpoints;
+package TAEB::AI::Planar::Resource::Hitpoints;
 use TAEB::OO;
-extends 'TAEB::AI::Resource';
+extends 'TAEB::AI::Planar::Resource';
 
 has value => (
     isa => 'Num',

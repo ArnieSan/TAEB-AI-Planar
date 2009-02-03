@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-package TAEB::AI::Resource::Nutrition;
+package TAEB::AI::Planar::Resource::Nutrition;
 use TAEB::OO;
-extends 'TAEB::AI::Resource';
+extends 'TAEB::AI::Planar::Resource';
 
 has _value => (
     isa => 'Num',

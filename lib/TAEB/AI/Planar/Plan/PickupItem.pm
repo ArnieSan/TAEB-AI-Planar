@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::PickupItem;
+package TAEB::AI::Planar::Plan::PickupItem;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::PathBased';
 
 # We take an item on the floor as argument.
 has item => (

@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::Nop;
+package TAEB::AI::Planar::Plan::Nop;
 use TAEB::OO;
-use TAEB::AI::TacticsMapEntry;
-extends 'TAEB::AI::Plan::Tactical';
+use TAEB::AI::Planar::TacticsMapEntry;
+extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # A tactical plan to do nothing. Needed because we have to get the
 # tactics started somehow, and to stop us coming up with a more
@@ -32,7 +32,7 @@ sub check_possibility {
 	make_safer_plans=> {},
 	step            => $ai->aistep,
     };
-    bless $tme, "TAEB::AI::TacticsMapEntry";
+    bless $tme, "TAEB::AI::Planar::TacticsMapEntry";
     $ai->add_possible_move($tme);
 }
 

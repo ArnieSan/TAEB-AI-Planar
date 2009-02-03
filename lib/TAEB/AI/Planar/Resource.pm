@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-package TAEB::AI::Resource;
+package TAEB::AI::Planar::Resource;
 use TAEB::OO;
 
 has _value => (

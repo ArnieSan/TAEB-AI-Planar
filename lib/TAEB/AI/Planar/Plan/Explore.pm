@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::Explore;
+package TAEB::AI::Planar::Plan::Explore;
 use TAEB::OO;
-extends 'TAEB::AI::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::PathBased';
 
 has tile => (
     isa => 'TAEB::World::Tile',

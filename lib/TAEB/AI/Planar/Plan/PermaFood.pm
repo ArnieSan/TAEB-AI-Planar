@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::PermaFood;
+package TAEB::AI::Planar::Plan::PermaFood;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Plan';
+extends 'TAEB::AI::Planar::Plan';
 
 # We take an item in our inventory as argument.
 has item => (

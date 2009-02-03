@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::Descend;
+package TAEB::AI::Planar::Plan::Descend;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::PathBased';
 
 has _level => (
     isa => 'Maybe[TAEB::World::Level]',

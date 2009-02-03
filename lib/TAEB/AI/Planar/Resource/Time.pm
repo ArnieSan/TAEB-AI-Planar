@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-package TAEB::AI::Resource::Time;
+package TAEB::AI::Planar::Resource::Time;
 use TAEB::OO;
-extends 'TAEB::AI::Resource';
+extends 'TAEB::AI::Planar::Resource';
 
 # Generally speaking, we don't run short of time, it's not a resource
 # that can be run out of unless we're aiming for a new world record.

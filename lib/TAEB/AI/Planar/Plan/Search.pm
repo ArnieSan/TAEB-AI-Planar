@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::Search;
+package TAEB::AI::Planar::Plan::Search;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::PathBased';
 
 # We take a tile as argument.
 has tile => (

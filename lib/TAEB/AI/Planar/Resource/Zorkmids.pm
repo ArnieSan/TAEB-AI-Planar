@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-package TAEB::AI::Resource::Zorkmids;
+package TAEB::AI::Planar::Resource::Zorkmids;
 use TAEB::OO;
-extends 'TAEB::AI::Resource';
+extends 'TAEB::AI::Planar::Resource';
 
 sub amount {
     return TAEB->gold;

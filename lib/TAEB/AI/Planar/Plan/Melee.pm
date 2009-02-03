@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::Melee;
+package TAEB::AI::Planar::Plan::Melee;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::PathBased';
 
 # We take a monster as argument.
 has monster => (

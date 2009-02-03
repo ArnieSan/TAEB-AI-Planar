@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::GroundItemMeta;
+package TAEB::AI::Planar::Plan::GroundItemMeta;
 use TAEB::OO;
-extends 'TAEB::AI::Plan';
+extends 'TAEB::AI::Planar::Plan';
 
 # A plan that does nothing but create other plans, as appropriate to
 # the item in question.

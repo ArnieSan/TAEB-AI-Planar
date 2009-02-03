@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::MoveFrom;
+package TAEB::AI::Planar::Plan::MoveFrom;
 use TAEB::OO;
-use TAEB::AI::TacticsMapEntry;
-extends 'TAEB::AI::Plan::Tactical';
+use TAEB::AI::Planar::TacticsMapEntry;
+extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # A metaplan. This one encompasses all methods of moving /from/ a
 # particular tile; how to move off a tile depends on what type of tile

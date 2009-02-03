@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::PathBased;
+package TAEB::AI::Planar::Plan::PathBased;
 use TAEB::OO;
-extends 'TAEB::AI::Plan';
+extends 'TAEB::AI::Planar::Plan';
 
 # Go somewhere, do something. A base class for all the varied plans
 # that work like that.

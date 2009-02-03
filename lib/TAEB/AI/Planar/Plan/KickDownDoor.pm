@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::KickDownDoor;
+package TAEB::AI::Planar::Plan::KickDownDoor;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Plan::Tactical';
+extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # We take a tile (preferably with a door on) as argument.
 has tile => (

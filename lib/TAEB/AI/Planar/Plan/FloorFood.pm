@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::FloorFood;
+package TAEB::AI::Planar::Plan::FloorFood;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use TAEB::Spoilers::Monster;
-extends 'TAEB::AI::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::PathBased';
 
 # We take an item, or a spoiler and tile, as argument.
 has item => (

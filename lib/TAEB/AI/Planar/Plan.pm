@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan;
+package TAEB::AI::Planar::Plan;
 use TAEB::OO;
 
 use constant   difficulty_fading     => 2;
@@ -188,7 +188,7 @@ sub gain_resource_conversion_desire { }
 # possible use for it. In this case, the name reflects both the use
 # and the item for which it is responsible; instances of a plan,
 # therefore, may have longer names than the plan itself.
-# A plan in package TAEB::AI::Plan::Foo is named Foo; if it refers
+# A plan in package TAEB::AI::Planar::Plan::Foo is named Foo; if it refers
 # to an object $object, it's called Foo[refaddr($object)]. (Here
 # $object could be a monster, item, or whatever.)
 # The name is set automatically by the AI itself, rather than by the
@@ -250,7 +250,7 @@ sub succeeded {
 
 # Plans to remove difficulty from when this plan succeeds.
 has reverse_dependencies => (
-    isa => 'ArrayRef[TAEB::AI::Plan]',
+    isa => 'ArrayRef[TAEB::AI::Planar::Plan]',
     default => sub { [] },
 );
 # Reset difficulty but not d_difficulty. That way, there's still a

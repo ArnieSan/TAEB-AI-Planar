@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::Tactical;
+package TAEB::AI::Planar::Plan::Tactical;
 use TAEB::OO;
-use TAEB::AI::TacticsMapEntry;
+use TAEB::AI::Planar::TacticsMapEntry;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Plan';
+extends 'TAEB::AI::Planar::Plan';
 
 # Tactical plans. These are similar to strategic plans, but plan
 # movement from one tile to the next, rather than the much broader
@@ -154,7 +154,7 @@ sub add_possible_move {
 	step             => $ai->aistep,
         make_safer_plans => $msp,
     };
-    bless $tme, "TAEB::AI::TacticsMapEntry";
+    bless $tme, "TAEB::AI::Planar::TacticsMapEntry";
     $ai->add_possible_move($tme);
 }
 

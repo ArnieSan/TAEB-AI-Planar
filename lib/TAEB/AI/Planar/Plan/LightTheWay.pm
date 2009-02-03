@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::LightTheWay;
+package TAEB::AI::Planar::Plan::LightTheWay;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Plan::Tactical';
+extends 'TAEB::AI::Planar::Plan::Tactical';
 
 has tile => (
     isa => 'Maybe[TAEB::World::Tile]',

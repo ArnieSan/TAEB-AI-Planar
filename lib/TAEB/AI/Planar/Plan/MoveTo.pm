@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::MoveTo;
+package TAEB::AI::Planar::Plan::MoveTo;
 use TAEB::OO;
-use TAEB::AI::TacticsMapEntry;
-extends 'TAEB::AI::Plan::Tactical';
+use TAEB::AI::Planar::TacticsMapEntry;
+extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # A metaplan. This one encompasses all methods of moving from a
 # particular TME to a particular tile; it works by looking at the tile

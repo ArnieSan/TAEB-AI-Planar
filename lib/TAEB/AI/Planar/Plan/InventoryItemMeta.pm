@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
-package TAEB::AI::Plan::InventoryItemMeta;
+package TAEB::AI::Planar::Plan::InventoryItemMeta;
 use TAEB::OO;
 use TAEB::Spoilers::Item::Food;
-extends 'TAEB::AI::Plan';
+extends 'TAEB::AI::Planar::Plan';
 
 # A plan that does nothing but create other plans, as appropriate to
 # the item in question.
