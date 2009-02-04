@@ -37,6 +37,11 @@ sub spread_desirability {
 	    TAEB->is_blind)) {
 	    $self->depends(1,"Explore",$tile);
 	}
+	# As well as exploring horizontally, we can explore vertically.
+	# Looking underneath objects is one way to help find the stairs.
+	if($tile->is_interesting) {
+	    $self->depends(1,"Explore",$tile);
+	}
     });
 }
 
