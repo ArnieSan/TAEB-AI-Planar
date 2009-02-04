@@ -52,14 +52,16 @@ sub difficulty {
 }
 
 # How to mark a plan as impossible. This has to retroactively figure
-# out how much d_difficulty faded since it was last marked impossible.
+# out how much d_difficulty faded since it was last marked impossible
+# (to prevent the need to update d_difficulty everywhere every step).
 sub mark_impossible {
     my $self = shift;
     my $asc = $self->appropriate_success_count;
     my $elapsed = $asc - $self->last_marked_impossible;
     my $d_difficulty = $self->d_difficulty;
     $d_difficulty -= $elapsed * d_difficulty_fading;
-    $d_difficulty < 0 and $d_difficulty = 0;
+    $d_difficulty < d_difficulty_increase
+	and $d_difficulty = d_difficulty_increase;
     $self->required_success_count($asc + $d_difficulty);
     $d_difficulty += d_difficulty_increase;
     $d_difficulty *= d_difficulty_multiplier;
