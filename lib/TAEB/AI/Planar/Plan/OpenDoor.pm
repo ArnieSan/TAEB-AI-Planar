@@ -22,12 +22,6 @@ sub action {
 sub check_possibility_inner {
     my $self = shift;
     my $tme  = shift;
-    # NOTE: For testing the AI, I'm explicitly not checking whether
-    # the door is locked for the time being, I'm hoping it figures
-    # out that it can't open a locked door for itself. If someone
-    # notices this comment in the future, I've probably forgotten to
-    # put it back; feel free to add in the check, it'll save a small
-    # amount of realtime.
 
     # If there is a closed door here, we can try to open it.
     # (Unless we have wounded legs or something like that, but that's
@@ -41,6 +35,12 @@ sub check_possibility_inner {
 	$self->validity(0);
 	return;
     }
+    # If the door is known to be locked, try a different tactic.
+    if ($self->tile->locked) {
+	$self->validity(0);
+	return;
+    }
+
     # We can't actually open the door down if we aren't standing next
     # to it (although again, why would this have been called in the
     # first place if that were the case?).
