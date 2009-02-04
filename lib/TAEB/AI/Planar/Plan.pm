@@ -5,7 +5,7 @@ use TAEB::OO;
 use constant   difficulty_fading     => 2;
 use constant d_difficulty_fading     => 1;
 use constant d_difficulty_increase   => 3;
-use constant d_difficulty_multiplier => 2;
+use constant d_difficulty_multiplier => 3;
 
 # The difficulty that carrying out this plan has, and the amount its
 # difficulty will increase by if something goes wrong. If a plan
