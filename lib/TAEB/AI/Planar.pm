@@ -792,6 +792,29 @@ sub threat_check {
 	my $plan = $self->get_plan("Eliminate",$enemy);
 	# Until we have information about what can fly in the spoilers...
 	$self->add_threat($plan->name,$danger,$tile,$relspeed,'walk');
+	$plan->validate();
+    }
+    # As an entirely different type of threat (where 'threat' is
+    # defined as 'something that makes it more expensive to move
+    # here'), we have traps we're currently stuck in. Bear-traps,
+    # pits, and webs need to be escaped first, so we mark them as
+    # high-risk threats (with the correct risk value being used to
+    # represent the cost of the make-safer plan that removes the
+    # threat in question).
+    my $trapturns = 0;
+    TAEB->in_beartrap and $trapturns = 7;
+    TAEB->in_pit and $trapturns = 10;
+    TAEB->in_web and $trapturns = 1;
+    if ($trapturns) {
+	my $threatmap = $self->threat_map->{TAEB->current_level};
+	TAEB->current_tile->each_adjacent(sub {
+	    my $tile = shift;
+	    # The *1000 here is to make barging out of the trap more
+	    # expensive than getting out the 'proper' way.
+	    $threatmap->[$tile->x]->[$tile->y]->{"-1 Extricate"}
+	        = {Time => $trapturns * 1000};
+	});
+	$self->get_plan("Extricate")->validate();
     }
 }
 
