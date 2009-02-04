@@ -300,6 +300,11 @@ sub next_action {
     } else {
 	$self->abandoned_plan(undef);
     }
+
+    # Invalidate plans now so that any of the next few steps can
+    # re-validate them.
+    $_->invalidate for values %{$self->plans};
+
     $t1 = [gettimeofday];
     TAEB->log->personality("Time taken for success measurement: ".
 			   tv_interval($t0,$t1)."s.", level => 'debug');
@@ -381,7 +386,8 @@ sub next_plan_action {
     # Invalidate and destroy plans referring to nonexistent things.
     # (The plans themselves will refuse to be invalidated if they
     # always refer to something that exists, like a tile.)
-    $_->invalidate for values %{$self->plans};
+    # The invalidation is done before threat check, so it can validate
+    # plans too.
     my @refs = (TAEB->current_level->has_enemies,
 		TAEB->inventory->items,
 		TAEB->current_level->items);
@@ -729,7 +735,7 @@ sub threat_check {
  	    }
 	}
     }
-    # The only threats in the game at the moment are monsters on the
+    # The most important threats in the game are monsters on the
     # current level.
     my @enemies = $current_level->has_enemies;
     my $selfspeed = TAEB->speed; # invariant code motion
