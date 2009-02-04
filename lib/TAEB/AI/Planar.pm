@@ -887,10 +887,13 @@ has try_again_step => (
 );
 
 # Responding to messages.
-sub msg_door_resists {
-    # The door actions can safely try again.
+sub msg_door {
     my $self = shift;
-    $self->try_again_step(TAEB->step);
+    my $what = shift;
+    if($what eq 'resists') {
+	# The door actions can safely try again.
+	$self->try_again_step(TAEB->step);
+    }
 }
 sub msg_tile_update {
     # This might have made plans with the tile in question as an
