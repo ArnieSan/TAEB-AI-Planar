@@ -17,6 +17,8 @@ use constant repeated_threat_turns => 5;
 
 # The overall plan, what we're aiming towards.
 use constant overall_plan => 'Descend';
+# The fallback metaplan: what to do if we get stuck.
+use constant fallback_plan => 'FallbackMeta';
 
 # A trick to avoid having to loop over things invalidating them;
 # instead, store an aistep value, and they're invalidated if it
@@ -36,6 +38,11 @@ has strategic_success_count => (
     default => 0,
 );
 
+# Extra information about what we're doing at the moment.
+has currently_modifiers => (
+    isa     => 'Str',
+    default => '',
+);
 # Plans.
 has plans => (
     isa     => 'HashRef[TAEB::AI::Planar::Plan]',
@@ -323,7 +330,8 @@ sub next_action {
     # should ever be allowed to happen in the first place).
     if($action->isa('TAEB::AI::Planar::Plan::Tactical')) {
 	# It's a tactical plan.
-	$self->currently($plan->description . ' > ' .
+	$self->currently($self->currently_modifiers .
+			 $plan->description . ' > ' .
 			 $action->description);
 	$self->current_tactical_plan($action);
 	my $inner_action = $action->try;
@@ -340,7 +348,7 @@ sub next_action {
 	@_ = ($self);
 	goto &next_action; # tail-recursion
     } else {
-	$self->currently($plan->description);
+	$self->currently($self->currently_modifiers . $plan->description);
 	$self->current_tactical_plan(undef);
 	return $action;
     }
@@ -438,6 +446,8 @@ sub next_plan_action {
     # so far (using plans as the hash keys), or undef if it's untried.
     my %planstate = ();
     my $bestplanname;
+    my $majorplan = overall_plan;
+    $self->currently_modifiers('');
     while (1) {
 	my $desire;
 	$plan = undef;
@@ -463,27 +473,23 @@ sub next_plan_action {
 		 && $planstate{$plan} >= $desire-(1e-8);
 	}
 	if (!defined $plan) {
-	    if (! (++$iterations % 3)) {
-		die 'No plans seem possible at all!' if $iterations > 30;
+	    if (++$iterations > 3) {
+		die 'No plans seem possible at all!' if $iterations > 8;
 		# Decay impossibility a bit, and try the whole thing
 		# again, in a desperate attempt to find some plan we
 		# can use. If all plans are locked out like this, it
 		# means that we have either a severe dependency mess-
 		# up or something's happened to us that we don't know
 		# how to handle.
-		# TODO: Should we try negative-desirability plans in
-		# this situation? That's akin to the typical human
-		# tactic of drinking random potions, or whatever, to
-		# try to escape certain doom. OTOH, that typical
-		# tactic never seems to work...
 		TAEB->log->personality(
 		    'Decaying impossibility to try to find a plan...',
 		    level => 'info');
+		$self->currently_modifiers('[Retry] ');
 		$self->strategic_success_count(
-		    $self->strategic_success_count+1);
+		    $self->strategic_success_count+3);
 		$self->tactical_success_count(
-		    $self->tactical_success_count+1);
-		if ($iterations > 27) {
+		    $self->tactical_success_count+3);
+		if ($iterations > 6) {
 		    # We're utterly stumped. Wipe out the
 		    # impossibility records, so that we'll retry
 		    # anything, even if it seems sure to fail. Maybe
@@ -492,15 +498,22 @@ sub next_plan_action {
 		    TAEB->log->personality(
 			'Blanking impossibility to try to find a plan...',
 			level => 'info');
-		$self->strategic_success_count(
-		    $self->strategic_success_count+10000);
-		$self->tactical_success_count(
-		    $self->tactical_success_count+10000);
+		    $self->currently_modifiers('[Major retry] ');
+		    $self->strategic_success_count(
+			$self->strategic_success_count+10000);
+		    $self->tactical_success_count(
+			$self->tactical_success_count+10000);
+		}
+		if ($iterations > 7) {
+		    # There are no positive-desirability plans. Let's
+		    # see how the fallbacks work out.
+		    $majorplan = fallback_plan;
+		    $self->currently_modifiers('[Fallback] ');
 		}
 		$self->_planheap->clear;
 		%planstate = ();
 	    }
-	    $self->add_capped_desire($self->get_plan(overall_plan),
+	    $self->add_capped_desire($self->get_plan($majorplan),
 				     10000000);
 	    next;
 	}
@@ -856,13 +869,20 @@ around institute => sub {
 
     # Require the module for each plan we could use.
     # The list here is of plans referenced by the core AI itself.
-    my @planlist = ("InventoryItemMeta", # metaplan for inventory items
-		    "GroundItemMeta",    # metaplan for floor items
-		    "Investigate",       # metaplan for interesting tiles
-		    "Eliminate",         # metaplan for monsters
-		    "MoveFrom",          # tactical metaplan for tiles
-		    "Nop",               # stub tactical plan
-		    overall_plan);       # metaplan for strategy
+    my @planlist = (
+	# Validity metaplans
+	"InventoryItemMeta", # metaplan for inventory items
+	"GroundItemMeta",    # metaplan for floor items
+	"Investigate",       # metaplan for interesting tiles
+	# Threat metaplans
+	"Eliminate",         # metaplan for monsters
+	"Extricate",         # metaplan for traps we're in
+	# Tactical metaplans
+	"MoveFrom",          # tactical metaplan for tiles
+	"Nop",               # stub tactical plan
+	# Goal metaplans
+	fallback_plan,       # metaplan for fallback
+	overall_plan);       # metaplan for strategy
     my %processed = ();
 
     # Load each plan, and recursively load its references.
