@@ -29,6 +29,8 @@ sub check_possibility_inner {
     # TODO: It's possible to move up or down from stairs.
 }
 
+use constant references => ['MoveTo'];
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 

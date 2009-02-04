@@ -63,6 +63,7 @@ sub succeeded {
 }
 
 use constant description => 'Walking';
+use constant references => ['ScareMonster'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

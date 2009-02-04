@@ -22,10 +22,10 @@ sub set_arg {
 
 sub planspawn {
     my $self = shift;
-    my $ai = TAEB->personality;
+    my $ai = TAEB->ai;
     my $item = $self->item;
     # Create plans to eat corpses.
-    if ($item->class eq 'carrion') {
+    if ($item->isa("TAEB::World::Item::Food::Corpse")) {
 	$ai->get_plan('FloorFood',$item);
     }
     # Pick up items if they seem useful.
@@ -37,6 +37,7 @@ sub planspawn {
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Doing something with an item on the ground';
+use constant references => ['PickupItem','FloorFood'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

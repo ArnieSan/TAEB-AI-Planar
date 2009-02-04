@@ -25,6 +25,7 @@ sub spread_desirability {
 sub invalidate {shift->validity(0);}
 
 use constant description => "Eliminating a dangerous monster";
+use constant references => ['Melee'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

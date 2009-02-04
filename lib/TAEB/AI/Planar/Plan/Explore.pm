@@ -28,6 +28,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Exploring';
+use constant references => ['ImproveConnectivity'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

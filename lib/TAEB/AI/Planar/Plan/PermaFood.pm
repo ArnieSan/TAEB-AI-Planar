@@ -18,7 +18,7 @@ sub set_arg {
 # item. The time spent eating it is risk rather than resource loss.
 sub gain_resource_conversion_desire {
     my $self = shift;
-    my $ai   = TAEB->personality;
+    my $ai   = TAEB->ai;
     my $item = $self->item;
     # Bump our own desirability.
     $ai->add_capped_desire($self, $ai->resources->{'Nutrition'}->value *

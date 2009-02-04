@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-package TAEB::AI::TacticsMapEntry;
+package TAEB::AI::Planar::TacticsMapEntry;
 
 =begin comment
 
@@ -51,14 +51,6 @@ has risk => (
     isa => 'HashRef[Num]',
     default => sub { {} },
 );
-# The risk as a numerical value.
-sub numerical_risk {
-    my $self = shift;
-    my $risk = 0;
-    $risk += $self->ai->resources->{$_}->cost($self->risk->{$_})
-	for keys %{$self->risk};
-    return $risk;
-}
 
 # The risk of pathing to this tile /within the level/, calculated the
 # same way as the risk value above. This is to allow level caching to
@@ -120,7 +112,7 @@ has step => (
 sub numerical_risk {
     my $self = shift;
     my $risk = 0;
-    my $tpr = TAEB->personality->resources;
+    my $tpr = TAEB->ai->resources;
     $risk += $tpr->{$_}->cost($self->{'risk'}->{$_})
 	for keys %{$self->{'risk'}};
     return $risk;

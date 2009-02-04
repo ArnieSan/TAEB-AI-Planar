@@ -56,7 +56,7 @@ sub planspawn { die "Tactical plan is trying to spawn strategic plans"; }
 
 # Impossibility for tactical plans is based on the tactical success count.
 sub appropriate_success_count {
-    return TAEB->personality->tactical_success_count;
+    return TAEB->ai->tactical_success_count;
 }
 
 # The main entry point for tactical planning. This causes the plan to
@@ -80,7 +80,7 @@ sub generate_plan {
     my $tme = shift;
     my $planname = shift;
     my @args = @_;
-    my $ai = TAEB->personality;
+    my $ai = TAEB->ai;
     $ai->get_tactical_plan($planname, [$tme->{'tile_level'},
 				       $tme->{'tile_x'},
 				       $tme->{'tile_y'},
@@ -100,7 +100,7 @@ sub add_possible_move {
     my $newy = shift;
     my $oldlevel = $oldtme->{'tile_level'};
     my $newlevel = shift || $oldlevel;
-    my $ai = TAEB->personality;
+    my $ai = TAEB->ai;
     # We can save a lot of time by not bothering if there's already a
     # current TME for this square.
     my $currenttme = $ai->tactics_map->{$newlevel}->[$newx]->[$newy];

@@ -43,7 +43,7 @@ sub calculate_risk {
     # We need to know where we're aiming, so that we can work out the
     # risk it costs to get there.
     my $aim = $self->aim_tile;
-    my $ai  = TAEB->personality;
+    my $ai  = TAEB->ai;
     if (!defined($aim)) {
 	# We don't have anywhere to aim for, that's a plan
 	# failure. Bail out.
@@ -98,7 +98,7 @@ sub calculate_risk {
 	my $plan = $ai->plans->{$planname};
 	my $amount = $target_tme->{'make_safer_plans'}->{$planname};
 	if(!defined $plan) {
-	    TAEB->log->personality("Plan $plan has gone missing...");
+	    TAEB->log->personality("Plan $planname has gone missing...");
 	    next;
 	}
 	#$self->desire < $amount and $amount = $self->desire;
@@ -129,7 +129,7 @@ sub aim_tile_turns {
     my $self = shift;
     my $turns = shift;
     my $aim = $self->_aim_tile_cache;
-    my $ai = TAEB->personality;
+    my $ai = TAEB->ai;
     my $thme = $ai->threat_map->{$aim->level}->[$aim->x]->[$aim->y];
     my %resamounts = ('Time' => $turns);
     my $cost = 0;
@@ -152,7 +152,7 @@ sub aim_tile_turns {
 # the action if we're where we want to be, else bail.
 sub action {
     my $self = shift;
-    my $ai   = TAEB->personality;
+    my $ai   = TAEB->ai;
     return undef unless defined $self->_aim_tile_cache;
     # Yes, return the reach action even if there isn't one. It's undef
     # in that case, which is exactly what we want; it's an error to

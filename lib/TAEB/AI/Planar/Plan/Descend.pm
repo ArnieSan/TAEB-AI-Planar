@@ -35,6 +35,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Going downstairs';
+use constant references => ['ImproveConnectivity'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

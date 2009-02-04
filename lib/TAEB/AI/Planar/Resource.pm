@@ -35,7 +35,7 @@ sub want_to_spend {
     my $self = shift;
     my $quantity = shift;
     my $value = $self->_value;
-    for my $resource (values %{TAEB->personality->resources}) {
+    for my $resource (values %{TAEB->ai->resources}) {
 	$resource == $self and next;
 	$value += $resource->degrade;
     }

@@ -41,7 +41,7 @@ has last_marked_impossible => (
     default => 0,
 );
 sub appropriate_success_count {
-    return TAEB->personality->strategic_success_count;
+    return TAEB->ai->strategic_success_count;
 }
 sub difficulty {
     my $self = shift;
@@ -142,7 +142,7 @@ sub cost {
     # later when the plan is enacted. Just bill the item for later use
     # and return.
     defined(wantarray) or return;
-    my $resources = TAEB->personality->resources;
+    my $resources = TAEB->ai->resources;
     die "Resource $resourcename isn't a resource" unless
 	exists $resources->{$resourcename};
     return $resources->{$resourcename}->cost($amount);
@@ -222,7 +222,7 @@ sub try {
     # which case no point trying to gather the resources we need for it.
     if (defined $action) {
 	for my $resourcename (keys %{$self->spending_plan}) {
-	    my $resource = TAEB->personality->resources->{$resourcename};
+	    my $resource = TAEB->ai->resources->{$resourcename};
 	    $resource->want_to_spend($self->spending_plan->{$resourcename});
 	    $resource->amount < $self->spending_plan->{$resourcename} and
 		$cando = 0;
@@ -277,7 +277,7 @@ has desire_with_risk => (
 sub depends {
     my $self = shift;
     my $ratio = shift;
-    my $ai = TAEB->personality;
+    my $ai = TAEB->ai;
     my $on = $ai->get_plan(@_);
     push @{$on->reverse_dependencies}, $self;
     $ai->add_capped_desire($on, $self->desire * $ratio);
@@ -286,7 +286,7 @@ sub depends {
 sub depends_risky {
     my $self = shift;
     my $ratio = shift;
-    my $ai = TAEB->personality;
+    my $ai = TAEB->ai;
     my $on = $ai->get_plan(@_);
     push @{$on->reverse_dependencies}, $self;
     $ai->add_capped_desire($on, $self->desire_with_risk * $ratio);
@@ -320,6 +320,13 @@ sub invalidate { }
 # Metaplans do nothing but spawn other plans.
 # Even non-metaplans may want to spawn sometimes.
 sub planspawn { }
+
+# Plans which this plan can refer to (by spawning, depending, or
+# otherwise generating).
+has references => (
+    isa => 'ArrayRef[TAEB::AI::Planar::Plan]',
+    default => sub { [] }
+);
 
 # Stuff to remove once a better way is available
 sub item_tile {

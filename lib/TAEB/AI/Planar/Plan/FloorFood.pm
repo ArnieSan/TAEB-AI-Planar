@@ -51,7 +51,7 @@ sub reach_action {
 # loss.
 sub gain_resource_conversion_desire {
     my $self = shift;
-    my $ai   = TAEB->personality;
+    my $ai   = TAEB->ai;
     # Bump our own desirability.
     $ai->add_capped_desire($self, $ai->resources->{'Nutrition'}->value *
 			   $self->spoiler->{'corpse'}->{'nutrition'});
@@ -108,6 +108,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Eating a corpse on the floor';
+use constant references => ['Investigate'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

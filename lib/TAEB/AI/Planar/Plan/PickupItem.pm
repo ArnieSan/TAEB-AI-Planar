@@ -24,7 +24,7 @@ sub aim_tile {
 sub gain_resource_conversion_desire {
     my $self  = shift;
     my $item  = $self->item;
-    my $ai    = TAEB->personality;
+    my $ai    = TAEB->ai;
     my $value = $ai->item_value($item);
     if ($value > 0) {
 	$ai->add_capped_desire($self, $value);

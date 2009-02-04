@@ -31,7 +31,7 @@ sub check_possibility_inner {
     my $tmex = $tme->{'tile_x'};
     my $tmey = $tme->{'tile_y'};
     my $tmel = $tme->{'tile_level'};
-    my $ai   = TAEB->personality;
+    my $ai   = TAEB->ai;
     my $aistep = $ai->aistep;
     # Bail as fast as we can if a faster way to move to this tile has
     # already been locked into the tactical map, to save needless
@@ -114,6 +114,9 @@ sub check_possibility_inner {
 
     # TODO: Need much more here
 }
+
+use constant references => ['OpenDoor','KickDownDoor','Walk','PushBoulder',
+                            'LightTheWay'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

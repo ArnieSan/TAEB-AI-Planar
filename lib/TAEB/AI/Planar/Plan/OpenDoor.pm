@@ -54,7 +54,7 @@ sub check_possibility_inner {
 }
 sub succeeded {
     my $self = shift;
-    my $ai   = TAEB->personality;
+    my $ai   = TAEB->ai;
     # There's a very small chance this malfunctions if the door fails
     # to open and a xorn steps on it while we're trying to open it,
     # but that's unlikely to be a problem, especially as all it would

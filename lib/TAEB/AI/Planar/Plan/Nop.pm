@@ -14,7 +14,7 @@ sub set_arg { die 'This plan takes no arguments'; }
 # it trying to update our (nonexistent) TME.
 sub check_possibility {
     my $self = shift;
-    my $ai   = TAEB->personality;
+    my $ai   = TAEB->ai;
     my $tme = {
 	prevtile_level  => undef,
 	prevtile_x      => undef,

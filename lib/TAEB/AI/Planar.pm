@@ -1,11 +1,10 @@
 #!/usr/bin/env perl
-package TAEB::AI::Personality::Ais523_Experimental;
+package TAEB::AI::Planar;
 use TAEB::OO;
 use Heap::Simple::XS;
 use Scalar::Util qw/refaddr weaken/;
 use Time::HiRes qw/gettimeofday tv_interval/;
-use TAEB::Spoilers::Item::Food;
-extends 'TAEB::AI::Personality';
+extends 'TAEB::AI';
 
 # The shortsightedness modifier, or its opposite (lower means more
 # shortsighted); the number of turns over which to measure a threat
@@ -159,7 +158,7 @@ has resources => (
 	my $self = shift;
 	my %resources = ();
 	for my $type (resource_types) {
-	    require "TAEB/AI/Resource/$type.pm";
+	    require "TAEB/AI/Planar/Resource/$type.pm";
 	    $resources{$type} = "TAEB::AI::Planar::Resource::$type"->new;
 	}
 	return \%resources;
@@ -845,27 +844,41 @@ sub create_plan {
     }
 }
 
-# TODO: Replace this with something that actually works
-sub institute {
+around institute => sub {
+    my $orig = shift;
     my $self = shift;
-    $self->SUPER::institute;
-    # We want to require all plan packages /right now/, to save time
-    # working out their filenames later. This is done by looping over
-    # all the files in lib/TAEB/AI/Plan that end .pm, and requiring
-    # them right now. (This also helps to catch compile errors in the
-    # plans, in addition to speeding up plan creation.)
-    # TODO: Make this work even after install
-    my @planfiles = glob 'lib/TAEB/AI/Planar/Plan/*.pm';
-    # Unfortunately, the 'extends' mechanism in Moose seems to confuse
-    # require slightly, such that base classes mustn't be required
-    # twice or they end up being loaded twice and getting confused.
-    # This is a hack for now, I need to think up a better mechanism
-    # later.
-    @planfiles = grep {$_ !~ /PathBased|Tactical/} @planfiles;
-    (TAEB->log->personality("Loading plan $_"), require $_) for @planfiles;
-}
+
+    $orig->($self);
+
+    # Load plans.
+    TAEB->log->personality("Loading plans...");
+
+    # Require the module for each plan we could use.
+    # The list here is of plans referenced by the core AI itself.
+    my @planlist = ("InventoryItemMeta", # metaplan for inventory items
+		    "GroundItemMeta",    # metaplan for floor items
+		    "Investigate",       # metaplan for interesting tiles
+		    "Eliminate",         # metaplan for monsters
+		    "MoveFrom",          # tactical metaplan for tiles
+		    "Nop",               # stub tactical plan
+		    overall_plan);       # metaplan for strategy
+    my %processed = ();
+
+    # Load each plan, and recursively load its references.
+    while (@planlist) {
+	my $planname = shift @planlist;
+	next if $processed{$planname};
+	$processed{$planname} = 1;
+	my $pkg = "TAEB::AI::Planar::Plan::$planname";
+	TAEB->log->personality("Loading plan $planname");
+	require "TAEB/AI/Planar/Plan/$planname.pm";
+	my @referencedplans = @{$pkg->new->references};
+	@planlist = (@planlist, @referencedplans);
+    }
+};
 
 #####################################################################
+# Things below this line should be elsewhere or handled differently
 
 has try_again_step => (
     isa => 'Int',
@@ -894,11 +907,13 @@ sub item_value {
     my $self = shift;
     my $item = shift;
     my $resources = $self->resources;
-    # If the item is edible food, its value is its nutrition minus its
+    # If the item is permafood, its value is its nutrition minus its
     # weight; its nutrition is measured in unscarce units (twice the
     # base value for permafood), but its weight is measured in dynamic
     # units. (That allows us to drop things when we get burdened.)
-    if(TAEB::Spoilers::Item::Food->should_eat($item)) {
+    if($item->isa('TAEB::World::Item::Food')
+    &&!$item->isa('TAEB::World::Item::Food::Corpse')
+    && $item->is_safely_edible) {
 	return $resources->{'Nutrition'}->base_value * 2 *
 	    $item->nutrition;
     }

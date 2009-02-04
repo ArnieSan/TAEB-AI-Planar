@@ -16,7 +16,7 @@ sub amount {
 # nutrition is a decent approximiation for now.)
 sub value {
     my $self = shift;
-    my $nutrition = TAEB->personality->resources->{'Nutrition'};
+    my $nutrition = TAEB->ai->resources->{'Nutrition'};
     return $nutrition->value;
 }
 
@@ -25,7 +25,7 @@ sub value {
 sub cost {
     my $self = shift;
     my $quantity = shift;
-    my $nutrition = TAEB->personality->resources->{'Nutrition'};
+    my $nutrition = TAEB->ai->resources->{'Nutrition'};
     return $nutrition->cost($quantity);
 }
 
@@ -34,7 +34,7 @@ sub cost {
 sub want_to_spend {
     my $self = shift;
     my $quantity = shift;
-    my $nutrition = TAEB->personality->resources->{'Nutrition'};
+    my $nutrition = TAEB->ai->resources->{'Nutrition'};
     $nutrition->want_to_spend($quantity);
 }
 

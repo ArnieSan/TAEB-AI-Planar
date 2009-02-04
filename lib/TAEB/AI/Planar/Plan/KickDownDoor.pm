@@ -58,7 +58,7 @@ sub succeeded {
     $self->tile($self->tile->level->at($self->tile->x,$self->tile->y));
     $success = $self->tile->type ne 'closeddoor';
     $success and $self->validity(0); # no longer a closed door here
-    $success or TAEB->personality->try_again_step ==
+    $success or TAEB->ai->try_again_step ==
 	TAEB->step and $success = undef;
     return $success;
 }

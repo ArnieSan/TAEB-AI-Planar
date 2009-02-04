@@ -36,7 +36,7 @@ sub gain_resource_conversion_desire {
     # plans run at a farlook-safe time.)
     my $self = shift;
     my $glyph = $self->tile->glyph;
-    my $ai = TAEB->personality;
+    my $ai = TAEB->ai;
     if ($glyph eq '$') {
 	$ai->add_capped_desire($self, $ai->resources->{'Zorkmids'}->value
 			       * 50);
@@ -65,12 +65,13 @@ sub planspawn {
 	# the corpse will be rotten for certain by now.
 	next if $killelement->[2] >= TAEB->turn - 100;
 	my $spoiler = TAEB::Spoilers::Monster->monster($monster);
-	TAEB->personality->get_plan("FloorFood",[$self->tile,$spoiler])
+	TAEB->ai->get_plan("FloorFood",[$self->tile,$spoiler])
 	    ->validate;
     }
 }
 
 use constant description => "Seeing what's on a tile";
+use constant references => ['FloorFood'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
