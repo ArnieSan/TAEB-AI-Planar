@@ -740,6 +740,7 @@ sub threat_check {
 	    my $glyph = $description[0];
 	    $species =~ s/^peaceful // and next; # don't worry about peacefuls
 	    $species =~ s/^tame // and next; # pets are not a threat
+	    $glyph eq 'I' and next; # it probably isn't still there anyway
 	    # coyote naming is weird...
 	    $species =~ /^coyote / and $species = 'coyote';
 	    my %monsterlist = TAEB::Spoilers::Monster->search(
