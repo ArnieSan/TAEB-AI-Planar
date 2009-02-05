@@ -16,12 +16,28 @@ sub check_possibility_inner {
     my $tme  = shift;
     # Set off move-to metaplans for adjacent tiles.
     my $tmetile = $self->tme_tile($tme);
-    if($tmetile->type ne 'opendoor') {
+    if($tmetile->type ne 'opendoor' && $tmetile->type ne 'closeddoor') {
 	$tmetile->each_adjacent(sub {
-	    $self->generate_plan($tme, "MoveTo", shift);
+	    my $tile = shift;
+	    $self->generate_plan($tme, "MoveTo", $tile);
+	    if (($tile->type eq 'opendoor' || $tile->type eq 'closeddoor')
+		&& ($tile->x == $tmetile->x || $tile->y == $tmetile->y)) {
+		# You can't move diagonally off an open door; but you
+		# can close and destroy the door, then do the diagonal
+		# movement. Likewise, if we want to go diagonally from
+		# a closed door next to us, better plan that before we
+		# start trying to walk through that.
+		$tile->each_diagonal(sub {
+		    my $fartile = shift;
+		    return if $tmetile->x == $fartile->x;
+		    return if $tmetile->y == $fartile->y;
+		    $self->generate_plan($tme, "DiagonalDoor", $fartile);
+		});
+	    }
         });
     } else {
-	# You can't move diagonally off open doors.
+	# You can't move diagonally off open doors. And you can't move
+	# diagonally off closed doors, once they've been opened.
 	$tmetile->each_orthogonal(sub {
 	    $self->generate_plan($tme, "MoveTo", shift);
         });
@@ -29,7 +45,7 @@ sub check_possibility_inner {
     # TODO: It's possible to move up or down from stairs.
 }
 
-use constant references => ['MoveTo'];
+use constant references => ['MoveTo','DiagonalDoor'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

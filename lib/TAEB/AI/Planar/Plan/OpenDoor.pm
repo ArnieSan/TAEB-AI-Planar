@@ -24,7 +24,7 @@ sub check_possibility_inner {
     my $tme  = shift;
 
     # If there is a closed door here, we can try to open it.
-    # (Unless we have wounded legs or something like that, but that's
+    # (Unless we have no hands or something like that, but that's
     # caught by generic impossibility checks; still worth adding here
     # when I get round to it as it'll probably speed the program up a
     # bit.)
@@ -41,9 +41,9 @@ sub check_possibility_inner {
 	return;
     }
 
-    # We can't actually open the door down if we aren't standing next
-    # to it (although again, why would this have been called in the
-    # first place if that were the case?).
+    # We can't actually open the door if we aren't standing next to it
+    # (although again, why would this have been called in the first
+    # place if that were the case?).
     if (abs($tme->{'tile_x'} - $self->tile->x) > 1
      || abs($tme->{'tile_y'} - $self->tile->y) > 1) {
 	return;
