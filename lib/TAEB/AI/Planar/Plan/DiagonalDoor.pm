@@ -56,6 +56,8 @@ sub calculate_risk {
     $self->cost("Time", 0.693/$kickchance + 2);
     $self->cost("Time", 0.693/$openchance) if $door->type eq 'opendoor';
     $self->level_step_danger($tile->level);
+    $self->level_step_danger($tile->level);
+    $self->level_step_danger($tile->level) if $door->type eq 'opendoor';
     $door->type eq 'closeddoor' and $door->is_shop
 	and $self->cost('Zorkmids', 400);
 }
