@@ -155,6 +155,10 @@ sub add_possible_move {
     my $self = shift;
     my $tme = shift;
     $self->_tacticsheap->insert($tme);
+    # Debug line; comment this out when not in use.
+#    TAEB->log->personality("Adding potential tactic " .
+#			   $tme->{'tactic'}->name .
+#			   " with risk " . $tme->numerical_risk);
 }
 
 # Resources.
