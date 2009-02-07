@@ -16,7 +16,6 @@ sub set_additional_args {
 sub calculate_risk {
     my $self = shift;
     # The time this takes us depends on the speed of the monster.
-    # TODO: Make this not assume the monster is the same speed as us.
     my $spoiler = $self->tile->monster->spoiler;
     if (defined $spoiler)
     {
@@ -36,7 +35,11 @@ sub check_possibility_inner {
     my $monster = $tile->monster;
     return unless defined $monster;
     # We can't scare a monster that doesn't respect Elbereth.
-    return unless $monster->respects_elbereth;
+    unless ($monster->respects_elbereth) {
+	# It might be peaceful (shk, watchman...)
+	$self->generate_plan($tme,"PardonMe",$tile);
+	return;
+    }
     # We can't scare an immobile monster.
     my $spoiler = $tile->monster->spoiler;
     return if $spoiler and !($spoiler->{'speed'});
@@ -56,6 +59,7 @@ sub succeeded {
 }
 
 use constant description => 'Scaring a monster out of our way';
+use constant references => ['PardonMe'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

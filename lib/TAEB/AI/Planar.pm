@@ -709,6 +709,18 @@ sub tme_from_tile {
     return $tme;
 }
 
+# Keep track of which monsters are peaceful, so we don't need to
+# farlook them repeatedly.
+has _peaceful_monsters => (
+    isa     => 'HashRef',
+    default => sub { {} },
+);
+sub monster_is_peaceful {
+    my $self = shift;
+    my $monster = shift;
+    return exists $self->_peaceful_monsters->{$monster};
+}
+
 sub threat_check {
     my $self = shift;
     # Clear the threat map for the current level.
@@ -743,6 +755,7 @@ sub threat_check {
     # current level.
     my @enemies = $current_level->has_enemies;
     my $selfspeed = TAEB->speed; # invariant code motion
+    $self->_peaceful_monsters({});
     for my $enemy (@enemies) {
 	# Work out what type of enemy this is. If we know its spoiler
 	# from its Monster.pm data (i.e. unique glyph and colour),
@@ -752,32 +765,33 @@ sub threat_check {
 	my $danger = {};
 	my $tile = $enemy->tile;
 	my $relspeed = 4; # fear for the worst during hallu...
-	my @description;
-	if (!defined($spoiler)) {
+	my @description = TAEB->farlook($tile);
+	if($self->aistep == 2) {
+	    # Workaround for a farlook bug
 	    @description = TAEB->farlook($tile);
-	    if($self->aistep == 2) {
-		# Workaround for a farlook bug
-		@description = TAEB->farlook($tile);
-	    }
-	    my $species = $description[2];
-	    my $glyph = $description[0];
-	    $species =~ s/^peaceful // and next; # don't worry about peacefuls
-	    $species =~ s/^tame // and next; # pets are not a threat
-	    $glyph eq 'I' and next; # it probably isn't still there anyway
-	    # coyote naming is weird...
-	    $species =~ /^coyote / and $species = 'coyote';
-	    my %monsterlist = TAEB::Spoilers::Monster->search(
-		glyph => $glyph,
-		name  => $species,
+	}
+	my $species = $description[2];
+	my $glyph = $description[0];
+	if ($species =~ s/^peaceful //) { # don't worry about peacefuls
+	    $self->_peaceful_monsters->{$enemy} = 1;
+	    next;
+	}
+	$species =~ s/^tame // and next; # pets are not a threat
+	$glyph eq 'I' and next; # it probably isn't still there anyway
+	# coyote naming is weird...
+	$species =~ /^coyote / and $species = 'coyote';
+	my %monsterlist = TAEB::Spoilers::Monster->search(
+	    glyph => $glyph,
+	    name  => $species,
 	    );
-	    if(values %monsterlist == 1) {
-		($spoiler) = (values %monsterlist);
-	    } else {
-		local $" = "|";
-		TAEB->log->personality("Could not determine what the monster ".
-		    "with description @description is...",
-		    level => 'info');
-	    }
+	if(values %monsterlist == 1) {
+	    ($spoiler) = (values %monsterlist);
+	} else {
+	    local $" = "|";
+	    TAEB->log->personality("Could not determine what the monster ".
+				   "with description @description is...",
+				   level => 'info');
+	    # leave spoiler determined from $enemy->spoiler
 	}
 	if (defined($spoiler)) {
 	    my $attacks = $$spoiler{attacks};

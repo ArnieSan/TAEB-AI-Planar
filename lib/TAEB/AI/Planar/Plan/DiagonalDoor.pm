@@ -60,6 +60,9 @@ sub calculate_risk {
     $self->level_step_danger($tile->level) if $door->type eq 'opendoor';
     $door->type eq 'closeddoor' and $door->is_shop
 	and $self->cost('Zorkmids', 400);
+    my $level = TAEB->current_level;
+    my $mines = $level->known_branch && $level->branch eq 'mines';
+    $mines and $self->cost('Hitpoints', 150);
 }
 
 sub check_possibility_inner {
