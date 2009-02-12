@@ -42,10 +42,13 @@ sub check_possibility_inner {
 	    $self->generate_plan($tme, "MoveTo", shift);
         });
     }
-    # TODO: It's possible to move up or down from stairs.
+    # It's possible to move up or down from stairs.
+    if($tmetile->type eq 'stairsdown' || $tmetile->type eq 'stairsup') {
+	$self->generate_plan($tme, "Stairs", $tmetile);
+    }
 }
 
-use constant references => ['MoveTo','DiagonalDoor'];
+use constant references => ['MoveTo','DiagonalDoor','Stairs'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

@@ -594,14 +594,17 @@ sub update_tactical_map {
 	my $tme = $heap->extract_top;
 	# If we're off the level, just ignore this TME, to avoid
 	# updating the entire dungeon every step, unless it specifies
-	# prevlevel_level incorrectly (and therefore hasn't been
+	# prevtile_level incorrectly (and therefore hasn't been
 	# updated since we entered the level we're on).
+	# The whole dungeon /is/ updated when we change level.
 	next if refaddr($tme->{'tile_level'}) != $curlevelra
 	     && defined $map->{$tme->{'tile_level'}}
 	     && defined	$map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
 		            ->[$tme->{'tile_y'}]
+	     && defined	$map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
+	                    ->[$tme->{'tile_y'}]->{'prevtile_level'}
 	     && refaddr($map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
-		      ->[$tme->{'tile_y'}]->{'prevlevel_level'}) == $curlevelra;
+		      ->[$tme->{'tile_y'}]->{'prevtile_level'}) == $curlevelra;
 	# If we've already found an easier way to get here, ignore
 	# this method of getting here.
 	next if exists $map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
