@@ -769,32 +769,31 @@ sub threat_check {
 	my $tile = $enemy->tile;
 	my $relspeed = 4; # fear for the worst during hallu...
 	my @description = TAEB->farlook($tile);
-	if($self->aistep == 2) {
-	    # Workaround for a farlook bug
-	    @description = TAEB->farlook($tile);
-	}
-	my $species = $description[2];
-	my $glyph = $description[0];
-	if ($species =~ s/^peaceful //) { # don't worry about peacefuls
-	    $self->_peaceful_monsters->{$enemy} = 1;
-	    next;
-	}
-	$species =~ s/^tame // and next; # pets are not a threat
-	$glyph eq 'I' and next; # it probably isn't still there anyway
-	# coyote naming is weird...
-	$species =~ /^coyote / and $species = 'coyote';
-	my %monsterlist = TAEB::Spoilers::Monster->search(
-	    glyph => $glyph,
-	    name  => $species,
-	    );
-	if(values %monsterlist == 1) {
-	    ($spoiler) = (values %monsterlist);
-	} else {
-	    local $" = "|";
-	    TAEB->log->ai("Could not determine what the monster ".
-				   "with description @description is...",
-				   level => 'info');
-	    # leave spoiler determined from $enemy->spoiler
+	if (scalar @description > 2) {
+	    # Useful data from the farlook (there isn't any, if, say, the
+	    # monster is invisible)
+	    my $species = $description[2];
+	    my $glyph = $description[0];
+	    if ($species =~ s/^peaceful //) { # don't worry about peacefuls
+		$self->_peaceful_monsters->{$enemy} = 1;
+		next;
+	    }
+	    $species =~ s/^tame // and next; # pets are not a threat
+	    # coyote naming is weird...
+	    $species =~ /^coyote / and $species = 'coyote';
+	    my %monsterlist = TAEB::Spoilers::Monster->search(
+		glyph => $glyph,
+		name  => $species,
+		);
+	    if(values %monsterlist == 1) {
+		($spoiler) = (values %monsterlist);
+	    } else {
+		local $" = "|";
+		TAEB->log->ai("Could not determine what the monster ".
+			      "with description @description is...",
+			      level => 'info');
+		# leave spoiler determined from $enemy->spoiler
+	    }
 	}
 	if (defined($spoiler)) {
 	    my $attacks = $$spoiler{attacks};
