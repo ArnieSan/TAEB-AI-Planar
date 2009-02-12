@@ -18,6 +18,7 @@ sub spread_desirability {
     my $self = shift;
     my $level = TAEB->current_level;
     my $mines = $level->known_branch && $level->branch eq 'mines';
+    my $blind = TAEB->is_blind;
     $level->each_tile(sub {
 	my $tile = shift;
 	if(!$mines && $tile->is_walkable(0) &&
@@ -33,8 +34,7 @@ sub spread_desirability {
 	# this, we /do/ try to explore unexplored tiles when blind, so
 	# that LightTheWay kicks in and attempts to route there.
 	if(!$tile->explored &&
-	   ($tile->type !~ /^(?:rock|unexplored)$/o ||
-	    TAEB->is_blind)) {
+	   ($blind || $tile->type !~ /^(?:rock|unexplored)$/o)) {
 	    $self->depends(1,"Explore",$tile);
 	}
 	# As well as exploring horizontally, we can explore vertically.
