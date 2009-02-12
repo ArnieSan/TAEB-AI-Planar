@@ -21,7 +21,7 @@ sub spread_desirability {
     my $blind = TAEB->is_blind;
     $level->each_tile(sub {
 	my $tile = shift;
-	if(!$mines && $tile->is_walkable(0) &&
+	if(!$mines && $tile->is_walkable(0,1) &&
 	   scalar $tile->grep_orthogonal(
 	       sub {$self->is_search_blocked(shift)}) == 3) {
 	    $self->depends(1,"Search",$tile);
