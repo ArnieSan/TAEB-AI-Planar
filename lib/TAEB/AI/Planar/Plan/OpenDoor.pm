@@ -67,7 +67,7 @@ sub succeeded {
     $success = $self->tile->type ne 'closeddoor';
     $success and $self->validity(0); # no longer a closed door here
     $success or $ai->try_again_step == TAEB->step and $success = undef;
-    TAEB->log->personality("try_again_step = ".$ai->try_again_step .
+    TAEB->log->ai("try_again_step = ".$ai->try_again_step .
 			   ", TAEB->step = ".TAEB->step, level => 'debug');
     return $success;
 }

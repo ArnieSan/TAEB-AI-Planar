@@ -98,12 +98,12 @@ sub calculate_risk {
 	my $plan = $ai->plans->{$planname};
 	my $amount = $target_tme->{'make_safer_plans'}->{$planname};
 	if(!defined $plan) {
-	    TAEB->log->personality("Plan $planname has gone missing...");
+	    TAEB->log->ai("Plan $planname has gone missing...");
 	    next;
 	}
 	#$self->desire < $amount and $amount = $self->desire;
 	## START DEBUG CODE
-# 	TAEB->log->personality("Spreading $amount desire to msp $planname...");
+# 	TAEB->log->ai("Spreading $amount desire to msp $planname...");
 # 	my $thme = $ai->threat_map->{$target_tme->{tile_level}}->
 # 	    [$target_tme->{tile_x}]->[$target_tme->{tile_y}];
 # 	for my $p (keys %$thme) {
@@ -111,7 +111,7 @@ sub calculate_risk {
 # 	    my ($turns, $reductionplan) = split / /, $p;
 # 	    my @costs = %{$thme->{$p}};
 # 	    local $" = ';';
-# 	    TAEB->log->personality("THME has plan $reductionplan after $turns ".
+# 	    TAEB->log->ai("THME has plan $reductionplan after $turns ".
 # 				   "saving @costs");
 # 	}
 	## END DEBUG CODE

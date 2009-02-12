@@ -156,7 +156,7 @@ sub add_possible_move {
     my $tme = shift;
     $self->_tacticsheap->insert($tme);
     # Debug line; comment this out when not in use.
-#    TAEB->log->personality("Adding potential tactic " .
+#    TAEB->log->ai("Adding potential tactic " .
 #			   $tme->{'tactic'}->name .
 #			   " with risk " . $tme->numerical_risk);
 }
@@ -220,7 +220,7 @@ sub next_action {
     my $self = shift;
     my $t0 = [gettimeofday];
     my $t1;
-    TAEB->log->personality("Time taken outside next_action: ".
+    TAEB->log->ai("Time taken outside next_action: ".
 			   tv_interval($self->lasttimeofday,$t0)."s.",
 			   level => 'debug')
 	if defined $self->lasttimeofday;
@@ -236,7 +236,7 @@ sub next_action {
 	# suspending it for a while; and remember that dependencies and
 	# excursions will mark other plans possible when they succeed.)
 	$self->abandoned_plan->mark_impossible;
-	TAEB->log->personality("Plan ".$self->abandoned_plan->name.
+	TAEB->log->ai("Plan ".$self->abandoned_plan->name.
 			       " was abandoned.");
 	# More interestingly, we also abandon the tactical plan we
 	# were trying, if there is one; even though it quite possibly
@@ -245,7 +245,7 @@ sub next_action {
 	# oscillating and need to try going in the other direction.
 	if (defined $self->abandoned_tactical_plan) {
 	    $self->abandoned_tactical_plan->mark_impossible;
-	    TAEB->log->personality("Tactical plan ".
+	    TAEB->log->ai("Tactical plan ".
 				   $self->abandoned_tactical_plan->name.
 				   " was abandoned.");
 	}
@@ -257,12 +257,12 @@ sub next_action {
 	$succeeded = $self->current_tactical_plan->succeeded;
 	defined $succeeded and $succeeded and
 	    $self->tactical_success_count($self->tactical_success_count+1),
-	    TAEB->log->personality("OK, tactic ".
+	    TAEB->log->ai("OK, tactic ".
 				   $self->current_tactical_plan->name.
 				   " worked.", level => 'debug');
 	defined $succeeded and !$succeeded and
 	    $self->current_tactical_plan->mark_impossible,
-	    TAEB->log->personality("Ugh, tactic ".
+	    TAEB->log->ai("Ugh, tactic ".
 				   $self->current_tactical_plan->name.
 				   " failed...", level => 'info');
     }
@@ -276,7 +276,7 @@ sub next_action {
 	# If the plan succeeded, maybe other plans will have an easier job
 	# as a result.
 	defined $succeeded and $succeeded and
-	    TAEB->log->personality("Yay, plan ".$self->current_plan->name.
+	    TAEB->log->ai("Yay, plan ".$self->current_plan->name.
 				   " succeeded!", level => 'info'),
 	    $self->current_plan->reactivate_dependencies,
 	    $self->strategic_success_count($self->strategic_success_count+1);
@@ -291,7 +291,7 @@ sub next_action {
 	# something's happened that makes them possible (such as the
 	# monster that was causing oscillations having moved).
 	defined $succeeded and !$succeeded and
-	    TAEB->log->personality("Aargh, plan ".$self->current_plan->name.
+	    TAEB->log->ai("Aargh, plan ".$self->current_plan->name.
 				   " failed!", level => 'info'),
 	    $self->current_plan->mark_impossible;
     }
@@ -310,26 +310,26 @@ sub next_action {
     $_->invalidate for values %{$self->plans};
 
     $t1 = [gettimeofday];
-    TAEB->log->personality("Time taken for success measurement: ".
+    TAEB->log->ai("Time taken for success measurement: ".
 			   tv_interval($t0,$t1)."s.", level => 'debug');
 
     # Place threats on the threat map.
     $self->threat_check;
     $t0 = [gettimeofday];
-    TAEB->log->personality("Time taken for threat check: ".
+    TAEB->log->ai("Time taken for threat check: ".
 			   tv_interval($t1,$t0)."s.", level => 'debug');
 
     # Create the tactical map.
     $self->update_tactical_map;
     $t1 = [gettimeofday];
-    TAEB->log->personality("Time taken for tactical map: ".
+    TAEB->log->ai("Time taken for tactical map: ".
 			   tv_interval($t0,$t1)."s.", level => 'debug');
 
     # Find our plan for this step.
     my ($plan, $action) = $self->next_plan_action;
     $self->current_plan($plan);
     $t0 = [gettimeofday];
-    TAEB->log->personality("Time taken for strategic planning: ".
+    TAEB->log->ai("Time taken for strategic planning: ".
 			   tv_interval($t1,$t0)."s.", level => 'debug');
     $self->lasttimeofday($t0);
     # We need to tell if the return value was an action or a tactical
@@ -351,7 +351,7 @@ sub next_action {
 	# it does that plan's plan-calculation needs looking at.)
 	$self->current_tactical_plan(undef);
 	$self->current_plan(undef);
-	TAEB->log->personality("Tactical plan ".($action->name).
+	TAEB->log->ai("Tactical plan ".($action->name).
 			       " failed to produce an action, marking it".
 			       " as impossible...", level => 'debug');
 	@_ = ($self);
@@ -491,7 +491,7 @@ sub next_plan_action {
 		# means that we have either a severe dependency mess-
 		# up or something's happened to us that we don't know
 		# how to handle.
-		TAEB->log->personality(
+		TAEB->log->ai(
 		    'Decaying impossibility to try to find a plan...',
 		    level => 'info');
 		$self->currently_modifiers('[Retry] ');
@@ -505,7 +505,7 @@ sub next_plan_action {
 		    # anything, even if it seems sure to fail. Maybe
 		    # we'll get somewhere by repeating plans until
 		    # something else happens.
-		    TAEB->log->personality(
+		    TAEB->log->ai(
 			'Blanking impossibility to try to find a plan...',
 			level => 'info');
 		    $self->currently_modifiers('[Major retry] ');
@@ -542,9 +542,9 @@ sub next_plan_action {
 	    $plan->spending_plan({});
 	    $plan->risk($plan->calculate_risk);
 	    # Some more debugging lines that I seem to use a lot
-#	    TAEB->log->personality(
+#	    TAEB->log->ai(
 #		"Risk of $bestplanname calculated at ".$plan->risk);
-#	    TAEB->log->personality("Desire was $desire");
+#	    TAEB->log->ai("Desire was $desire");
 	    # Reinsert the plan with the same desire level; it'll be
 	    # updated for the new risk value
 	    $self->add_capped_desire($plan, $desire);
@@ -563,7 +563,7 @@ sub next_plan_action {
 	# Seems it was impossible. Oh well...
 	$plan->spread_desirability;
     }
-    TAEB->log->personality("Plan $bestplanname thinks it's possible, ".
+    TAEB->log->ai("Plan $bestplanname thinks it's possible, ".
 			   "enacting it.", level => 'info');
     return ($plan, $action);
 }
@@ -618,7 +618,7 @@ sub update_tactical_map {
 	    = $tme;
 	# The next line is debug code only, but I seem to use it far too
 	# often. Just comment it out, don't remove it.
-#	TAEB->log->personality("Locking in TME at ".$tme->{'tile_x'}.
+#	TAEB->log->ai("Locking in TME at ".$tme->{'tile_x'}.
 #				", ".$tme->{'tile_y'});
 	$self->get_tactical_plan("MoveFrom", [$tme->{'tile_level'},
 					      $tme->{'tile_x'},
@@ -791,7 +791,7 @@ sub threat_check {
 	    ($spoiler) = (values %monsterlist);
 	} else {
 	    local $" = "|";
-	    TAEB->log->personality("Could not determine what the monster ".
+	    TAEB->log->ai("Could not determine what the monster ".
 				   "with description @description is...",
 				   level => 'info');
 	    # leave spoiler determined from $enemy->spoiler
@@ -915,7 +915,7 @@ around institute => sub {
     $orig->($self);
 
     # Load plans.
-    TAEB->log->personality("Loading plans...");
+    TAEB->log->ai("Loading plans...");
 
     # Require the module for each plan we could use.
     # The list here is of plans referenced by the core AI itself.
@@ -941,7 +941,7 @@ around institute => sub {
 	next if $processed{$planname};
 	$processed{$planname} = 1;
 	my $pkg = "TAEB::AI::Planar::Plan::$planname";
-	TAEB->log->personality("Loading plan $planname");
+	TAEB->log->ai("Loading plan $planname");
 	require "TAEB/AI/Planar/Plan/$planname.pm";
 	my @referencedplans = @{$pkg->new->references};
 	@planlist = (@planlist, @referencedplans);
