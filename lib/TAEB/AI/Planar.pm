@@ -767,7 +767,7 @@ sub threat_check {
 	my $spoiler = $enemy->spoiler;
 	my $danger = {};
 	my $tile = $enemy->tile;
-	my $relspeed = 4; # fear for the worst during hallu...
+	my $relspeed = 0.99; # to encourage running away from unknown monsters
 	my @description = TAEB->farlook($tile);
 	if (scalar @description > 2) {
 	    # Useful data from the farlook (there isn't any, if, say, the
