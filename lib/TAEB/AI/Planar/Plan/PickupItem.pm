@@ -6,7 +6,7 @@ extends 'TAEB::AI::Planar::Plan::PathBased';
 
 # We take an item on the floor as argument.
 has item => (
-    isa     => 'Maybe[TAEB::World::Item]',
+    isa     => 'Maybe[NetHack::Item]',
     default => undef,
 );
 sub set_arg {

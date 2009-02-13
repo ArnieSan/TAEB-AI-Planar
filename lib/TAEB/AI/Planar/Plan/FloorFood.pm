@@ -7,7 +7,7 @@ extends 'TAEB::AI::Planar::Plan::PathBased';
 
 # We take an item, or a spoiler and tile, as argument.
 has item => (
-    isa     => 'Maybe[TAEB::World::Item]',
+    isa     => 'Maybe[NetHack::Item]',
     default => undef,
 );
 has tile => (
