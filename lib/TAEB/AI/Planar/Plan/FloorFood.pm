@@ -45,7 +45,7 @@ sub has_reach_action { 1 }
 sub reach_action {
     my $self = shift;
     return undef unless defined $self->item;
-    return TAEB::Action->new_action('eat', item => $self->item->identity);
+    return TAEB::Action->new_action('eat', food => $self->item->identity);
 }
 # TODO: reach_action_succeeded
 
