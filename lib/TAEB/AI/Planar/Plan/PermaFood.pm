@@ -42,7 +42,7 @@ sub action {
     my $self = shift;
     my $item = $self->item;
     return undef unless defined $item;
-    return TAEB::Action->new_action('eat', item => $item);
+    return TAEB::Action->new_action('eat', food => $item);
 }
 
 use constant description => 'Eating food in our inventory';
