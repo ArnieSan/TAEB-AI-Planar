@@ -36,7 +36,9 @@ sub has_reach_action { 1 }
 sub reach_action {
     # The actual item that's picked up depends on the personality;
     # it'll pick up all items with positive instantaneous values.
-    return TAEB::Action->new_action('pickup', count => undef);
+    # For some reason, the API for Pickup requires 0 to pick up all
+    # items.
+    return TAEB::Action->new_action('pickup', count => 0);
 }
 sub reach_action_succeeded {
     my $self = shift;
