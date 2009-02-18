@@ -9,6 +9,7 @@ extends 'TAEB::AI::Planar::Plan';
 # We take an item as argument.
 has item => (
     isa     => 'Maybe[NetHack::Item]',
+    is  => 'rw',
     default => undef,
 );
 sub set_arg {

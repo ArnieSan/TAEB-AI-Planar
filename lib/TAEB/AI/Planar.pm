@@ -25,31 +25,37 @@ use constant fallback_plan => 'FallbackMeta';
 # doesn't equal the current value.
 has aistep => (
     isa     => 'Int',
+    is      => 'rw',
     default => 1,
 );
 # Likewise, tactical and strategic success counts remove the need to
 # loop through plans changing their difficulties.
 has tactical_success_count => (
     isa     => 'Int',
+    is      => 'rw',
     default => 0,
 );
 has strategic_success_count => (
     isa     => 'Int',
+    is      => 'rw',
     default => 0,
 );
 
 # Extra information about what we're doing at the moment.
 has currently_modifiers => (
     isa     => 'Str',
+    is      => 'rw',
     default => '',
 );
 # Plans.
 has plans => (
     isa     => 'HashRef[TAEB::AI::Planar::Plan]',
+    is      => 'rw',
     default => sub { {} },
 );
 has current_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan]',
+    is      => 'rw',
     default => undef,
 );
 # A plan counts as potentially abandoned if it doesn't strategy-fail
@@ -59,25 +65,30 @@ has current_plan => (
 # plan, if there is one.
 has abandoned_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan]',
+    is      => 'rw',
     default => undef,
 );
 has abandoned_tactical_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
+    is      => 'rw',
     default => undef,
 );
 # This list is separate merely for efficiency reasons.
 has tactical_plans => (
     isa     => 'HashRef[TAEB::AI::Planar::Plan::Tactical]',
+    is      => 'rw',
     default => sub { {} },
 );
 has current_tactical_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
+    is      => 'rw',
     default => undef,
 );
 # Storing plans by the object they refer to speeds up certain
 # operations.
 has plan_index_by_object => (
     isa     => 'HashRef[ArrayRef[TAEB::AI::Planar::Plan]]',
+    is      => 'rw',
     default => sub { {} },
 );
 # Plans sometimes need to store per-AI persistent data, mostly for
@@ -86,6 +97,7 @@ has plan_index_by_object => (
 # with each other.
 has plan_caches => (
     isa     => 'HashRef', # with unknown contents
+    is      => 'rw',
     default => sub { {} },
 );
 
@@ -106,6 +118,7 @@ has plan_caches => (
 # element took risk into account or not.
 has _planheap => (
     isa    => 'Heap::Simple::XS',
+    is      => 'rw',
     default => sub {
 	# The type of heap is specified specifically, because we're
 	# using dirty optimisations, and their safety varies from heap
@@ -141,7 +154,8 @@ sub add_capped_desire {
 # strategy plan heap is; the plans themselves need to be able to
 # modify it.
 has _tacticsheap => (
-    isa => 'Heap::Simple::XS',
+    isa     => 'Heap::Simple::XS',
+    is      => 'rw',
     default => sub {
 	return Heap::Simple::XS->new(
 	    order => '<',
@@ -165,6 +179,7 @@ sub add_possible_move {
 use constant resource_types => qw/Hitpoints Nutrition Time Zorkmids/;
 has resources => (
     isa     => 'HashRef[TAEB::AI::Planar::Resource]',
+    is      => 'rw',
     default => sub {
 	my $self = shift;
 	my %resources = ();
@@ -186,6 +201,7 @@ has resources => (
 has tactics_map => (
     isa     =>
         'HashRef[ArrayRef[ArrayRef[TAEB::AI::Planar::TacticsMapEntry]]]',
+    is      => 'rw',
     default => sub { {} },
 );
 
@@ -207,12 +223,14 @@ has tactics_map => (
 # movement type can't. Phasers can walk anywhere.
 has threat_map => (
     isa     => 'HashRef[ArrayRef[ArrayRef[HashRef[Maybe[HashRef[Num]]]]]]',
+    is      => 'rw',
     default => sub { {} },
 );
 
 # For profiling
 has lasttimeofday => (
     isa     => 'Maybe[ArrayRef]',
+    is      => 'rw',
     default => undef,
 );
 
@@ -716,6 +734,7 @@ sub tme_from_tile {
 # farlook them repeatedly.
 has _peaceful_monsters => (
     isa     => 'HashRef',
+    is      => 'rw',
     default => sub { {} },
 );
 sub monster_is_peaceful {
@@ -952,6 +971,7 @@ around institute => sub {
 
 has try_again_step => (
     isa => 'Int',
+    is  => 'rw',
     default => -1,
 );
 

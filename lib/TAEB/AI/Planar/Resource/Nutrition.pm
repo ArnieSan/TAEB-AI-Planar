@@ -5,6 +5,7 @@ extends 'TAEB::AI::Planar::Resource';
 
 has _value => (
     isa => 'Num',
+    is  => 'rw',
     default => 0.01, # 1 point of nutrition is not worth a lot
 );
 

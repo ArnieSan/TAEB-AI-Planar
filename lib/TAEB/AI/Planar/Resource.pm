@@ -4,6 +4,7 @@ use TAEB::OO;
 
 has _value => (
     isa => 'Num',
+    is  => 'rw',
     default => 1.0,
 );
 sub base_value {

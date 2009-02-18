@@ -30,14 +30,17 @@ use constant d_difficulty_multiplier => 3;
 # considers trying again.
 has required_success_count => (
     isa => 'Int',
+    is  => 'rw',
     default => 0,
 );
 has d_difficulty => (
     isa => 'Int',
+    is  => 'rw',
     default => 0,
 );
 has last_marked_impossible => (
     isa => 'Int',
+    is  => 'rw',
     default => 0,
 );
 sub appropriate_success_count {
@@ -90,12 +93,14 @@ sub mark_impossible {
 # it defers the plan and it is considered again later.
 has risk => (
     isa => 'Maybe[Num]',
+    is  => 'rw',
     default => undef,
 );
 # To avoid having to loop over plans invalidating risk. This also
 # controls spending plan validity.
 has risk_valid_on_step => (
     isa => 'Int',
+    is  => 'rw',
     default => -1,
 );
 
@@ -116,6 +121,7 @@ sub calculate_risk {
 # spent to make it work.
 has spending_plan => (
     isa => 'HashRef',
+    is  => 'rw',
     default => sub { {} },
 );
 
@@ -197,6 +203,7 @@ sub gain_resource_conversion_desire { }
 # package, according to the package's filename and argument.
 has name => (
     isa => 'Str',
+    is  => 'rw',
 );
 
 sub set_arg {
@@ -206,6 +213,7 @@ sub set_arg {
 # The description of this plan; used to tell people what we're doing.
 has description => (
     isa => 'Str',
+    is  => 'rw',
 );
 
 # Trying this plan. If the attempt fails, mark the plan as impossible.
@@ -253,6 +261,7 @@ sub succeeded {
 # Plans to remove difficulty from when this plan succeeds.
 has reverse_dependencies => (
     isa => 'ArrayRef[TAEB::AI::Planar::Plan]',
+    is  => 'rw',
     default => sub { [] },
 );
 # Reset difficulty but not d_difficulty. That way, there's still a
@@ -267,9 +276,11 @@ sub reactivate_dependencies {
 # What the AI told us our desire was, so we can spread it properly.
 has desire => (
     isa => 'Num'
+    is  => 'rw',
 );
 has desire_with_risk => (
     isa => 'Num'
+    is  => 'rw',
 );
 
 # This plan depends on another plan. Normally, this will be called in
@@ -314,6 +325,7 @@ sub spread_desirability {
 # themselves redundant due to their nature).
 has validity => (
     isa => 'Bool',
+    is  => 'rw',
     default => 1
 );
 sub validate { shift->validity(1); }
@@ -327,6 +339,7 @@ sub planspawn { }
 # otherwise generating).
 has references => (
     isa => 'ArrayRef[TAEB::AI::Planar::Plan]',
+    is  => 'rw',
     default => sub { [] }
 );
 

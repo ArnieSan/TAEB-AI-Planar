@@ -6,6 +6,7 @@ extends 'TAEB::AI::Planar::Plan';
 # We take a monster as argument.
 has monster => (
     isa     => 'Maybe[TAEB::World::Monster]',
+    is  => 'rw',
     default => undef,
 );
 sub set_arg {

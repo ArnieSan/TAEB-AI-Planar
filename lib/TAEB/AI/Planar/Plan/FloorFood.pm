@@ -8,14 +8,17 @@ extends 'TAEB::AI::Planar::Plan::PathBased';
 # We take an item, or a spoiler and tile, as argument.
 has item => (
     isa     => 'Maybe[NetHack::Item]',
+    is  => 'rw',
     default => undef,
 );
 has tile => (
     isa     => 'Maybe[TAEB::World::Tile]',
+    is  => 'rw',
     default => undef,
 );
 has spoiler => (
     isa     => 'Maybe[HashRef]',
+    is  => 'rw',
     default => undef,
 );
 sub set_arg {
@@ -61,6 +64,7 @@ sub gain_resource_conversion_desire {
 # its weight shifted right 6 places.
 has _risk => (
     isa => 'Num',
+    is  => 'rw',
     default => 0,
 );
 sub calculate_extra_risk {

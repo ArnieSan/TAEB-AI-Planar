@@ -6,6 +6,7 @@ extends 'TAEB::AI::Planar::Plan::PathBased';
 
 has _level => (
     isa => 'Maybe[TAEB::World::Level]',
+    is  => 'rw',
 );
 
 sub aim_tile {

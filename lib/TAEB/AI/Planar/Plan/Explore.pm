@@ -5,6 +5,7 @@ extends 'TAEB::AI::Planar::Plan::PathBased';
 
 has tile => (
     isa => 'TAEB::World::Tile',
+    is  => 'rw',
 );
 sub set_arg {
     my $self = shift;

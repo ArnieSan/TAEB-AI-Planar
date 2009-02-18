@@ -6,14 +6,17 @@ extends 'TAEB::AI::Planar::Plan::Tactical';
 
 has tile => (
     isa => 'Maybe[TAEB::World::Tile]',
+    is  => 'rw',
     default => undef,
 );
 has door => (
     isa => 'Maybe[TAEB::World::Tile]',
+    is  => 'rw',
     default => undef,
 );
 has wasclosed => (
     isa => 'Bool',
+    is  => 'rw',
     default => 0,
 );
 sub set_additional_args {

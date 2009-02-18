@@ -14,6 +14,7 @@ extends 'TAEB::AI::Planar::Plan::Tactical';
 
 has tile => (
     isa => 'Maybe[TAEB::World::Tile]',
+    is  => 'rw',
     default => undef,
 );
 sub set_additional_args {

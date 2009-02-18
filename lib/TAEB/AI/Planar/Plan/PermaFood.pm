@@ -7,6 +7,7 @@ extends 'TAEB::AI::Planar::Plan';
 # We take an item in our inventory as argument.
 has item => (
     isa     => 'Maybe[NetHack::Item]',
+    is      => 'rw',
     default => undef,
 );
 sub set_arg {

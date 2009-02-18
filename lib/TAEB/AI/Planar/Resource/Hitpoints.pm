@@ -5,6 +5,7 @@ extends 'TAEB::AI::Planar::Resource';
 
 has value => (
     isa => 'Num',
+    is  => 'rw',
     default => 10, # hitpoints are one of the most valuable resources
 );
 

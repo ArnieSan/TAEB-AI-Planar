@@ -8,6 +8,7 @@ extends 'TAEB::AI::Planar::Plan::PathBased';
 # We take a tile (preferably with a door on) as argument.
 has tile => (
     isa     => 'Maybe[TAEB::World::Tile]',
+    is  => 'rw',
     default => undef,
 );
 sub set_arg {

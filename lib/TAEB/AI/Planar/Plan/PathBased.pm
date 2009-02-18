@@ -30,6 +30,7 @@ sub mobile_target { 0 }
 # performing the action.
 has _aim_tile_cache => (
     isa => 'Maybe[TAEB::World::Tile]',
+    is  => 'rw',
 );
 
 # Risk. There is both cost and danger in pathing somewhere, but plans

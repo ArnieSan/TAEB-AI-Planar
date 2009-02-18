@@ -15,10 +15,12 @@ sub has_reach_action { 1 }
 
 has last_movement_turn => (
     isa => 'Int',
+    is  => 'rw',
     default => -1,
 );
 has consecutive_tries => (
     isa => 'Int',
+    is  => 'rw',
     default => 0,
 );
 
