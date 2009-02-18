@@ -275,11 +275,11 @@ sub reactivate_dependencies {
 
 # What the AI told us our desire was, so we can spread it properly.
 has desire => (
-    isa => 'Num'
+    isa => 'Num',
     is  => 'rw',
 );
 has desire_with_risk => (
-    isa => 'Num'
+    isa => 'Num',
     is  => 'rw',
 );
 
