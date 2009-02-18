@@ -37,7 +37,7 @@ sub check_possibility_inner {
 	return;
     }
     # If the door is known to be locked, try a different tactic.
-    if ($self->tile->locked) {
+    if ($self->tile->is_locked) {
 	$self->validity(0);
 	return;
     }
