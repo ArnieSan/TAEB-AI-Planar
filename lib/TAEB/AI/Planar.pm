@@ -818,7 +818,7 @@ sub threat_check {
 	    # Passive-attack-only monsters are not dangerous to walk past,
 	    # and therefore not threats (they're risky to attack, but not
 	    # threatty).
-	    $attacks =~ /^\(.*\)$/ and next;
+	    $attacks =~ /^[\(\[].*[\)\]]$/ and next;
 	    # TODO: Refine this according to what resistances we have and
 	    # what the enemy's attacks are like.
 	    my $damagepotential = 0;
