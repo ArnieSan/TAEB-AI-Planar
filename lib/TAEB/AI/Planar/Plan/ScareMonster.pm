@@ -21,7 +21,8 @@ sub calculate_risk {
     if (defined $spoiler)
     {
 	# There's a 72% chance of a valid dust-Elbereth.
-	$self->cost("Time",TAEB->speed/$spoiler->{'speed'}/0.72);
+	# Remember to add 1 for the time it takes to step onto the tile!
+	$self->cost("Time",TAEB->speed/$spoiler->{'speed'}/0.72+1);
     } else {
 	# Most of the things we want to scare are rather slow...
 	$self->cost("Time",10);
