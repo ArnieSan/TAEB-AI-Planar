@@ -1006,6 +1006,7 @@ sub item_value {
     if($item->isa('TAEB::World::Item::Food')
     &&!$item->isa('TAEB::World::Item::Food::Corpse')
     && $item->is_safely_edible) {
+	return 0 unless $item->nutrition;
 	return $resources->{'Nutrition'}->base_value * 2 *
 	    $item->nutrition;
     }
