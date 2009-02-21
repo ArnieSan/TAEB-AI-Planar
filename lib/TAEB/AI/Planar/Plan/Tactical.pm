@@ -144,11 +144,6 @@ sub add_possible_move {
 	prevtile_y       => $oldtme->{'tile_y'},
 	risk             => \%risk,
 	tactic           => $self,
-	physicalpath     => ($oldtme->{'physicalpath'} .
-			     $self->_extvidelta($newx, $newy, $newlevel,
-			 		       $oldtme->{'tile_x'},
-			 		       $oldtme->{'tile_y'},
-			 		       $oldtme->{'tile_level'})),
 	tile_x           => $newx,
 	tile_y           => $newy,
 	tile_level       => $newlevel,
@@ -157,21 +152,6 @@ sub add_possible_move {
     };
     bless $tme, "TAEB::AI::Planar::TacticsMapEntry";
     $ai->add_possible_move($tme);
-}
-
-sub _extvidelta {
-    my $self  = shift;
-    my $xto   = shift;
-    my $yto   = shift;
-    my $lto   = shift;
-    my $xfrom = shift;
-    my $yfrom = shift;
-    my $lfrom = shift;
-    if ($lfrom != $lto) {
-	return '>'; # generic level-change, the direction doesn't matter
-    }
-    my $delta = delta2vi($xto-$xfrom,$yto-$yfrom);
-    return $delta || '?';
 }
 
 __PACKAGE__->meta->make_immutable;

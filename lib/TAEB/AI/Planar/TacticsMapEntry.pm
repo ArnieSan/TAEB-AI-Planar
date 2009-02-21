@@ -66,12 +66,6 @@ has tactic => (
     isa => 'Maybe[TAEB::AI::Plan]',
     default => undef,
 );
-# The physical route which will be taken to reach this tile, as a
-# series of vikeys and < and >. (This is used for debug display.)
-has physicalpath => (
-    isa => 'Maybe[Str]',
-    default => undef,
-);
 
 # The tile that this entry refers to.
 has tile_x => (

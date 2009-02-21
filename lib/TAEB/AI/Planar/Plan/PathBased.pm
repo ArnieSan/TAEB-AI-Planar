@@ -163,14 +163,6 @@ sub action {
 	if TAEB->current_tile == $self->_aim_tile_cache;
     my @chain = $ai->calculate_tme_chain($self->_aim_tile_cache);
     return undef unless @chain;
-    # Tell the AI which way we're going, so we can show the user in
-    # debug view.
-    my $path = Moose::Object::new('TAEB::World::Path',
-				  from => TAEB->current_tile,
-				  to   => $self->_aim_tile_cache,
-				  path => $chain[-1]->{'physicalpath'},
-				  complete => 1);
-    $ai->debug_path($path);
     # We want the first step in the chain.
     return $chain[0]->{'tactic'};
 }

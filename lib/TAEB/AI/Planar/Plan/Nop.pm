@@ -25,7 +25,6 @@ sub check_possibility {
 	risk            => {},
 	level_risk      => {},
 	tactic          => $self,
-	physicalpath    => '',
 	tile_x          => TAEB->x,
 	tile_y          => TAEB->y,
 	tile_level      => TAEB->current_level,

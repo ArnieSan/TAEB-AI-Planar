@@ -245,7 +245,6 @@ sub next_action {
     # Go to the next AI step, invalidating everything from last step
     # in the process.
     $self->aistep($self->aistep + 1);
-    $self->debug_path(undef);
     # Did we abandon a plan last turn?
     if (defined $self->abandoned_plan && defined $self->current_plan &&
 	$self->abandoned_plan->name ne $self->current_plan->name) {
