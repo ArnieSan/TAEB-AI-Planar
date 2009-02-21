@@ -59,8 +59,8 @@ sub check_possibility_inner {
     # TODO: Also push boulders along corridors until they reach a junction
     # (where we can walk round them).
     if($tile->has_boulder && (!defined $l->branch || $l->branch ne 'sokoban')) {
-	my $beyond = $l->at($x*2-$tmex,$y*2-$tmey);
-	if($beyond->type eq 'unexplored') {
+	my $beyond = $l->at_safe($x*2-$tmex,$y*2-$tmey);
+	if(defined $beyond and $beyond->type eq 'unexplored') {
 	    $self->generate_plan($tme,"PushBoulder",$tile);
 	}
     }
