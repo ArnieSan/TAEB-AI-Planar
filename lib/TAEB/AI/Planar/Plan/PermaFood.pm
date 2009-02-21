@@ -2,7 +2,7 @@
 package TAEB::AI::Planar::Plan::PermaFood;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Planar::Plan';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take an item in our inventory as argument.
 has item => (
@@ -13,6 +13,20 @@ has item => (
 sub set_arg {
     my $self = shift;
     $self->item(shift);
+}
+
+sub aim_tile {
+    my $self = shift;
+    return undef unless defined $self->item;
+    return TAEB->current_tile;
+}
+
+sub has_reach_action { 1 }
+sub reach_action {
+    my $self = shift;
+    my $item = $self->item;
+    return undef unless defined $item;
+    return TAEB::Action->new_action('eat', food => $item);
 }
 
 # This is resource conversion: we gain the food, for the loss of the
@@ -26,24 +40,15 @@ sub gain_resource_conversion_desire {
 			   $item->nutrition - $ai->item_value($item));
 }
 
-sub calculate_risk {
+sub calculate_extra_risk {
     my $self = shift;
     my $item = $self->item;
-    my $risk = 0;
-    $risk += $self->cost('Time',$item->time) if defined $item->time;
-    return $risk;
+    return $self->aim_tile_turns($item->time);
 }
 
 # This plan needs a continuous stream of validity from our inventory,
 # or it ceases to exist.
 sub invalidate {shift->validity(0);}
-
-sub action {
-    my $self = shift;
-    my $item = $self->item;
-    return undef unless defined $item;
-    return TAEB::Action->new_action('eat', food => $item);
-}
 
 use constant description => 'Eating food in our inventory';
 

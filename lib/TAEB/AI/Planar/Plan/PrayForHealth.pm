@@ -2,20 +2,26 @@
 package TAEB::AI::Planar::Plan::PrayForHealth;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Planar::Plan';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # As long as prayer is safe, this isn't risky at all. Not even tile risk,
 # because you're invulnerable whilst praying.
-sub calculate_risk {
+sub calculate_extra_risk {
     # Put the cost of the prayer here?
     return 0;
 }
 
-# Pray, if we can do so safely and it would heal us.
-sub action {
+# This is only set if we can pray for health right now.
+sub aim_tile {
     my $self = shift;
     return undef unless TAEB->can_pray;
     return undef unless TAEB->hp*7 < TAEB->maxhp;
+    return TAEB->current_tile;
+}
+
+sub has_reach_action { 1 }
+sub reach_action {
+    my $self = shift;
     return TAEB::Action->new_action('pray');
 }
 
