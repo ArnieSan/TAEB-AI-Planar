@@ -815,6 +815,10 @@ sub threat_check {
 	}
 	if (defined($spoiler)) {
 	    my $attacks = $$spoiler{attacks};
+	    # Passive-attack-only monsters are not dangerous to walk past,
+	    # and therefore not threats (they're risky to attack, but not
+	    # threatty).
+	    $attacks =~ /^\(.*\)$/ and next;
 	    # TODO: Refine this according to what resistances we have and
 	    # what the enemy's attacks are like.
 	    my $damagepotential = 0;
