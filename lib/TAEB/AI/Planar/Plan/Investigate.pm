@@ -3,7 +3,7 @@ package TAEB::AI::Planar::Plan::Investigate;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use TAEB::Spoilers::Monster;
-extends 'TAEB::AI::Planar::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a tile (preferably with a door on) as argument.
 has tile => (

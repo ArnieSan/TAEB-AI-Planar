@@ -2,7 +2,7 @@
 package TAEB::AI::Planar::Plan::Search;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Planar::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a tile as argument.
 has tile => (

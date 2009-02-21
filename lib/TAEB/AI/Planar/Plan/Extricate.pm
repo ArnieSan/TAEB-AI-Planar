@@ -2,12 +2,12 @@
 package TAEB::AI::Planar::Plan::Extricate;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Planar::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
-# A slightly unusual use of PathBased; here, we're always on the
+# A slightly unusual use of Strategic; here, we're always on the
 # aim_tile, so the pathing isn't involved, just the reach action. It's
 # done like this so that aim_tile_turns works. (Hmm... maybe all plans
-# should be PathBased-based, in that case?)
+# should be Strategic-based, in that case?)
 sub aim_tile {
     return TAEB->current_tile;
 }

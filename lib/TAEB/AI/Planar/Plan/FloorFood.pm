@@ -3,7 +3,7 @@ package TAEB::AI::Planar::Plan::FloorFood;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use TAEB::Spoilers::Monster;
-extends 'TAEB::AI::Planar::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take an item, or a spoiler and tile, as argument.
 has item => (

@@ -2,7 +2,7 @@
 package TAEB::AI::Planar::Plan::PickupItem;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Planar::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take an item on the floor as argument.
 has item => (

@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-package TAEB::AI::Planar::Plan::PathBased;
+package TAEB::AI::Planar::Plan::Strategic;
 use TAEB::OO;
 extends 'TAEB::AI::Planar::Plan';
 

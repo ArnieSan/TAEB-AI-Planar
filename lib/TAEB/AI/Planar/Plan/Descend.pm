@@ -2,7 +2,7 @@
 package TAEB::AI::Planar::Plan::Descend;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Planar::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 has _level => (
     isa => 'Maybe[TAEB::World::Level]',

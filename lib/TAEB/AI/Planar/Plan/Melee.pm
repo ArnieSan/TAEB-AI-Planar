@@ -2,7 +2,7 @@
 package TAEB::AI::Planar::Plan::Melee;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-extends 'TAEB::AI::Planar::Plan::PathBased';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a monster as argument.
 has monster => (
