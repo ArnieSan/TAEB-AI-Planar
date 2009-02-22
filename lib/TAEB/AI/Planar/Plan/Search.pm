@@ -18,7 +18,9 @@ sub set_arg {
 sub aim_tile {
     my $self = shift;
     my $tile = $self->tile;
-    $tile->searched >= 20 and return undef;
+    $tile->grep_adjacent(sub {
+	shift->searched < 20
+    }) or return undef;
     return $tile;
 }
 
