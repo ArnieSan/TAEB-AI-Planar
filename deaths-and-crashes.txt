@@ -1,0 +1,12 @@
+This file contains things that have caused the Planar AI
+to either die, or to crash. The intention is that looking
+for patterns here will enable bugs or AI deficiencies to be
+noticed.
+
+- Being stunned
+- Invisible monsters
+- Getting stuck inside a shop
+  - This is to do with either a lack of implementation of
+    being able to pay for things, or bugs in PardonMe, or
+    both. Why is PardonMe not working?
+- Failing to start up properly; is this a framework bug?
