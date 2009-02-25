@@ -826,10 +826,14 @@ sub threat_check {
 	    # In practice, the monster will deal an average of half its
 	    # maximum possible damage.
 	    $damagepotential /= 2.0;
+	    # Use the built-in TAEB average-damage function if it's
+	    # available for this monster.
+	    $enemy->spoiler and
+		$damagepotential = $enemy->average_melee_damage;
 	    $danger = {'Hitpoints' => $damagepotential};
 	    $relspeed = $$spoiler{speed} / $selfspeed;
 	} else { # use a stock value as we don't know...
-	    $danger = {'Hitpoints' => 20};
+	    $danger = {'Hitpoints' => 5};
 	}
 	my $plan = $self->get_plan("Eliminate",$enemy);
 	# Until we have information about what can fly in the spoilers...
