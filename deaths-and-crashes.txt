@@ -10,3 +10,5 @@ noticed.
     being able to pay for things, or bugs in PardonMe, or
     both. Why is PardonMe not working?
 - Failing to start up properly; is this a framework bug?
+- Invisible monsters. More invisible monsters.
+- Squeezing past a boulder and not knowing how to get back.
