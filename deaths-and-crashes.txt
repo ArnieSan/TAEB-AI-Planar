@@ -12,3 +12,8 @@ noticed.
 - Failing to start up properly; is this a framework bug?
 - Invisible monsters. More invisible monsters.
 - Squeezing past a boulder and not knowing how to get back.
+- Panicked after going downstairs for no obvious reason
+  - This makes me even more suspicious that there's a
+    caching bug related to changing level
+- Forgetting the location of a bugbear and being killed by
+  it from 1hp
