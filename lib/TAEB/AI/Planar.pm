@@ -729,17 +729,11 @@ sub tme_from_tile {
     return $tme;
 }
 
-# Keep track of which monsters are peaceful, so we don't need to
-# farlook them repeatedly.
-has _peaceful_monsters => (
-    isa     => 'HashRef',
-    is      => 'rw',
-    default => sub { {} },
-);
 sub monster_is_peaceful {
     my $self = shift;
     my $monster = shift;
-    return exists $self->_peaceful_monsters->{$monster};
+    return $monster->disposition eq 'peaceful'
+        || $monster->disposition eq 'tame';
 }
 
 sub threat_check {
@@ -776,60 +770,24 @@ sub threat_check {
     # current level.
     my @enemies = $current_level->has_enemies;
     my $selfspeed = TAEB->speed; # invariant code motion
-    $self->_peaceful_monsters({});
     for my $enemy (@enemies) {
 	# Work out what type of enemy this is. If we know its spoiler
 	# from its Monster.pm data (i.e. unique glyph and colour),
 	# then use that; otherwise, farlook at it and see if we have a
 	# spoiler from that.
+	$enemy->farlook;
 	my $spoiler = $enemy->spoiler;
 	my $danger = {};
 	my $tile = $enemy->tile;
 	my $relspeed = 0.99; # to encourage running away from unknown monsters
-	my @description = TAEB->farlook($tile);
-	if (scalar @description > 2) {
-	    # Useful data from the farlook (there isn't any, if, say, the
-	    # monster is invisible)
-	    my $species = $description[2];
-	    my $glyph = $description[0];
-	    if ($species =~ s/^peaceful //) { # don't worry about peacefuls
-		$self->_peaceful_monsters->{$enemy} = 1;
-		next;
-	    }
-	    $species =~ s/^tame // and next; # pets are not a threat
-	    # coyote naming is weird...
-	    $species =~ /^coyote / and $species = 'coyote';
-	    my %monsterlist = TAEB::Spoilers::Monster->search(
-		glyph => $glyph,
-		name  => $species,
-		);
-	    if(values %monsterlist == 1) {
-		($spoiler) = (values %monsterlist);
-	    } else {
-		local $" = "|";
-		TAEB->log->ai("Could not determine what the monster ".
-			      "with description @description is...",
-			      level => 'info');
-		# leave spoiler determined from $enemy->spoiler
-	    }
-	}
 	if (defined($spoiler)) {
 	    my $attacks = $$spoiler{attacks};
 	    # Passive-attack-only monsters are not dangerous to walk past,
 	    # and therefore not threats (they're risky to attack, but not
 	    # threatty).
 	    $attacks =~ /^[\(\[].*[\)\]]$/ and next;
-	    # TODO: Refine this according to what resistances we have and
-	    # what the enemy's attacks are like.
-	    my $damagepotential = 0;
-	    $attacks =~ s/(\d+)d(\d+)/$damagepotential += $1*$2/eg;
-	    # In practice, the monster will deal an average of half its
-	    # maximum possible damage.
-	    $damagepotential /= 2.0;
-	    # Use the built-in TAEB average-damage function if it's
-	    # available for this monster.
-	    $enemy->spoiler and
-		$damagepotential = $enemy->average_melee_damage;
+	    # Use the built-in TAEB average-damage function.
+	    my $damagepotential = $enemy->average_melee_damage;
 	    $danger = {'Hitpoints' => $damagepotential};
 	    $relspeed = $$spoiler{speed} / $selfspeed;
 	} else { # use a stock value as we don't know...
