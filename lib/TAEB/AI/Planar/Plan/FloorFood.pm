@@ -17,7 +17,7 @@ has tile => (
     default => undef,
 );
 has spoiler => (
-    isa     => 'Maybe[HashRef]',
+    isa     => 'Maybe[TAEB::Spoilers::Monster]',
     is  => 'rw',
     default => undef,
 );
@@ -31,7 +31,7 @@ sub set_arg {
     } else {
 	$self->item($arg);
 	$self->tile($self->item_tile($arg));
-	$self->spoiler(TAEB::Spoilers::Monster->monster($arg->monster));
+	$self->spoiler($arg->monster);
     }
 }
 
@@ -57,7 +57,7 @@ sub gain_resource_conversion_desire {
     my $ai   = TAEB->ai;
     # Bump our own desirability.
     $ai->add_capped_desire($self, $ai->resources->{'Nutrition'}->value *
-			   $self->spoiler->{'corpse'}->{'nutrition'});
+			   $self->spoiler->corpse_nutrition);
 }
 
 # The number of turns it takes to eat a corpse is equal to 3 plus
@@ -70,7 +70,8 @@ has _risk => (
 sub calculate_extra_risk {
     my $self = shift;
     my $risk = 0;
-    my $corpse = $self->spoiler->{'corpse'};
+    my $spoiler = $self->spoiler;
+    my $corpse = $spoiler->corpse;
     # Certain corpses are a lot more risky.
     # TODO: Work out a sensible way to quantify this risk.
     $risk += 1000 if defined $self->item && $self->item->maybe_rotted > -1;

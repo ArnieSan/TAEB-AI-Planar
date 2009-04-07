@@ -65,7 +65,7 @@ sub planspawn {
 	# Don't bother investigating if the kill was so long ago that
 	# the corpse will be rotten for certain by now.
 	next if $killelement->[2] >= TAEB->turn - 100;
-	my $spoiler = TAEB::Spoilers::Monster->monster($monster);
+	my $spoiler = TAEB::Spoilers::Monster->lookup($monster);
 	TAEB->ai->get_plan("FloorFood",[$self->tile,$spoiler])
 	    ->validate;
     }
