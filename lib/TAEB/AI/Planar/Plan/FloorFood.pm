@@ -83,7 +83,7 @@ sub calculate_extra_risk {
     $risk += 1000 if $corpse->{'hallucination'};
     $risk += 1000 if $corpse->{'poisonous'};
     $risk += 1000 if $corpse->{'stun'};
-    $risk += 1000 if $corpse->{'cannibal'} eq TAEB->race;
+    $risk += 1000 if ($corpse->{'cannibal'} // 'None') eq TAEB->race;
     $risk += 1000 if $corpse->{'aggravate'};
     # TODO: Make this the cost of the intrinsic
     $risk += 1000 if $corpse->{'speed_toggle'};
