@@ -17,7 +17,7 @@ has tile => (
     default => undef,
 );
 has spoiler => (
-    isa     => 'Maybe[TAEB::Spoilers::Monster]',
+    isa     => 'Maybe[NetHack::Monster::Spoiler]',
     is  => 'rw',
     default => undef,
 );
