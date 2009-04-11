@@ -36,13 +36,13 @@ sub check_possibility_inner {
     my $self = shift;
     my $tme  = shift;
     my $tile = $self->tile;
-    return unless $tile->is_walkable;
     if (defined $tile->monster) {
 	# We need to generate a plan to scare the monster out of the
 	# way, if the AI doesn't want to kill it for some reason.
 	$self->generate_plan($tme,"ScareMonster",$tile);
 	return;
     }
+    return unless $tile->is_walkable;
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 
