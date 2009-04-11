@@ -22,7 +22,7 @@ sub calculate_risk {
     {
 	# There's a 72% chance of a valid dust-Elbereth.
 	# Remember to add 1 for the time it takes to step onto the tile!
-	$self->cost("Time",TAEB->speed/$spoiler->{'speed'}/0.72+1);
+	$self->cost("Time",TAEB->speed/$spoiler->speed/0.72+1);
     } else {
 	# Most of the things we want to scare are rather slow...
 	$self->cost("Time",10);
@@ -43,8 +43,8 @@ sub check_possibility_inner {
 	return;
     }
     # We can't scare an immobile monster.
-    my $spoiler = $tile->monster->spoiler;
-    return if $spoiler and !($spoiler->{'speed'});
+    my $spoiler = $monster->spoiler;
+    return if $spoiler and !($spoiler->speed);
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 

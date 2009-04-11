@@ -21,7 +21,7 @@ sub calculate_risk {
     if (defined $spoiler)
     {
 	# There's a 72% chance of a valid dust-Elbereth.
-	$self->cost("Time",TAEB->speed/$spoiler->{'speed'}/0.72);
+	$self->cost("Time",TAEB->speed/$spoiler->speed/0.72);
     } else {
 	# an estimate
 	$self->cost("Time",10);
@@ -40,7 +40,7 @@ sub check_possibility_inner {
     return unless $ai->monster_is_peaceful($monster);
     # We can't scare an immobile monster.
     my $spoiler = $tile->monster->spoiler;
-    return if $spoiler and !($spoiler->{'speed'});
+    return if $spoiler and !($spoiler->speed);
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 
