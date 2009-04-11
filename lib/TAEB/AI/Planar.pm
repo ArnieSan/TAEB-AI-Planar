@@ -681,7 +681,8 @@ sub add_threat {
 	$visitmap[$x]->[$y] = 1;
 	my $rt = $t / $relspeed;
 	$threatmap->[$x]->[$y]->{"$rt $planname"} = $danger;
-	if ($movetype eq 'phase' || exists $threatmap->[$x]->[$y]->{$movetype})
+	if ($movetype eq 'phase' || exists $threatmap->[$x]->[$y]->{$movetype}
+                                 || $t == -1)
 	{
 	    # The monster can attack here on turn t, so it can move here on
 	    # turn t and so be in range to attack adjacent cells on turn t+1.
