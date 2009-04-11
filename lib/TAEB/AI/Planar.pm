@@ -749,7 +749,9 @@ sub threat_check {
     for my $x (0..79) {
 	my $col = $tmcl->[$x] = [];
 	for my $y (1..21) {
-	    my $type = $current_level->at($x,$y)->type;
+	    my $tile = $current_level->at($x,$y);
+	    next if $tile->has_monster;
+	    my $type = $tile->type;
 	    my $coly = $col->[$y] = {};
  	    if ($type eq 'rock' || $type eq 'closeddoor' ||
 		$type eq 'wall' || $type eq 'drawbridge' ||
