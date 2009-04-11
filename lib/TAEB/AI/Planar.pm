@@ -732,8 +732,9 @@ sub tme_from_tile {
 sub monster_is_peaceful {
     my $self = shift;
     my $monster = shift;
-    return $monster->disposition eq 'peaceful'
-        || $monster->disposition eq 'tame';
+    my $rv = $monster->disposition eq 'peaceful'
+          || $monster->disposition eq 'tame';
+    return $rv;
 }
 
 sub threat_check {
@@ -780,12 +781,16 @@ sub threat_check {
 	my $danger = {};
 	my $tile = $enemy->tile;
 	my $relspeed = 0.99; # to encourage running away from unknown monsters
+        # Tame and peaceful monsters are not threats.
+        next if $enemy->disposition eq 'peaceful';
+        next if $enemy->disposition eq 'tame';
 	if (defined($spoiler)) {
-	    my $attacks = $$spoiler{attacks};
 	    # Passive-attack-only monsters are not dangerous to walk past,
 	    # and therefore not threats (they're risky to attack, but not
 	    # threatty).
-	    $attacks =~ /^[\(\[].*[\)\]]$/ and next;
+	    my $passive_only = 1;
+            $passive_only &&= ($_->{mode} eq 'passive') for @{$spoiler->attacks};
+	    next if $passive_only;
 	    # Use the built-in TAEB average-damage function.
 	    my $damagepotential = $enemy->average_melee_damage;
 	    $danger = {'Hitpoints' => $damagepotential};
