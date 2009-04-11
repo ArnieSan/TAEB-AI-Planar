@@ -72,9 +72,10 @@ sub calculate_extra_risk {
     my $risk = 0;
     my $spoiler = $self->spoiler;
     my $corpse = $spoiler->corpse;
+    my $maybe_rotted = $self->item->maybe_rotted;
     # Certain corpses are a lot more risky.
     # TODO: Work out a sensible way to quantify this risk.
-    $risk += 1000 if defined $self->item && $self->item->maybe_rotted > -1;
+    $risk += 1000 if defined $self->item && ($maybe_rotted // 1);
     $risk += 1000 if $corpse->{'die'};
     $risk += 1000 if $corpse->{'lycanthropy'};
     $risk += 1000 if $corpse->{'petrify'};
@@ -89,7 +90,7 @@ sub calculate_extra_risk {
     $risk += 1000 if $corpse->{'speed_toggle'};
     # Acidic corpses just deal damage, so they cost in hitpoints.
     $risk += $self->cost('Hitpoints', 15) if $corpse->{'acidic'};
-    $self->_risk($risk + $self->aim_tile_turns(3+$corpse->{'weight'}>>6));
+    $self->_risk($risk + $self->aim_tile_turns(3+($spoiler->weight>>6)));
     return $self->_risk;
 }
 
