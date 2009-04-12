@@ -41,11 +41,10 @@ sub check_possibility_inner {
     my $tile = $self->tile;
     my $monster = $tile->monster;
     return unless defined $monster;
-    # We can't scare a monster that doesn't respect Elbereth.
-    return unless $monster->respects_elbereth;
     # It might be peaceful (shk, watchman...)
     $self->generate_plan($tme,"PardonMe",$tile);
-    return;
+    # We can't scare a monster that doesn't respect Elbereth.
+    return unless $monster->respects_elbereth;
     # We can't scare an immobile monster.
     my $spoiler = $monster->spoiler;
     return if $spoiler and !($spoiler->speed);
