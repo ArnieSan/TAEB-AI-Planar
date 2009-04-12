@@ -112,12 +112,15 @@ sub check_possibility_inner {
     if($type eq 'unexplored' && $tmel->at($tmex,$tmey)->stepped_on) {
 	$self->generate_plan($tme,"LightTheWay",$tile);
     }
-
+    # Certain traps are passable, at a cost.
+    if($type eq 'trap') {
+	$self->generate_plan($tme,"ThroughTrap",$tile);
+    }
     # TODO: Need much more here
 }
 
 use constant references => ['OpenDoor','KickDownDoor','Walk','PushBoulder',
-                            'LightTheWay'];
+                            'LightTheWay','ThroughTrap'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
