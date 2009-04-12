@@ -14,11 +14,16 @@ sub set_additional_args {
     $self->tile(shift);
 }
 
+has turntried => (
+    isa => 'Maybe[Int]',
+    is  => 'rw',
+);
+
 sub calculate_risk {
     my $self = shift;
     # The time this takes us depends on the speed of the monster.
     my $spoiler = $self->tile->monster->spoiler;
-    if (defined $spoiler)
+    if (defined $spoiler && $spoiler->speed > 0)
     {
 	# There's a 72% chance of a valid dust-Elbereth.
 	# Remember to add 1 for the time it takes to step onto the tile!
@@ -37,11 +42,10 @@ sub check_possibility_inner {
     my $monster = $tile->monster;
     return unless defined $monster;
     # We can't scare a monster that doesn't respect Elbereth.
-    unless ($monster->respects_elbereth) {
-	# It might be peaceful (shk, watchman...)
-	$self->generate_plan($tme,"PardonMe",$tile);
-	return;
-    }
+    return unless $monster->respects_elbereth;
+    # It might be peaceful (shk, watchman...)
+    $self->generate_plan($tme,"PardonMe",$tile);
+    return;
     # We can't scare an immobile monster.
     my $spoiler = $monster->spoiler;
     return if $spoiler and !($spoiler->speed);
@@ -50,6 +54,7 @@ sub check_possibility_inner {
 
 sub action {
     my $self = shift;
+    $self->turntried(TAEB->turn);
     return TAEB::Action->new_action('Engrave');
 }
 
@@ -57,6 +62,8 @@ sub succeeded {
     my $self = shift;
     # It succeeded if the monster is no longer in the way.
     ($self->validity(0), return 1) if ! defined $self->tile->monster;
+    # If the attempt consumed no time, we're in a form that can't engrave.
+    $self->turntried == TAEB->turn and return 0;
     return undef; # try again; TODO: Figure out when this won't work
 }
 
