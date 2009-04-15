@@ -17,13 +17,16 @@ sub set_arg {
     $self->item(shift);
 }
 
+# Things we can do with this item.
 sub planspawn {
     my $self = shift;
     my $item = $self->item;
+    # Food can be eaten. This plan doesn't imply that we should eat it, or
+    # that it's a good idea; just that we can.
     if($item->isa('TAEB::World::Item::Food')
     &&!$item->isa('TAEB::World::Item::Food::Corpse')
     && $item->is_safely_edible) {
-	TAEB->ai->get_plan('PermaFood',$self->item);
+	TAEB->ai->get_plan('PermaFood',$self->item)->validate;
     }
 }
 

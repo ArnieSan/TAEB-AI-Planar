@@ -18,20 +18,19 @@ sub set_arg {
 }
 
 # Ensure plans exist for everything that the given item can do. This
-# is generally done by getting the plan with get_plan, then ignoring
+# is generally done by getting the plan with get_plan, then validating
 # the result; this is because get_plan ensures that the plan exists.
-
 sub planspawn {
     my $self = shift;
     my $ai = TAEB->ai;
     my $item = $self->item;
     # Create plans to eat corpses.
     if ($item->isa("TAEB::World::Item::Food::Corpse")) {
-	$ai->get_plan('FloorFood',$item);
+	$ai->get_plan('FloorFood',$item)->validate;
     }
     # Pick up items if they seem useful.
     if ($ai->item_value($item) > 0) {
-	$ai->get_plan('PickupItem',$item);
+	$ai->get_plan('PickupItem',$item)->validate;
     }
 }
 

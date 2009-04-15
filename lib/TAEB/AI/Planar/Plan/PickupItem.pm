@@ -32,6 +32,8 @@ sub gain_resource_conversion_desire {
     }
 }
 
+# TODO: Drop gold first, for credit? That helps in cases like
+# leprechauns and itis.
 sub has_reach_action { 1 }
 sub reach_action {
     # The actual item that's picked up depends on the personality;
@@ -48,9 +50,22 @@ sub reach_action_succeeded {
     return defined($self->item->slot);
 }
 
+# It takes one turn to pick up the item, plus all its drawbacks (weight
+# and price, in particular).
 sub calculate_extra_risk {
     my $self = shift;
-    return $self->aim_tile_turns(1);
+    my $turncount = 1;
+    my $ai = TAEB->ai;
+    my $item = $self->item;
+    my $drawbacks = $ai->item_drawbacks($item);
+    my $risk = 0;
+    for my $resourcename (keys %$drawbacks) {
+	$risk += $self->cost($resourcename, $drawbacks->{$resourcename});
+	# It takes a turn to pay the shk, in addition to the turn it
+	# takes to pick up the item.
+	$turncount++ if $resourcename eq 'Zorkmids';
+    }
+    return $risk + $self->aim_tile_turns(1);
 }
 
 use constant description => 'Picking up a useful item';

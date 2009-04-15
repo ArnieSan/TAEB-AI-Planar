@@ -968,7 +968,7 @@ sub msg_tile_update {
 	for @{$self->plan_index_by_object->{$addr}};
 }
 
-# Item value.
+# Positive aspects of the item value.
 sub item_value {
     my $self = shift;
     my $item = shift;
@@ -977,19 +977,56 @@ sub item_value {
     # weight; its nutrition is measured in unscarce units (twice the
     # base value for permafood), but its weight is measured in dynamic
     # units. (That allows us to drop things when we get burdened.)
-    if($item->isa('TAEB::World::Item::Food')
-    &&!$item->isa('TAEB::World::Item::Food::Corpse')
+    if($item->isa('NetHack::Item::Food')
+    &&!$item->isa('NetHack::Item::Food::Corpse')
     && $item->is_safely_edible) {
 	return 0 unless $item->nutrition;
 	return $resources->{'Nutrition'}->base_value * 2 *
-	    $item->nutrition;
+	    $item->nutrition * $item->quantity;
     }
+    # Gold has value measured in zorkmids.
+    $item->identity and $item->identity eq 'gold piece' and
+	return $resources->{'Zorkmids'}->value($item->quantity);
     return 0;
+}
+# Negative aspects of this item's value.
+# This returns a spending plan, not a number like item_value does.
+sub item_drawbacks {
+    my $self = shift;
+    my $item = shift;
+    my $plan = {};
+    # TODO: Weight.
+    # Cost.
+    $item->cost and $plan->{'Zorkmids'} += $item->cost;
+    return $plan;
+}
+# Item drawbacks, numerically at current values.
+# Returns undef if we can't afford the item (either because it's in a
+# shop and literally too expensive, or if it's dangerous to possess it
+# for other reasons ("oY, loadstone...)
+sub item_drawback_cost {
+    my $self = shift;
+    my $item = shift;
+    my $plan = $self->item_drawbacks($item);
+    my $resources = $self->resources;
+    my $cost = 0;
+    for my $resourcename (keys %$plan) {
+	my $resource = $resources->{$resourcename};
+	my $quantity = $plan->{$resourcename};
+	$quantity > $resource->quantity and return undef;
+	$cost += $resource->cost($quantity);
+    }
+    return $cost;
 }
 sub pickup {
     my $self = shift;
     my $item = shift;
-    return $self->item_value($item) > 0;
+    # TODO: What if we can't afford everything in the pickup list?
+    # This probably needs announcements...
+    my $value = $self->item_value($item);
+    my $drawbacks = $self->item_drawback_cost($item);
+    return 0 unless defined $drawbacks;
+    return $value > $drawbacks;
 }
 sub drop {
     my $self = shift;

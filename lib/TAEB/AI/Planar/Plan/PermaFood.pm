@@ -31,6 +31,8 @@ sub reach_action {
 
 # This is resource conversion: we gain the food, for the loss of the
 # item. The time spent eating it is risk rather than resource loss.
+# TODO: Gain the weight of the food as well? (Eating to satiated to
+# save weight is sometimes a good idea.)
 sub gain_resource_conversion_desire {
     my $self = shift;
     my $ai   = TAEB->ai;

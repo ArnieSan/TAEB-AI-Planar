@@ -4,7 +4,7 @@ use TAEB::OO;
 extends 'TAEB::AI::Planar::Resource';
 
 sub amount {
-    return TAEB->gold;
+    return TAEB->gold - TAEB->debt;
 }
 
 # Zorkmids don't really get scarce. They can get anti-scarce, though.

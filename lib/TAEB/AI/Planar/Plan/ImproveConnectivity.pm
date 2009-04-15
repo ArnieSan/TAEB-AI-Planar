@@ -43,10 +43,13 @@ sub spread_desirability {
 	    $self->depends(1,"Explore",$tile);
 	}
     });
+    # If possible, paying off debt can improve connectivity by
+    # allowing us to move past a shk.
+    $self->depends(1,"Pay");
 }
 
 use constant description => 'Improving connectivity on this level';
-use constant references => ['Search','Explore'];
+use constant references => ['Search','Explore','Pay'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
