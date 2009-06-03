@@ -74,6 +74,7 @@ sub check_possibility_inner {
     my $tile = $self->tile;
     return unless $tile->is_walkable;
     my $door = $self->locate_door($tme);
+    return if defined $door->monster;
     return unless $door->type eq 'opendoor' || $door->type eq 'closeddoor';
     $self->wasclosed($door->type eq 'closeddoor');
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
@@ -103,6 +104,7 @@ sub succeeded {
     $door->type eq 'opendoor' and return 0;
     $door->type eq 'closeddoor' and $self->wasclosed and return 0;
     $door->type eq 'closeddoor' and return undef;
+    $door->type eq 'obscured' and return 0; # something got stuck in the door
     return 1;
 }
 
