@@ -21,12 +21,13 @@ sub set_arg {
 sub spread_desirability {
     my $self = shift;
     $self->depends(1,"Melee",$self->monster);
+    $self->depends(0.5,"CombatFallback");
 }
 
 sub invalidate {shift->validity(0);}
 
 use constant description => "Eliminating a dangerous monster";
-use constant references => ['Melee'];
+use constant references => ['Melee','CombatFallback'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

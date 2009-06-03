@@ -17,8 +17,6 @@ use constant repeated_threat_turns => 5;
 
 # The overall plan, what we're aiming towards.
 use constant overall_plan => 'Descend';
-# The fallback metaplan: what to do if we get stuck.
-use constant fallback_plan => 'FallbackMeta';
 
 # A trick to avoid having to loop over things invalidating them;
 # instead, store an aistep value, and they're invalidated if it
@@ -531,12 +529,6 @@ sub next_plan_action {
 		    $self->tactical_success_count(
 			$self->tactical_success_count+10000);
 		}
-		if ($iterations > 7) {
-		    # There are no positive-desirability plans. Let's
-		    # see how the fallbacks work out.
-		    $majorplan = fallback_plan;
-		    $self->currently_modifiers('[Fallback] ');
-		}
 		$self->_planheap->clear;
 		%planstate = ();
 	    }
@@ -733,8 +725,12 @@ sub tme_from_tile {
 sub monster_is_peaceful {
     my $self = shift;
     my $monster = shift;
-    my $rv = $monster->disposition eq 'peaceful'
-          || $monster->disposition eq 'tame';
+    my $disposition = $monster->disposition;
+    defined $disposition or
+        (TAEB->log->ai("Don't know the disposition of $monster..."),
+         return !($monster->is_hostile() // 1));
+    my $rv = $disposition eq 'peaceful'
+          || $disposition eq 'tame';
     return $rv;
 }
 
@@ -922,7 +918,6 @@ around institute => sub {
 	"MoveFrom",          # tactical metaplan for tiles
 	"Nop",               # stub tactical plan
 	# Goal metaplans
-	fallback_plan,       # metaplan for fallback
 	overall_plan);       # metaplan for strategy
     my %processed = ();
 

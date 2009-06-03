@@ -21,11 +21,16 @@ sub spread_desirability {
     my $blind = TAEB->is_blind;
     $level->each_tile(sub {
 	my $tile = shift;
-	if(!$mines && $tile->is_walkable(0,1) &&
-	   scalar $tile->grep_orthogonal(
-	       sub {$self->is_search_blocked(shift)}) == 3) {
-	    $self->depends(1,"Search",$tile);
-	}
+	if(!$mines && $tile->is_walkable(0,1)) {
+	   my $orthogonals = scalar $tile->grep_orthogonal(
+	       sub {$self->is_search_blocked(shift)});
+           # Dead-end; a very good place to search, even when not stuck
+           $orthogonals == 3 and $self->depends(1,"Search",$tile);
+           # If there's even one tile, this place can be used for fallback
+           # search.
+           ($orthogonals == 1 || $orthogonals == 2) and
+               $self->depends(0.5,"Search",$tile);
+        }
 	# It makes sense to explore tiles we haven't explored yet as
 	# one of the main ways to improve connectivity. Don't try to
 	# explore tiles with unknown pathability, or which are rock,

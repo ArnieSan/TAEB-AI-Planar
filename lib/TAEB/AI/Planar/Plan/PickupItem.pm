@@ -10,15 +10,26 @@ has item => (
     is      => 'rw',
     default => undef,
 );
+has tile => (
+    isa     => 'Maybe[TAEB::World::Tile]',
+    is      => 'rw',
+    default => undef,
+);
 sub set_arg {
     my $self = shift;
-    $self->item(shift);
+    my $item = shift;
+    $self->item($item);
+    $self->tile($self->item_tile($item));
 }
 
 sub aim_tile {
     my $self = shift;
     my $item = $self->item;
-    return $self->item_tile($item);
+    my $tile = $self->tile;
+    $_ == $item and return $self->tile for $tile->items;
+    $self->invalidate;
+    TAEB->log->ai("Item $item has gone missing...");
+    return undef;
 }
 
 # Our desire to pick something up is the value of that item.
