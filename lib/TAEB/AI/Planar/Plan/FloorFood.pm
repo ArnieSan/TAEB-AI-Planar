@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::FloorFood;
 use TAEB::OO;
-use TAEB::Util qw/delta2vi/;
+use TAEB::Util qw/delta2vi assert/;
 use TAEB::Spoilers::Monster;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
@@ -44,10 +44,19 @@ sub aim_tile {
 sub has_reach_action { 1 }
 sub reach_action {
     my $self = shift;
-    return undef unless defined $self->item;
+    my $item = $self->item;
+    return undef unless defined $item;
+    # sanity
+    defined $self->item_tile($item) && $self->item_tile($item) == $self->tile or
+        TAEB->log->ai("Floorfood item $item has gone missing",
+                      level => 'error');
     return TAEB::Action->new_action('eat', food => $self->item);
 }
-# TODO: reach_action_succeeded
+sub reach_action_succeeded {
+    my $self = shift;
+    $self->invalidate;
+    return 1; # TODO: write this
+}
 
 # This is resource conversion: we gain the food, for free more or less.
 # The time spent pathing to and eating it is risk rather than resource
