@@ -57,6 +57,12 @@ has current_plan => (
     is      => 'rw',
     default => undef,
 );
+# Keeping track of adding and removing plans.
+has validitychanged => (
+    isa     => 'Bool',
+    default => 1,
+    is      => 'rw',
+);
 # A plan counts as potentially abandoned if it doesn't strategy-fail
 # or tactics-fail or succeed. It is actually marked as abandoned if
 # a different plan is selected at the next step and it is potentially
@@ -417,21 +423,29 @@ sub next_plan_action {
     }
     # Create plans for items and map features, if necessary.
     for my $item (TAEB->inventory->items) {
-	$self->get_plan("InventoryItemMeta",$item);
+	$self->get_plan("InventoryItemMeta",$item)->validate;
     }
     for my $item (TAEB->current_level->items) {
-	$self->get_plan("GroundItemMeta",$item);
+	$self->get_plan("GroundItemMeta",$item)->validate;
     }
     TAEB->current_level->each_tile(sub {
 	my $tile = shift;
 	# Interesting tiles have Investigate as a metaplan. These are
 	# tiles on which we know there are items, but not what.
-	$tile->is_interesting and $self->get_plan("Investigate",$tile);
+	$tile->is_interesting and
+            $self->get_plan("Investigate",$tile)->validate;
     });
-    $_->planspawn for values %{$self->plans};
+    $self->validitychanged(1);
+    while ($self->validitychanged) {
+        # Spawn only from valid plans; repeat until there's no change
+        # in validity.
+        $self->validitychanged(0);
+        $_->validity and $_->planspawn for values %{$self->plans};
+    }
     # Delete any plans which are still invalid.
     for my $planname (keys %{$self->plans}) {
-	delete $self->plans->{$planname}
+	(delete $self->plans->{$planname},
+         TAEB->log->ai("Eliminating invalid plan $planname"))
 	    unless $self->plans->{$planname}->validity;
     }
 
@@ -486,6 +500,10 @@ sub next_plan_action {
 	    ($plan,$desire,$withrisk) = @$heapentry;
 	    # Likewise, bail if all plans are undesirable.
 	    (($plan=undef), last) if $desire <= 0;
+            # Ignore this plan if it's invalid. (Such plans can still
+            # generate desirability, due to the timing in the code
+            # above, even if they've been deleted from the plan list.)
+            redo unless $plan->validity;
 	    # If this heap entry was calculated without taking risk
 	    # into account, but we now have more accurate figures,
 	    # ignore in favour of those (lower) figures.

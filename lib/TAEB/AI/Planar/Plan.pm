@@ -328,7 +328,11 @@ has validity => (
     is  => 'rw',
     default => 1
 );
-sub validate { shift->validity(1); }
+sub validate {
+    my $self = shift;
+    $self->validity or TAEB->ai->validitychanged(1);
+    $self->validity(1);
+}
 sub invalidate { }
 
 # Metaplans do nothing but spawn other plans.
