@@ -69,7 +69,7 @@ sub reach_action_succeeded {
     my $self = shift;
     # If we asked for the cost, it succeeded if we know now how much
     # it cost.
-    return $self->item->cost if $self->asked_for_cost;
+    return !!$self->item->cost if $self->asked_for_cost;
     # If the item is now in our inventory, it worked.
     # (We may have picked up other items at the same time, that's
     # irrelevant.)
