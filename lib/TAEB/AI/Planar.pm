@@ -548,6 +548,7 @@ sub next_plan_action {
 		    $self->tactical_success_count(
 			$self->tactical_success_count+10000);
 		}
+                $self->update_tactical_map;
 		$self->_planheap->clear;
 		%planstate = ();
 	    }
