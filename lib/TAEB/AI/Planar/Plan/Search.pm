@@ -33,14 +33,23 @@ sub calculate_extra_risk {
     my $self = shift;
     # The best possible searchability is a bit below 50; searchability
     # is measured in the same units as time (at least in Behavioral).
-    # Therefore, we set aim_tile_turns to 70 minus the searchability
-    # (20 turns for the search, plus a penalty if that tile isn't very
-    # searchable).
-    my $risk = $self->aim_tile_turns(70 - $self->tile_searchability);
+    # Therefore, we add a time cost (/not/ aim_tile_turns) of 150
+    # minus three times the searchability.
+    my $searchability = $self->tile_searchability;
+#    TAEB->log->ai("Searchability of ".$self->tile." is $searchability");
+    my $risk = $self->aim_tile_turns(20);
+    $risk += $self->cost('Time' => 150 - $searchability * 3);
     return $risk;
 }
 
-# Searchability; using Behavioral's algorithm
+sub is_search_blocked {
+    my $self = shift;
+    my $tile = shift;
+    return (($tile->type eq 'rock' || $tile->type eq 'wall') &&
+	    !$tile->has_boulder);
+}
+
+# Searchability; mostly using Behavioral's algorithm
 sub tile_searchability {
     my $self = shift;
     my $tile = $self->tile;
@@ -53,7 +62,9 @@ sub tile_searchability {
         $ai->plan_caches->{'Search'} = $pmap;
     }
     $pmap = $pmap->{'map'};
-    return log(searchability($pmap,$tile));
+    return 50 if 3 == scalar $tile->grep_orthogonal(
+        sub {$self->is_search_blocked(shift);});
+    return log(searchability($pmap,$tile)+1);
 }
 
 #####################################################################
