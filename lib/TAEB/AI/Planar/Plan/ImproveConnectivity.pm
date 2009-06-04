@@ -17,19 +17,20 @@ sub is_search_blocked {
 sub spread_desirability {
     my $self = shift;
     my $level = TAEB->current_level;
-    my $mines = $level->known_branch && $level->branch eq 'mines';
+    my $mines = $level->known_branch && $level->branch eq 'mines'
+        && !$level->is_minetown;
     my $blind = TAEB->is_blind;
     $level->each_tile(sub {
 	my $tile = shift;
-	if(!$mines && $tile->is_walkable(0,1)) {
+	if($tile->is_walkable(0,1)) {
 	   my $orthogonals = scalar $tile->grep_orthogonal(
 	       sub {$self->is_search_blocked(shift)});
            # Dead-end; a very good place to search, even when not stuck
-           $orthogonals == 3 and $self->depends(1,"Search",$tile);
+           $orthogonals == 3 and $self->depends($mines ? 0.5 : 1, "Search", $tile);
            # If there's even one tile, this place can be used for fallback
            # search.
            ($orthogonals == 1 || $orthogonals == 2) and
-               $self->depends(0.5,"Search",$tile);
+               $self->depends($mines ? 0.3 : 0.5, "Search", $tile);
         }
 	# It makes sense to explore tiles we haven't explored yet as
 	# one of the main ways to improve connectivity. Don't try to
