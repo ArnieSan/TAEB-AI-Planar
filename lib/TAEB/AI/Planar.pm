@@ -4,6 +4,7 @@ use TAEB::OO;
 use Heap::Simple::XS;
 use Scalar::Util qw/refaddr weaken/;
 use Time::HiRes qw/gettimeofday tv_interval/;
+#use Data::Dumper; # needed for debug code, not for general use
 extends 'TAEB::AI';
 
 # The shortsightedness modifier, or its opposite (lower means more
@@ -547,13 +548,15 @@ sub next_plan_action {
 	# that would make it less risky).
 	if ($plan->difficulty <= 0 &&
 	    $plan->risk_valid_on_step != $self->aistep) {
+#            local $Data::Dumper::Indent = 0; # for debugging
 	    $plan->risk_valid_on_step($self->aistep);
 	    $plan->spending_plan({});
 	    $plan->risk($plan->calculate_risk);
 	    # Some more debugging lines that I seem to use a lot
-#	    TAEB->log->ai(
-#		"Risk of $bestplanname calculated at ".$plan->risk);
-#	    TAEB->log->ai("Desire was $desire");
+#            TAEB->log->ai(
+#                "Risk of $bestplanname calculated at ".$plan->risk);
+#            TAEB->log->ai("Desire was $desire");
+#            TAEB->log->ai("Spending plan is ".Dumper($plan->spending_plan));
 	    # Reinsert the plan with the same desire level; it'll be
 	    # updated for the new risk value
 	    $self->add_capped_desire($plan, $desire);
