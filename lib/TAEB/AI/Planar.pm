@@ -17,7 +17,7 @@ extends 'TAEB::AI';
 use constant repeated_threat_turns => 5;
 
 # The overall plan, what we're aiming towards.
-use constant overall_plan => 'Descend';
+use constant overall_plan => 'SolveSokoban';
 
 # A trick to avoid having to loop over things invalidating them;
 # instead, store an aistep value, and they're invalidated if it
