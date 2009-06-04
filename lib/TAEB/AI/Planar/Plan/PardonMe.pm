@@ -16,11 +16,12 @@ sub set_additional_args {
 
 sub calculate_risk {
     my $self = shift;
-    # The time this takes us depends on the speed of the monster.
+    # The time this takes us depends on the speed of the monster. Also,
+    # one extra turn for the time it takes to walk.
     my $spoiler = $self->tile->monster->spoiler;
     if (defined $spoiler && $spoiler->speed > 0)
     {
-	$self->cost("Time",TAEB->speed/$spoiler->speed);
+	$self->cost("Time",TAEB->speed/$spoiler->speed+1);
     } else {
 	# an estimate
 	$self->cost("Time",10);
@@ -45,7 +46,7 @@ sub check_possibility_inner {
 
 sub action {
     my $self = shift;
-    return TAEB::Action->new_action('Search');
+    return TAEB::Action->new_action('Search', iterations => 1);
 }
 
 sub succeeded {
