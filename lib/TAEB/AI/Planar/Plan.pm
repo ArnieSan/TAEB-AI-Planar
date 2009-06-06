@@ -205,6 +205,12 @@ has name => (
     isa => 'Str',
     is  => 'rw',
 );
+sub shortname {
+    my $self = shift;
+    local $_ = $self->name;
+    /^(\w+)/;
+    return $1;
+}
 
 sub set_arg {
     die "Tried to set an argument of a plan that doesn't take one";
@@ -283,6 +289,28 @@ has desire_with_risk => (
     is  => 'rw',
 );
 
+# The path used to give desirability to this plan
+has dependency_path => (
+    isa     => 'ArrayRef[TAEB::AI::Planar::Plan]',
+    is      => 'rw',
+    default => sub { [] },
+);
+has dependency_path_aistep => (
+    isa     => 'Num',
+    is      => 'rw',
+    default => -1,
+);
+sub add_dependency_path {
+    my $self = shift;
+    my $on = shift;
+    my $aistep = TAEB->ai->aistep;
+    my $newdeppath = [@{$self->dependency_path},$self];
+    $on->dependency_path($newdeppath)
+        if scalar @$newdeppath <= scalar $on->dependency_path
+        || $on->dependency_path_aistep != $aistep;
+    $on->dependency_path_aistep($aistep);
+}
+
 # This plan depends on another plan. Normally, this will be called in
 # spread_desirability. This increases the desirability of the other
 # plan to this plan's desirability times a constant, and adds this
@@ -294,6 +322,7 @@ sub depends {
     my $on = $ai->get_plan(@_);
     push @{$on->reverse_dependencies}, $self;
     $ai->add_capped_desire($on, $self->desire * $ratio);
+    $self->add_dependency_path($on);
 }
 # The same as above, but taking the amount of risk into account.
 sub depends_risky {
@@ -303,6 +332,7 @@ sub depends_risky {
     my $on = $ai->get_plan(@_);
     push @{$on->reverse_dependencies}, $self;
     $ai->add_capped_desire($on, $self->desire_with_risk * $ratio);
+    $self->add_dependency_path($on);
 }
 
 # Spread the desirability of this plan onto other plans which might

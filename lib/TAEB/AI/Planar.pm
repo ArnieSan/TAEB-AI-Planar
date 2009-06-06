@@ -354,6 +354,10 @@ sub next_action {
     TAEB->log->ai("Time taken for strategic planning: ".
 			   tv_interval($t1,$t0)."s.", level => 'debug');
     $self->lasttimeofday($t0);
+    # Work out the currently string.
+    my $currently = $self->currently_modifiers .
+        join '|', map {$_->shortname} (@{$plan->dependency_path}, $plan);
+
     # We need to tell if the return value was an action or a tactical
     # plan. We do this by seeing if the class ISA tactical plan; if it
     # is, then it almost certainly isn't an action (and even if it
@@ -361,9 +365,8 @@ sub next_action {
     # should ever be allowed to happen in the first place).
     if($action->isa('TAEB::AI::Planar::Plan::Tactical')) {
 	# It's a tactical plan.
-	$self->currently($self->currently_modifiers .
-			 $plan->description . ' > ' .
-			 $action->description);
+	$self->currently($currently . '-' .
+			 $action->shortname);
 	$self->current_tactical_plan($action);
 	my $inner_action = $action->try;
 	return $inner_action if defined $inner_action;
@@ -379,7 +382,7 @@ sub next_action {
 	@_ = ($self);
 	goto &next_action; # tail-recursion
     } else {
-	$self->currently($self->currently_modifiers . $plan->description);
+	$self->currently($currently);
 	$self->current_tactical_plan(undef);
 	return $action;
     }
@@ -953,7 +956,7 @@ around institute => sub {
 	$processed{$planname} = 1;
 	my $pkg = "TAEB::AI::Planar::Plan::$planname";
 	TAEB->log->ai("Loading plan $planname");
-	require "TAEB/AI/Planar/Plan/$planname.pm";
+        Class::MOP::load_class("$pkg");
 	my @referencedplans = @{$pkg->new->references};
 	@planlist = (@planlist, @referencedplans);
     }

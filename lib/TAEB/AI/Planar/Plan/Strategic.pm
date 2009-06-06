@@ -118,6 +118,7 @@ sub calculate_risk {
 	## END DEBUG CODE
 	push @{$plan->reverse_dependencies}, $self;
 	$ai->add_capped_desire($plan, $self->desire);
+        $self->add_dependency_path($plan);
     }
     return $risk;
 }
