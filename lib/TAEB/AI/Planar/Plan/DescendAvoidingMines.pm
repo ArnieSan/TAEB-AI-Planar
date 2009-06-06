@@ -39,6 +39,8 @@ sub spread_desirability {
     # If we can't see the downstairs, explore to find it.
     my $self = shift;
     $self->depends(1,"ImproveConnectivity");
+    # In case we don't know where we are, but do know where the stairs are
+    $self->depends(0.8,"Descend");
 }
 
 use constant description => 'Going down, avoiding the Mines';

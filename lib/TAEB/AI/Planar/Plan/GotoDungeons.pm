@@ -51,7 +51,8 @@ sub spread_desirability {
     # TODO: This isn't exactly ImproveConnectivity, more DiscoverBranch. But
     # the tactics for both are much the same atm.
     TAEB->current_level->known_branch or
-        $self->depends(1,'ImproveConnectivity'), return;
+        $self->depends(1,'ImproveConnectivity'),
+        $self->depends(0.8,'Descend'), return;
     # If we're in the Dungeons already, nothing we can do will help.
     TAEB->current_level->branch eq 'dungeons' and return;
     # If we're in the Mines, go up.
