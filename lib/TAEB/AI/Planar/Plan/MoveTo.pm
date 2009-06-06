@@ -22,6 +22,19 @@ sub set_additional_args {
     $self->tile(shift);
 }
 
+# It's good to push a boulder onto a square if it has two or more
+# adjacent squares which are adjacent to each other
+sub _safe_boulder_square {
+    my $tile = shift;
+    my %xhash = ();
+    my %yhash = ();
+    $tile->each_orthogonal(sub {
+        my $t = shift;
+        $t->is_walkable(1,1) and $xhash{$t->x}=1, $yhash{$t->y}=1;
+    });
+    return scalar keys %xhash > 1 && scalar keys %yhash > 1;
+}
+
 sub check_possibility_inner {
     my $self = shift;
     my $tme  = shift;
@@ -56,13 +69,29 @@ sub check_possibility_inner {
 
     # Boulders can sometimes be pushed. It depends on what's beyond them.
     # We try to push them if it's unexplored beyond them.
-    # TODO: Also push boulders along corridors until they reach a junction
-    # (where we can walk round them).
-    if($tile->has_boulder && (!defined $l->branch || $l->branch ne 'sokoban')) {
-	my $beyond = $l->at_safe($x*2-$tmex,$y*2-$tmey);
+    if($tile->has_boulder
+       && (!defined $l->branch || $l->branch ne 'sokoban')
+       && !_safe_boulder_square($tile)) {
+        my $dx = $x - $tmex;
+        my $dy = $y - $tmey;
+	my $beyond = $l->at_safe($x+$dx,$y+$dy);
 	if(defined $beyond and $beyond->type eq 'unexplored') {
 	    $self->generate_plan($tme,"PushBoulder",$tile);
 	}
+        # If we can push the boulder to a square with two adjacent
+        # neighbours, we can route round it from there. (Except in
+        # Sokoban, but we shouldn't blindly push boulders there
+        # anyway.) So continue moving beyond until we find either an
+        # obstructed square, or a safely-pushable-to square; but don't
+        # push a boulder if it's already on a safely-pushable-to
+        # square (leave it unroutable instead).
+        while (defined $beyond && $beyond->is_walkable(1,1) &&
+               !_safe_boulder_square($beyond)) {
+            $beyond = $l->at_safe($beyond->x+$dx,$beyond->y+$dy);
+        }
+	if(defined $beyond and $beyond->is_walkable(1,1)) {
+	    $self->generate_plan($tme,"PushBoulder",$tile);
+	}        
     }
 
     # For things that don't care about which direction we approach the tile
