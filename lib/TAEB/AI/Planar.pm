@@ -753,6 +753,8 @@ sub monster_is_peaceful {
     my $self = shift;
     my $monster = shift;
     my $disposition = $monster->disposition;
+    defined $disposition or $monster->definitely('always_hostile')
+        && return 1;
     defined $disposition or
          return !($monster->is_hostile() // 1);
     my $rv = $disposition eq 'peaceful'
@@ -819,8 +821,8 @@ sub threat_check {
 	    my $passive_only = 1;
             $passive_only &&= ($_->{mode} eq 'passive') for @{$spoiler->attacks};
 	    next if $passive_only;
-	    # Use the built-in TAEB average-damage function.
-	    my $damagepotential = $enemy->average_melee_damage;
+	    # Use the built-in TAEB maximum-damage function.
+	    my $damagepotential = $enemy->maximum_melee_damage;
 	    $danger = {'Hitpoints' => $damagepotential};
 	    $relspeed = $$spoiler{speed} / $selfspeed;
 	} else { # use a stock value as we don't know...
