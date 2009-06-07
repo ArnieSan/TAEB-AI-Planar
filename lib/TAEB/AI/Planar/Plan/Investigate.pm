@@ -26,12 +26,14 @@ sub aim_tile {
 
 sub has_reach_action { 0 }
 
+sub invalidate { shift->validity(0); }
+
 sub gain_resource_conversion_desire {
     # TODO: Work out from the symbol shown on the map, and possibly
     # farlook, the chance that this item is useful, and go gain a
     # bit of desire to investigate what it is.
 
-    # Hack for the time being: investigate things shown as % or as $,
+    # Hack for the time being: investigate things shown as % ) or $,
     # using a written-in value. (Incidentally, farlooking may be a
     # better option here, so long as we memorise the resulting values;
     # plans run at a farlook-safe time.)
@@ -45,6 +47,9 @@ sub gain_resource_conversion_desire {
     if ($glyph eq '%') {
 	$ai->add_capped_desire($self, $ai->resources->{'Nutrition'}->base_value
 			       * 30);
+    }
+    if ($glyph eq ')') {
+        $ai->add_capped_desire($self, $ai->resources->{'Ammo'}->base_value);
     }
 }
 
