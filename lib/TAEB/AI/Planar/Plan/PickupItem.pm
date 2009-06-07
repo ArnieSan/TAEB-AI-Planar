@@ -15,11 +15,7 @@ has tile => (
     is      => 'rw',
     default => undef,
 );
-has asked_for_cost => (
-    isa     => 'Bool',
-    is      => 'rw',
-    default => 0,
-);
+
 sub set_arg {
     my $self = shift;
     my $item = shift;
@@ -31,6 +27,10 @@ sub aim_tile {
     my $self = shift;
     my $item = $self->item;
     my $tile = $self->tile;
+    if ($self->tile->in_shop && !($self->item->cost)) {
+        # Fail in favour of AskForPrice.
+        return undef;
+    }
     $_ == $item and return $self->tile for $tile->items;
     $self->invalidate;
     TAEB->log->ai("Item $item has gone missing...");
@@ -53,23 +53,20 @@ sub gain_resource_conversion_desire {
 sub has_reach_action { 1 }
 sub reach_action {
     my $self = shift;
-    # If the item's in a shop but we don't know how much it costs, ask.
+    # If the item's in a shop but we don't know how much it costs, we
+    # can't buy it yet (maybe we can't afford it); use AskForPrice
+    # instead.
     if ($self->tile->in_shop && !($self->item->cost)) {
-        $self->asked_for_cost(1);
-        return TAEB::Action->new_action('chat');
+        return undef;
     }
     # The actual item that's picked up depends on the personality;
     # it'll pick up all items with positive instantaneous values.
     # For some reason, the API for Pickup requires 0 to pick up all
     # items.
-    $self->asked_for_cost(0);
     return TAEB::Action->new_action('pickup', count => 0);
 }
 sub reach_action_succeeded {
     my $self = shift;
-    # If we asked for the cost, it succeeded if we know now how much
-    # it cost.
-    return !!$self->item->cost if $self->asked_for_cost;
     # If the item is now in our inventory, it worked.
     # (We may have picked up other items at the same time, that's
     # irrelevant.)
@@ -92,15 +89,18 @@ sub calculate_extra_risk {
 	# takes to pick up the item.
 	$turncount++ if $resourcename eq 'Zorkmids';
     }
-    # If in a shop and the price is known (i.e. cost in zorkmids), then
-    # this will take 4 - 2 = 2 turns. If the price isn't known, then
-    # picking up the item takes 3 turns (request price, pick up, pay),
-    # = 4 - 1.
-    $turncount = 4 - $turncount if $self->tile->in_shop;
     return $risk + $self->aim_tile_turns($turncount);
 }
 
+sub spread_desirability {
+    my $self = shift;
+    if ($self->tile->in_shop && !($self->item->cost)) {
+        $self->depends(1,"AskForPrice",$self->tile);
+    }
+}
+
 use constant description => 'Picking up a useful item';
+use constant references  => ['AskForPrice'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
