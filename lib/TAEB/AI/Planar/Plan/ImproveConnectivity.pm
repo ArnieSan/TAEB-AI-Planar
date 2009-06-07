@@ -48,6 +48,9 @@ sub spread_desirability {
 	if($tile->is_interesting) {
 	    $self->depends(1,"Explore",$tile);
 	}
+        if($tile->has_boulder && $tile->type eq 'obscured') {
+            $self->depends(1,"Explore",$tile);
+        }
     });
     # If possible, paying off debt can improve connectivity by
     # allowing us to move past a shk.

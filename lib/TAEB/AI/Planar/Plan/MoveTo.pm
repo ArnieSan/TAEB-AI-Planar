@@ -23,8 +23,8 @@ sub set_additional_args {
 }
 
 # It's good to push a boulder onto a square if it has two or more
-# adjacent squares which are adjacent to each other
-sub _safe_boulder_square {
+# adjacent squares which are adjacent to each other.
+sub safe_boulder_square {
     my $tile = shift;
     my %xhash = ();
     my %yhash = ();
@@ -68,15 +68,19 @@ sub check_possibility_inner {
     }
 
     # Boulders can sometimes be pushed. It depends on what's beyond them.
-    # We try to push them if it's unexplored beyond them.
+    # We try to push them if it's unexplored beyond them, and they aren't
+    # on a safe square atm. We also may want to push a boulder which is
+    # in a safe location, but only if specifically aiming there; so we use
+    # PushBoulderRisky instead.
     if($tile->has_boulder
-       && (!defined $l->branch || $l->branch ne 'sokoban')
-       && !_safe_boulder_square($tile)) {
+       && (!defined $l->branch || $l->branch ne 'sokoban')) {
         my $dx = $x - $tmex;
         my $dy = $y - $tmey;
 	my $beyond = $l->at_safe($x+$dx,$y+$dy);
+        my $plantype = (safe_boulder_square($tile) ?
+                        "PushBoulderRisky" : "PushBoulder");
 	if(defined $beyond and $beyond->type eq 'unexplored') {
-	    $self->generate_plan($tme,"PushBoulder",$tile);
+	    $self->generate_plan($tme,$plantype,$tile);
 	}
         # If we can push the boulder to a square with two adjacent
         # neighbours, we can route round it from there. (Except in
@@ -86,11 +90,11 @@ sub check_possibility_inner {
         # push a boulder if it's already on a safely-pushable-to
         # square (leave it unroutable instead).
         while (defined $beyond && $beyond->is_walkable(1,1) &&
-               !_safe_boulder_square($beyond)) {
+               !safe_boulder_square($beyond)) {
             $beyond = $l->at_safe($beyond->x+$dx,$beyond->y+$dy);
         }
 	if(defined $beyond and $beyond->is_walkable(1,1)) {
-	    $self->generate_plan($tme,"PushBoulder",$tile);
+	    $self->generate_plan($tme,$plantype,$tile);
 	}        
     }
 
@@ -149,7 +153,7 @@ sub check_possibility_inner {
 }
 
 use constant references => ['OpenDoor','KickDownDoor','Walk','PushBoulder',
-                            'LightTheWay','ThroughTrap'];
+                            'PushBoulderRisky','LightTheWay','ThroughTrap'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
