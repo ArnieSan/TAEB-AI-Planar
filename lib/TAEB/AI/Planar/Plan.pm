@@ -239,9 +239,12 @@ sub try {
     if (defined $action) {
 	for my $resourcename (keys %{$self->spending_plan}) {
 	    my $resource = TAEB->ai->resources->{$resourcename};
-	    $resource->want_to_spend($self->spending_plan->{$resourcename});
-	    $resource->amount < $self->spending_plan->{$resourcename} and
-		$cando = 0;
+            my $spendamount = $self->spending_plan->{$resourcename};
+	    $resource->want_to_spend($spendamount);
+	    $resource->amount < $spendamount and
+		$cando = 0, TAEB->log->ai(
+                    $self->name . " failed because $resourcename was needed (" .
+                    $resource->amount . " < " . $spendamount);
 	}
     }
     $cando and defined $action and return $action;

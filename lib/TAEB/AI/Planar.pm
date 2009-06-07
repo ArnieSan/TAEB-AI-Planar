@@ -181,7 +181,8 @@ sub add_possible_move {
 }
 
 # Resources.
-use constant resource_types => qw/Hitpoints Nutrition Time Zorkmids/;
+use constant resource_types =>
+    qw/Hitpoints Nutrition Time Zorkmids Delta Impossibility Ammo/;
 has resources => (
     isa     => 'HashRef[TAEB::AI::Planar::Resource]',
     is      => 'rw',
@@ -556,7 +557,7 @@ sub next_plan_action {
 		%planstate = ();
 	    }
 	    $self->add_capped_desire($self->get_plan($majorplan),
-				     10000000);
+				     1e8);
 	    next;
 	}
 	$bestplanname = $plan->name;
@@ -845,10 +846,14 @@ sub threat_check {
 	my $threatmap = $self->threat_map->{TAEB->current_level};
 	TAEB->current_tile->each_adjacent(sub {
 	    my $tile = shift;
-	    # The *1000 here is to make barging out of the trap more
-	    # expensive than getting out the 'proper' way.
+	    # The impossibility here is to force Extricate to run
+            # strategically rather than tactically, if we want to
+            # do any routing at all. (Things that can be done when
+            # stationary, like eating food rations, or meleeing
+            # from the current square, don't need extrication
+            # first.)
 	    $threatmap->[$tile->x]->[$tile->y]->{"-1 Extricate"}
-	        = {Time => $trapturns * 1000};
+	        = {Impossibility => 1};
 	});
 	$self->get_plan("Extricate")->validate();
     }
@@ -1010,6 +1015,9 @@ sub item_value {
     # Gold has value measured in zorkmids.
     $item->identity and $item->identity eq 'gold piece' and
 	return $resources->{'Zorkmids'}->value($item->quantity);
+    # Ammo counts as 1 ammo each.
+    $item->identity and $item->identity =~ /\b(?:spear|dagger|dart)\b/ and
+        return $resources->{'Ammo'}->value(1);
     return 0;
 }
 # Negative aspects of this item's value.

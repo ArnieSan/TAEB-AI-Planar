@@ -28,7 +28,7 @@ sub calculate_risk {
     # millinutrition, divided by the number of turns already recorded
     # in the TME (i.e. small enough to make no difference except as a
     # tiebreak) plus one (to avoid division by zero).
-    $self->cost("Nutrition",0.001/(($tme->{'risk'}->{'Nutrition'} || 0)+1))
+    $self->cost("Delta",1/(($tme->{'risk'}->{'Nutrition'} || 0)+1))
 	unless $tile->x == $tme->{'tile_x'} || $tile->y == $tme->{'tile_y'};
 }
 
