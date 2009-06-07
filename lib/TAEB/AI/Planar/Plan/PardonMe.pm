@@ -39,10 +39,12 @@ sub calculate_risk {
     my $ap = TAEB->ai->abandoned_tactical_plan;
     if (defined $ap && $ap->name eq $self->name) {
         my $tir = $self->timesinrow;
-        my $speed = defined $spoiler ? $spoiler->speed : 0.1;
-        $self->cost("Time",$speed/TAEB->speed*$tir);
+        my $speed = defined $spoiler ? $spoiler->speed : 12;
+        my $penalty = $speed/TAEB->speed*$tir;
+        $self->cost("Time", $penalty);
         $self->timesinrow($tir+1);
-        TAEB->log->ai("Adding penalty cost to PardonMe");
+        TAEB->log->ai("Adding penalty cost $penalty to PardonMe");
+        $penalty > 4 and $self->mark_impossible;
     } else {$self->timesinrow(0);}
     $self->level_step_danger($self->tile->level);
 }

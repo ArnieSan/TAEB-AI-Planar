@@ -46,10 +46,12 @@ sub calculate_risk {
     my $ap = TAEB->ai->abandoned_tactical_plan;
     if (defined $ap && $ap->name eq $self->name) {
         my $tir = $self->timesinrow;
-        my $speed = defined $spoiler ? $spoiler->speed : 0.1;
-        $self->cost("Time",$speed/TAEB->speed*$tir);
+        my $speed = defined $spoiler ? $spoiler->speed : 12;
+        my $penalty = $speed/TAEB->speed*$tir;
+        $self->cost("Time", $penalty);
         $self->timesinrow($tir+1);
-        TAEB->log->ai("Adding penalty cost to ScareMonster");
+        TAEB->log->ai("Adding penalty cost $penalty to PardonMe");
+        $penalty > 4 and $self->mark_impossible;
     } else {$self->timesinrow(0);}
     $self->level_step_danger($self->tile->level);
 }
@@ -66,7 +68,14 @@ sub check_possibility_inner {
     return unless $monster->respects_elbereth;
     # We can't scare an immobile monster.
     my $spoiler = $monster->spoiler;
+    my $timesaved = undef;
     if($spoiler and !($spoiler->speed)) {
+        $timesaved = {Impossibility => 1};
+    } elsif($spoiler) {
+        $timesaved = {Time => TAEB->speed/$spoiler->speed/0.72+1};
+    }
+    # Eliminating may be faster, even if it's a peaceful.
+    if(defined $timesaved) {
         my $ai = TAEB->ai;
         # We need to convert this into a /strategic/ plan, Eliminate.
         # This is done by inventing a threat on the square, and setting
@@ -76,9 +85,8 @@ sub check_possibility_inner {
         # somewhere?
         my $planname = $ai->get_plan("Eliminate",$monster)->name;
         $ai->threat_map->{$tile->level}->[$tile->x]->[$tile->y]->{"-1 $planname"}
-            = {Impossibility => 1};
+            = $timesaved;
     }
-    # TODO: Eliminate as an alternative even for mobile monsters
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 
