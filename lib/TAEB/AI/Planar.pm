@@ -193,7 +193,7 @@ sub add_possible_move {
 
 # Resources.
 use constant resource_types =>
-    qw/Hitpoints Nutrition Time Zorkmids Delta Impossibility Ammo/;
+    qw/Hitpoints Nutrition Time Zorkmids Delta Impossibility Ammo Purity/;
 has resources => (
     isa     => 'HashRef[TAEB::AI::Planar::Resource]',
     is      => 'rw',
@@ -470,6 +470,7 @@ sub next_plan_action {
 	$tile->is_interesting and
             $self->get_plan("Investigate",$tile)->validate;
     });
+    $self->get_plan("CharacterMeta")->validate;
     $self->validitychanged(1);
     while ($self->validitychanged) {
         # Spawn only from valid plans; repeat until there's no change
@@ -978,6 +979,7 @@ around institute => sub {
 	"InventoryItemMeta", # metaplan for inventory items
 	"GroundItemMeta",    # metaplan for floor items
 	"Investigate",       # metaplan for interesting tiles
+        "CharacterMeta",     # metaplan for intrinsics, etc
 	# Threat metaplans
 	"Eliminate",         # metaplan for monsters
 	"Extricate",         # metaplan for traps we're in
