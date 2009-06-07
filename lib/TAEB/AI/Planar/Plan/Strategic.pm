@@ -18,8 +18,14 @@ sub reach_action {
 }
 
 # Some plans need us to stop and perform the action one tile early,
-# e.g. fighting a monster.
+# e.g. fighting a monster. This is 0 to move to the tile, 1 to move
+# next to the tile, and higher numbers for progressively higher
+# ranges (orthogonal/diagonal only, though).
 sub stop_early { 0 }
+# What blocks an orthogonal/diagonal stop_early ray. This is given
+# a tile as argument, and should return 1 if it blocks, 0 if it
+# doesn't.
+sub stop_early_blocked_by { 0 }
 
 # Some plans have a mobile target. In such cases, we calculate risk
 # one square at a time, because the target will probably be moving
@@ -55,16 +61,22 @@ sub calculate_risk {
 	# Look for a tile next to the aim_tile that's cheap (or failing
 	# that, possible) to path to.
 	my $best_tile = undef;
-	my $best_risk = 1e10;
-	$aim->each_adjacent(sub {
-	    my $tile = shift;
-	    my $tme  = $ai->tme_from_tile($tile);
-	    return unless defined $tme;
-	    my $nr   = $tme->numerical_risk;
-	    return unless $nr < $best_risk;
-	    $best_risk = $nr;
-	    $best_tile = $tile;
-        });
+	my $best_risk = 1e12;
+        DIRECTION: for my $delta (qw/y u h j k l b n/) {
+	    my $tile = $aim;
+            my $range = 0;
+            while (++$range <= $self->stop_early) {
+                $tile = $tile->at_direction($delta);
+                next DIRECTION unless defined $tile;
+                next DIRECTION if $self->stop_early_blocked_by($tile);
+                my $tme = $ai->tme_from_tile($tile);
+                next unless defined $tme;
+                my $nr = $tme->numerical_risk;
+                next unless $nr < $best_risk;
+                $best_risk = $nr;
+                $best_tile = $tile;
+            }
+        }
 	$aim = $best_tile;
 	if (!defined($aim)) {
 	    # We can't route where we're aiming. Bail out.
