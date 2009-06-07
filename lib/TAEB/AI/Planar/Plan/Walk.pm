@@ -25,7 +25,7 @@ sub calculate_risk {
     # corridors, it looks nicer, and in theory it's easier to optimise
     # paths if they're consistent between turns (although the AI
     # doesn't take advantage of that at the moment). The gain is 1
-    # millinutrition, divided by the number of turns already recorded
+    # delta, divided by the number of turns already recorded
     # in the TME (i.e. small enough to make no difference except as a
     # tiebreak) plus one (to avoid division by zero).
     $self->cost("Delta",1/(($tme->{'risk'}->{'Nutrition'} || 0)+1))

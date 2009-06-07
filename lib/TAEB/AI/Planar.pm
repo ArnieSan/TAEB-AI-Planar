@@ -592,6 +592,7 @@ sub next_plan_action {
 	    # If it's undef, the plan failed, otherwise we're going to
 	    # try to carry it out directly with NetHack (rather than
 	    # just in our mind).
+            TAEB->log->ai("Trying plan $bestplanname...");
 	    $action = $plan->try;
 	    last if $action;
 	}
@@ -753,8 +754,7 @@ sub monster_is_peaceful {
     my $monster = shift;
     my $disposition = $monster->disposition;
     defined $disposition or
-        (TAEB->log->ai("Don't know the disposition of $monster..."),
-         return !($monster->is_hostile() // 1));
+         return !($monster->is_hostile() // 1);
     my $rv = $disposition eq 'peaceful'
           || $disposition eq 'tame';
     return $rv;
@@ -827,7 +827,7 @@ sub threat_check {
 	    $danger = {'Hitpoints' => 5};
 	}
 	my $plan = $self->get_plan("Eliminate",$enemy);
-	# Until we have information about what can fly in the spoilers...
+	# TODO: walk/fly/swim
 	$self->add_threat($plan->name,$danger,$tile,$relspeed,'walk');
 	$plan->validate();
     }
