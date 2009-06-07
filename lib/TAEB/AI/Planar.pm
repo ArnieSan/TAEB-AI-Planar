@@ -786,7 +786,7 @@ sub monster_is_peaceful {
     my $monster = shift;
     my $disposition = $monster->disposition;
     defined $disposition or $monster->definitely('always_hostile')
-        && return 1;
+        && return 0;
     defined $disposition or
          return !($monster->is_hostile() // 1);
     my $rv = $disposition eq 'peaceful'
