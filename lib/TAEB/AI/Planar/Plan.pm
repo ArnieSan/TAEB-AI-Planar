@@ -316,15 +316,15 @@ sub add_dependency_path {
 
 # This plan depends on another plan. Normally, this will be called in
 # spread_desirability. This increases the desirability of the other
-# plan to this plan's desirability times a constant, and adds this
-# plan as a dependency to the other plan.
+# plan to this plan's desirability plus the log of a constant, and
+# adds this plan as a dependency to the other plan.
 sub depends {
     my $self = shift;
     my $ratio = shift;
     my $ai = TAEB->ai;
     my $on = $ai->get_plan(@_);
     push @{$on->reverse_dependencies}, $self;
-    $ai->add_capped_desire($on, $self->desire * $ratio);
+    $ai->add_capped_desire($on, $self->desire + 1e6 * log $ratio);
     $self->add_dependency_path($on);
 }
 # The same as above, but taking the amount of risk into account.
@@ -334,7 +334,7 @@ sub depends_risky {
     my $ai = TAEB->ai;
     my $on = $ai->get_plan(@_);
     push @{$on->reverse_dependencies}, $self;
-    $ai->add_capped_desire($on, $self->desire_with_risk * $ratio);
+    $ai->add_capped_desire($on, $self->desire_with_risk + 1e6 * log $ratio);
     $self->add_dependency_path($on);
 }
 
