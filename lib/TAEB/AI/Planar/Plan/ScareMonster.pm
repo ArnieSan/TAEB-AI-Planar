@@ -18,6 +18,11 @@ has turntried => (
     isa => 'Maybe[Int]',
     is  => 'rw',
 );
+has timesinrow => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => 0
+);
 
 sub calculate_risk {
     my $self = shift;
@@ -28,10 +33,24 @@ sub calculate_risk {
 	# There's a 72% chance of a valid dust-Elbereth.
 	# Remember to add 1 for the time it takes to step onto the tile!
 	$self->cost("Time",TAEB->speed/$spoiler->speed/0.72+1);
+        # Don't scare a monster when you could walk around it.
+        $self->cost("Delta",10);
     } else {
 	# Most of the things we want to scare are rather slow...
 	$self->cost("Time",10);
     }
+    # If we're continuing with the same plan (i.e. this plan is
+    # potentially abandonable), then the cost goes up over time.
+    # (This is a compromise between marking it as impossible and
+    # repeating indefinitely.)
+    my $ap = TAEB->ai->abandoned_tactical_plan;
+    if (defined $ap && $ap->name eq $self->name) {
+        my $tir = $self->timesinrow;
+        my $speed = defined $spoiler ? $spoiler->speed : 0.1;
+        $self->cost("Time",$speed/TAEB->speed*$tir);
+        $self->timesinrow($tir+1);
+        TAEB->log->ai("Adding penalty cost to ScareMonster");
+    } else {$self->timesinrow(0);}
     $self->level_step_danger($self->tile->level);
 }
 
@@ -47,7 +66,19 @@ sub check_possibility_inner {
     return unless $monster->respects_elbereth;
     # We can't scare an immobile monster.
     my $spoiler = $monster->spoiler;
-    return if $spoiler and !($spoiler->speed);
+    if($spoiler and !($spoiler->speed)) {
+        my $ai = TAEB->ai;
+        # We need to convert this into a /strategic/ plan, Eliminate.
+        # This is done by inventing a threat on the square, and setting
+        # its difficulty for routing past to "impossible".
+        # TODO: This is rather encapsulation-breaking; maybe there
+        # should be a convert-tactics-to-strategy function in the AI
+        # somewhere?
+        my $planname = $ai->get_plan("Eliminate",$monster)->name;
+        $ai->threat_map->{$tile->level}->[$tile->x]->[$tile->y]->{"-1 $planname"}
+            = {Impossibility => 1};
+    }
+    # TODO: Eliminate as an alternative even for mobile monsters
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 

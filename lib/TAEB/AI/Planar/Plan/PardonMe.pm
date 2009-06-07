@@ -4,6 +4,12 @@ use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
+has timesinrow => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => 0
+);
+
 has tile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
@@ -26,6 +32,18 @@ sub calculate_risk {
 	# an estimate
 	$self->cost("Time",10);
     }
+    # If we're continuing with the same plan (i.e. this plan is
+    # potentially abandonable), then the cost goes up over time.
+    # (This is a compromise between marking it as impossible and
+    # repeating indefinitely.)
+    my $ap = TAEB->ai->abandoned_tactical_plan;
+    if (defined $ap && $ap->name eq $self->name) {
+        my $tir = $self->timesinrow;
+        my $speed = defined $spoiler ? $spoiler->speed : 0.1;
+        $self->cost("Time",$speed/TAEB->speed*$tir);
+        $self->timesinrow($tir+1);
+        TAEB->log->ai("Adding penalty cost to PardonMe");
+    } else {$self->timesinrow(0);}
     $self->level_step_danger($self->tile->level);
 }
 
