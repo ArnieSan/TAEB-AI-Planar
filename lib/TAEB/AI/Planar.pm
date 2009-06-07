@@ -63,6 +63,17 @@ has validitychanged => (
     default => 1,
     is      => 'rw',
 );
+# Past plans, to detect flapping oscillations.
+has old_plans => (
+    isa     => 'ArrayRef[TAEB::AI::Planar::Plan]',
+    is      => 'rw',
+    default => sub { [] },
+);
+has old_tactical_plans => (
+    isa     => 'ArrayRef[TAEB::AI::Planar::Plan::Tactical]',
+    is      => 'rw',
+    default => sub { [] },
+);
 # A plan counts as potentially abandoned if it doesn't strategy-fail
 # or tactics-fail or succeed. It is actually marked as abandoned if
 # a different plan is selected at the next step and it is potentially
@@ -273,6 +284,26 @@ sub next_action {
 				   " was abandoned.");
 	}
     }
+    # Another form of abandonment is tactical plan abandonment within a
+    # strategic plan. The above check doesn't detect this (the tactical
+    # plans can succeed alternately, cancelling each other out); this one
+    # does.
+    if (scalar $self->old_plans > 2 && $self->current_tactical_plan &&
+        defined $self->old_tactical_plans->[1] &&
+        defined $self->old_plans->[1] &&
+        $self->current_tactical_plan->name eq
+        $self->old_tactical_plans->[1]->name &&
+        $self->current_plan->name eq $self->old_plans->[1]->name &&
+        $self->old_tactical_plans->[0]->name ne
+        $self->old_tactical_plans->[1]->name) {
+        # We're oscillating between two tactics for the same strategy.
+        $self->current_tactical_plan->mark_impossible;
+	    TAEB->log->ai("Oscillating tactical plan ".
+				   $self->abandoned_tactical_plan->name.
+				   " was abandoned.");
+    }
+    unshift @{$self->old_plans}, $self->current_plan;
+    unshift @{$self->old_tactical_plans}, $self->current_tactical_plan;
     # Did the plan succeed, or fail, or is it ongoing?
     my $succeeded = undef;
     if (defined $self->current_tactical_plan) {
@@ -449,7 +480,8 @@ sub next_plan_action {
     # Delete any plans which are still invalid.
     for my $planname (keys %{$self->plans}) {
 	(delete $self->plans->{$planname},
-         TAEB->log->ai("Eliminating invalid plan $planname"))
+         TAEB->log->ai("Eliminating invalid plan $planname",
+                       level => 'debug'))
 	    unless $self->plans->{$planname}->validity;
     }
 
@@ -592,7 +624,7 @@ sub next_plan_action {
 	    # If it's undef, the plan failed, otherwise we're going to
 	    # try to carry it out directly with NetHack (rather than
 	    # just in our mind).
-            TAEB->log->ai("Trying plan $bestplanname...");
+            # TAEB->log->ai("Trying plan $bestplanname..."); # debug
 	    $action = $plan->try;
 	    last if $action;
 	}
