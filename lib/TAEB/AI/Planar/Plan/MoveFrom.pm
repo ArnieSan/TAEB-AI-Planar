@@ -19,7 +19,11 @@ sub check_possibility_inner {
     if($tmetile->type ne 'opendoor' && $tmetile->type ne 'closeddoor') {
 	$tmetile->each_adjacent(sub {
 	    my $tile = shift;
-	    $self->generate_plan($tme, "MoveTo", $tile);
+            my $level = TAEB->current_level;
+            if (($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
+                (!$level->known_branch || $level->branch ne 'sokoban')) {
+                $self->generate_plan($tme, "MoveTo", $tile);
+            }
 	    if (($tile->type eq 'opendoor' || $tile->type eq 'closeddoor')
 		&& ($tile->x == $tmetile->x || $tile->y == $tmetile->y)) {
 		# You can't move diagonally off an open door; but you

@@ -19,6 +19,11 @@ has push_turn => (
     is      => 'rw',
     default => -1
 );
+has push_in_row => ( # we could be fast...
+    isa     => 'Num',
+    is      => 'rw',
+    default => 0
+);
 
 sub aim_tile {
     my $self = shift;
@@ -32,8 +37,11 @@ sub aim_tile {
     # To an empty square?
     return $nexttile unless $nexttile->has_boulder;
     # Or to push a boulder?
+    my $p = $self->push_in_row;
     $self->bouldertile($nexttile);
-    $self->need_to_wait($self->push_turn == TAEB->turn);
+    $self->push_turn == TAEB->turn ? $p++ : ($p = 0);
+    $self->need_to_wait($p > 3);
+    $self->push_in_row($p);
     $self->push_turn(TAEB->turn);
     return TAEB->current_tile;
 }
@@ -55,8 +63,9 @@ sub reach_action_succeeded {
     # If there isn't a boulder on the square where there used to be one,
     # it worked.
     return 1 if !$self->bouldertile->has_boulder;
-    # If we're on the same aistep as before, there must be a monster in
-    # the way; wait once, and try again.
+    # If we're on the same aistep as before, there must be a monster
+    # in the way, or maybe we skipped a turn due to speed; wait once,
+    # and try again.
     return undef if TAEB->turn == $self->push_turn;
     # Otherwise, we failed.
     return 0;
