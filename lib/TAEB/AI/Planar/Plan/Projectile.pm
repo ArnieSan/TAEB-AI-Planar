@@ -25,7 +25,8 @@ sub get_projectile {
 # To throw projectiles, we're aiming for a tile orthogonal or diagonal
 # to the monster.
 sub aim_tile {
-    shift->monster->tile;
+    $self->get_projectile and shift->monster->tile;
+    return undef;
 }
 sub stop_early {
     my $projectile = get_projectile;
