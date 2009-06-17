@@ -861,7 +861,7 @@ sub threat_check {
 	} else { # use a stock value as we don't know...
 	    $danger = {'Hitpoints' => 5};
 	}
-	my $plan = $self->get_plan("Eliminate",$enemy);
+	my $plan = $self->get_plan("Mitigate",$enemy);
 	# TODO: walk/fly/swim
 	$self->add_threat($plan->name,$danger,$tile,$relspeed,'walk');
 	$plan->validate();
@@ -981,7 +981,7 @@ around institute => sub {
 	"Investigate",       # metaplan for interesting tiles
         "CharacterMeta",     # metaplan for intrinsics, etc
 	# Threat metaplans
-	"Eliminate",         # metaplan for monsters
+	"Mitigate",         # metaplan for monsters
 	"Extricate",         # metaplan for traps we're in
 	# Tactical metaplans
 	"MoveFrom",          # tactical metaplan for tiles
