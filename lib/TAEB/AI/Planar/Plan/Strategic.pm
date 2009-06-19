@@ -128,7 +128,7 @@ sub calculate_risk {
 # 				   "saving @costs");
 # 	}
 	## END DEBUG CODE
-	push @{$plan->reverse_dependencies}, $self;
+	$plan->reverse_dependencies->{$self} = $self;
 	$ai->add_capped_desire($plan, $self->desire);
         $self->add_dependency_path($plan);
     }

@@ -290,16 +290,24 @@ sub next_action {
 	$self->abandoned_plan->mark_impossible;
 	TAEB->log->ai("Plan ".$self->abandoned_plan->name.
 			       " was abandoned.");
+        $self->current_plan->reverse_dependencies
+            ->{$self->abandoned_plan->name} = $self->abandoned_plan;
 	# More interestingly, we also abandon the tactical plan we
 	# were trying, if there is one; even though it quite possibly
 	# succeeded! This is to prevent oscillations; if we try the
 	# same tactical plan any time soon, we're definitely
 	# oscillating and need to try going in the other direction.
-	if (defined $self->abandoned_tactical_plan) {
+	if (defined $self->abandoned_tactical_plan &&
+            defined $self->current_tactical_plan &&
+            $self->abandoned_tactical_plan->name ne
+            $self->current_tactical_plan->name) {
 	    $self->abandoned_tactical_plan->mark_impossible;
 	    TAEB->log->ai("Tactical plan ".
 				   $self->abandoned_tactical_plan->name.
 				   " was abandoned.");
+            $self->current_tactical_plan->reverse_dependencies
+                ->{$self->abandoned_tactical_plan->name} =
+                $self->abandoned_tactical_plan;
 	}
     }
     # Another form of abandonment is tactical plan abandonment within a

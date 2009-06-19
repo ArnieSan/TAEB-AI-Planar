@@ -267,19 +267,20 @@ sub succeeded {
     0;
 }
 
-# Plans to remove difficulty from when this plan succeeds.
+# Plans to remove difficulty from when this plan succeeds. It's a hash
+# from plan names to the plans.
 has reverse_dependencies => (
-    isa => 'ArrayRef[TAEB::AI::Planar::Plan]',
+    isa => 'HashRef[TAEB::AI::Planar::Plan]',
     is  => 'rw',
-    default => sub { [] },
+    default => sub { {} },
 );
 # Reset difficulty but not d_difficulty. That way, there's still a
 # timeout if this didn't make the plan possible after all.
 sub reactivate_dependencies {
     my $self = shift;
-    my @deps = @{$self->reverse_dependencies};
-    $self->reverse_dependencies([]);
-    $_->required_success_count(0), $_->reactivate_dependencies for @deps;
+    my @deps = values %{$self->reverse_dependencies};
+    $self->reverse_dependencies({});
+    $_->required_success_count(-1), $_->reactivate_dependencies for @deps;
 }
 
 # What the AI told us our desire was, so we can spread it properly.
@@ -323,7 +324,7 @@ sub depends {
     my $ratio = shift;
     my $ai = TAEB->ai;
     my $on = $ai->get_plan(@_);
-    push @{$on->reverse_dependencies}, $self;
+    $on->reverse_dependencies->{$self} = $self;
     $ai->add_capped_desire($on, $self->desire + 1e6 * log $ratio);
     $self->add_dependency_path($on);
 }
@@ -333,7 +334,7 @@ sub depends_risky {
     my $ratio = shift;
     my $ai = TAEB->ai;
     my $on = $ai->get_plan(@_);
-    push @{$on->reverse_dependencies}, $self;
+    $on->reverse_dependencies->{$self} = $self;
     $ai->add_capped_desire($on, $self->desire_with_risk + 1e6 * log $ratio);
     $self->add_dependency_path($on);
 }
