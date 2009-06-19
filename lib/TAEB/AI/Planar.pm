@@ -45,34 +45,40 @@ has currently_modifiers => (
     isa     => 'Str',
     is      => 'rw',
     default => '',
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # Plans.
 has plans => (
     isa     => 'HashRef[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 has current_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => undef,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # Keeping track of adding and removing plans.
 has validitychanged => (
     isa     => 'Bool',
     default => 1,
     is      => 'rw',
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # Past plans, to detect flapping oscillations.
 has old_plans => (
     isa     => 'ArrayRef[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => sub { [] },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 has old_tactical_plans => (
     isa     => 'ArrayRef[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => sub { [] },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # A plan counts as potentially abandoned if it doesn't strategy-fail
 # or tactics-fail or succeed. It is actually marked as abandoned if
@@ -83,22 +89,26 @@ has abandoned_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => undef,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 has abandoned_tactical_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => undef,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # This list is separate merely for efficiency reasons.
 has tactical_plans => (
     isa     => 'HashRef[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 has current_tactical_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => undef,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # Storing plans by the object they refer to speeds up certain
 # operations.
@@ -106,6 +116,7 @@ has plan_index_by_object => (
     isa     => 'HashRef[ArrayRef[TAEB::AI::Planar::Plan]]',
     is      => 'rw',
     default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # Plans sometimes need to store per-AI persistent data, mostly for
 # performance reasons. Give them somewhere they can store it without
@@ -115,6 +126,7 @@ has plan_caches => (
     isa     => 'HashRef', # with unknown contents
     is      => 'rw',
     default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
 # A heap of desire values. This only exists for one calculation, but
@@ -148,7 +160,8 @@ has _planheap => (
 	    elements => [Array => 1], # manually wrapped keys and values
 	    dirty => 1,               # safely dirty
 	);
-    }
+    },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # Set the desire of a plan to a given value, unless that would make it
 # smaller. This is implemented by adding a new heap element. (The
@@ -178,7 +191,8 @@ has _tacticsheap => (
 	    elements => [Object => 'numerical_risk'],
 	    dirty => 1,
 	);
-    }
+    },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # Add a possible move to the tactics heap.
 sub add_possible_move {
@@ -206,6 +220,7 @@ has resources => (
 	}
 	return \%resources;
     },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
 # The tactics map.
@@ -220,6 +235,7 @@ has tactics_map => (
         'HashRef[ArrayRef[ArrayRef[TAEB::AI::Planar::TacticsMapEntry]]]',
     is      => 'rw',
     default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
 # The threat map.
@@ -242,6 +258,7 @@ has threat_map => (
     isa     => 'HashRef[ArrayRef[ArrayRef[HashRef[Maybe[HashRef[Num]]]]]]',
     is      => 'rw',
     default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
 # For profiling
@@ -249,6 +266,7 @@ has lasttimeofday => (
     isa     => 'Maybe[ArrayRef]',
     is      => 'rw',
     default => undef,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
 sub next_action {
@@ -1006,10 +1024,25 @@ around institute => sub {
 #####################################################################
 # Things below this line should be elsewhere or handled differently
 
+sub STORABLE_freeze {
+    my $self = shift;
+    my $cloning = shift;
+    return if $cloning;
+    my @attrs = $self->meta->get_all_attributes;
+    push @attrs, $self->meta->get_all_class_attributes
+        if $self->meta->can('get_all_class_attributes');
+    for my $attr (@attrs) {
+        next unless $attr->does('TAEB::AI::Planar::Meta::Trait::DontFreeze');
+        my $default = $attr->default($self);
+        $attr->get_write_method_ref->($default);
+    }
+}
+
 has try_again_step => (
     isa => 'Int',
     is  => 'rw',
     default => -1,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
 # Responding to messages.
