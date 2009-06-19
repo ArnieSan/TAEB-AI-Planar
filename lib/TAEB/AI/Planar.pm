@@ -1035,6 +1035,8 @@ around institute => sub {
 #####################################################################
 # Things below this line should be elsewhere or handled differently
 
+=begin comment
+
 sub STORABLE_freeze {
     my $self = shift;
     my $cloning = shift;
@@ -1047,7 +1049,10 @@ sub STORABLE_freeze {
         my $default = $attr->default($self);
         $attr->get_write_method_ref->($default);
     }
+    return ($self);
 }
+
+=cut
 
 has try_again_step => (
     isa => 'Int',
