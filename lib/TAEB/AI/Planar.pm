@@ -910,6 +910,16 @@ sub threat_check {
 	});
 	$self->get_plan("Extricate")->validate();
     }
+    # Similar to traps: engulfing monsters.
+    if (TAEB->is_engulfed) {
+	my $threatmap = $self->threat_map->{TAEB->current_level};
+	TAEB->current_tile->each_adjacent(sub {
+	    my $tile = shift;
+	    $threatmap->[$tile->x]->[$tile->y]->{"-1 Unengulf"}
+	        = {Impossibility => 1};
+	});
+	$self->get_plan("Unengulf")->validate();
+    }    
 }
 
 # Naming a plan.
@@ -999,8 +1009,9 @@ around institute => sub {
 	"Investigate",       # metaplan for interesting tiles
         "CharacterMeta",     # metaplan for intrinsics, etc
 	# Threat metaplans
-	"Mitigate",         # metaplan for monsters
+	"Mitigate",          # metaplan for monsters
 	"Extricate",         # metaplan for traps we're in
+        "Unengulf",          # (meta)plan for engulfing monsters
 	# Tactical metaplans
 	"MoveFrom",          # tactical metaplan for tiles
 	"Nop",               # stub tactical plan
