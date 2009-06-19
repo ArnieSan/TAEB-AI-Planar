@@ -55,10 +55,16 @@ sub spread_desirability {
     # If possible, paying off debt can improve connectivity by
     # allowing us to move past a shk.
     $self->depends(1,"Pay");
+    # Eliminating (not mitigating) invisible monsters can help us
+    # explore by opening up more of the level.
+    for my $enemy (TAEB->current_level->has_enemies) {
+        $enemy->tile->glyph eq 'I'
+            and $self->depends(1,"Eliminate",$enemy);
+    }
 }
 
 use constant description => 'Improving connectivity on this level';
-use constant references => ['Search','Explore','Pay'];
+use constant references => ['Search','Explore','Pay','Eliminate'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
