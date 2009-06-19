@@ -99,6 +99,8 @@ sub spread_desirability {
     }
 }
 
+sub invalidate { shift->validity(0); }
+
 use constant description => 'Picking up a useful item';
 use constant references  => ['AskForPrice'];
 
