@@ -850,16 +850,16 @@ sub threat_check {
     my @enemies = $current_level->has_enemies;
     my $selfspeed = TAEB->speed; # invariant code motion
     for my $enemy (@enemies) {
+	my $tile = $enemy->tile;
 	# Work out what type of enemy this is. If we know its spoiler
 	# from its Monster.pm data (i.e. unique glyph and colour),
 	# then use that; otherwise, farlook at it and see if we have a
 	# spoiler from that. Also, if not an always-hostile, farlook to
         # determine disposition; peacefuls can be angered.
 	$enemy->definitely_known && $enemy->definitely('always_hostile')
-            or $enemy->farlook;
+            or $tile->glyph eq 'I' or $enemy->farlook;
 	my $spoiler = $enemy->spoiler;
 	my $danger = {};
-	my $tile = $enemy->tile;
 	my $relspeed = 0.99; # to encourage running away from unknown monsters
         my $disposition = $enemy->disposition // 'hostile';
         # Tame and peaceful monsters are not threats.
