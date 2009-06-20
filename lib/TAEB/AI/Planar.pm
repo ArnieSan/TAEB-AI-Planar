@@ -2,7 +2,7 @@
 package TAEB::AI::Planar;
 use TAEB::OO;
 use Heap::Simple::XS;
-use Scalar::Util qw/refaddr weaken/;
+use TAEB::Util qw/refaddr weaken display :colors/;
 use Time::HiRes qw/gettimeofday tv_interval/;
 #use Data::Dumper; # needed for debug code, not for general use
 extends 'TAEB::AI';
@@ -1042,6 +1042,26 @@ around institute => sub {
 
 #####################################################################
 # Things below this line should be elsewhere or handled differently
+
+sub drawing_modes {
+    tactical => {
+        description => 'Show tactical map',
+        color => sub {
+            my $tile = shift;
+            my $tme = TAEB->ai->tme_from_tile($tile);
+            my $risk = defined $tme ? $tme->numerical_risk : undef;
+            defined $risk or return display(COLOR_GRAY);
+            $risk <    5 and return display(COLOR_BLUE);
+            $risk <   10 and return display(COLOR_CYAN);
+            $risk <   15 and return display(COLOR_GREEN);
+            $risk <  100 and return display(COLOR_BROWN);
+            $risk < 1000 and return display(COLOR_YELLOW);
+            $risk < 2000 and return display(COLOR_RED);
+            return display(COLOR_MAGENTA);
+        },
+        onframe => sub {},
+    }
+}
 
 =begin comment
 
