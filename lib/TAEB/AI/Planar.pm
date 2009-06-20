@@ -4,6 +4,10 @@ use TAEB::OO;
 use Heap::Simple::XS;
 use TAEB::Util qw/refaddr weaken display :colors/;
 use Time::HiRes qw/gettimeofday tv_interval/;
+use Module::Pluggable
+    'search_path' => ['TAEB::AI::Planar::Resource'],
+    'sub_name' => 'resource_names',
+    'require' => 1;
 #use Data::Dumper; # needed for debug code, not for general use
 extends 'TAEB::AI';
 
@@ -206,17 +210,17 @@ sub add_possible_move {
 }
 
 # Resources.
-use constant resource_types =>
-    qw/Hitpoints Nutrition Time Zorkmids Delta Impossibility Ammo Purity/;
 has resources => (
     isa     => 'HashRef[TAEB::AI::Planar::Resource]',
     is      => 'rw',
     default => sub {
 	my $self = shift;
 	my %resources = ();
-	for my $type (resource_types) {
-	    require "TAEB/AI/Planar/Resource/$type.pm";
-	    $resources{$type} = "TAEB::AI::Planar::Resource::$type"->new;
+	for my $type (resource_names()) {
+            $type =~ /([^:]+)$/;
+            my $name = $1;
+            TAEB->log->ai("Loading resource $name...");
+	    $resources{$name} = "TAEB::AI::Planar::Resource::$name"->new;
 	}
 	return \%resources;
     },
