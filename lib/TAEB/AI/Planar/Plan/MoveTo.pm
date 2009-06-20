@@ -26,11 +26,13 @@ sub set_additional_args {
 # adjacent squares which are adjacent to each other.
 sub safe_boulder_square {
     my $tile = shift;
+    my $tiletocountassafe = shift // $tile;
     my %xhash = ();
     my %yhash = ();
     $tile->each_orthogonal(sub {
         my $t = shift;
-        $t->is_walkable(1,1) and $xhash{$t->x}=1, $yhash{$t->y}=1;
+        $t->is_walkable(1,1) || $t == $tiletocountassafe
+            and $xhash{$t->x}=1, $yhash{$t->y}=1;
     });
     return scalar keys %xhash > 1 && scalar keys %yhash > 1;
 }
@@ -90,7 +92,7 @@ sub check_possibility_inner {
         # push a boulder if it's already on a safely-pushable-to
         # square (leave it unroutable instead).
         while (defined $beyond && $beyond->is_walkable(1,1) &&
-               !safe_boulder_square($beyond)) {
+               !safe_boulder_square($beyond, $tile)) {
             $beyond = $l->at_safe($beyond->x+$dx,$beyond->y+$dy);
         }
 	if(defined $beyond and $beyond->is_walkable(1,1)) {
