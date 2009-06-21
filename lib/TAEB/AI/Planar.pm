@@ -1094,15 +1094,15 @@ has try_again_step => (
 );
 
 # Responding to messages.
-sub msg_door {
+subscribe door => sub {
     my $self = shift;
     my $what = shift;
-    if($what eq 'resists') {
+    if($what->state eq 'resists') {
 	# The door actions can safely try again.
 	$self->try_again_step(TAEB->step);
     }
-}
-sub msg_tile_update {
+};
+subscribe tile_update => sub {
     # This might have made plans with the tile in question as an
     # argument possible, when they weren't before. We look through
     # the plan index by object to find them.
@@ -1111,7 +1111,7 @@ sub msg_tile_update {
     my $addr = refaddr($tile);
     defined $_ and $_->required_success_count(0)
 	for @{$self->plan_index_by_object->{$addr}};
-}
+};
 
 # Positive aspects of the item value.
 sub item_value {
