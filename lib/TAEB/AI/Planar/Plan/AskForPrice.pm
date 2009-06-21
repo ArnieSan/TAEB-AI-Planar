@@ -17,7 +17,8 @@ sub set_arg {
 sub aim_tile {
     my $self = shift;
     my $tile = $self->tile;
-    return $tile if $tile->in_shop && $tile->item_count;
+    my @shk = grep { shift->is_shk } TAEB->current_level->monsters;
+    return $tile if $tile->in_shop && $tile->item_count && scalar @shk;
     $self->validity(0);
     return undef;
 }
