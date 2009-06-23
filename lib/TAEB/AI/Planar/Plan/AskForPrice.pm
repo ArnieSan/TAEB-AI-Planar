@@ -17,7 +17,7 @@ sub set_arg {
 sub aim_tile {
     my $self = shift;
     my $tile = $self->tile;
-    my @shk = grep { shift->is_shk } TAEB->current_level->monsters;
+    my @shk = grep { $_->is_shk } TAEB->current_level->monsters;
     return $tile if $tile->in_shop && $tile->item_count && scalar @shk;
     $self->validity(0);
     return undef;
@@ -31,7 +31,7 @@ sub reach_action {
 sub reach_action_succeeded {
     my $self = shift;
     # We succeed if there's an item on the tile we know the cost of.
-    $_->cost or return 1 for $self->tile->items;
+    $_->cost and return 1 for $self->tile->items;
     return 0;
 }
 
