@@ -615,6 +615,8 @@ sub next_plan_action {
 		    $self->tactical_success_count(
 			$self->tactical_success_count+10000);
 		}
+                $self->aistep($self->aistep+1); # will this break anything?
+                $self->threat_check;
                 $self->update_tactical_map;
 		$self->_planheap->clear;
 		%planstate = ();
