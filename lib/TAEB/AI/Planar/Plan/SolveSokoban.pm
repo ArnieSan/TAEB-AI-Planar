@@ -78,19 +78,20 @@ sub calculate_extra_risk {
 
 sub spread_desirability {
     my $self = shift;
-    # TODO: Don't fallback if Sokoban is unsolvable
-
-    # If we're in Sokoban already, fall back to Ascend. This means that if the
-    # current level is solved, we'll go up to the next one; and if it isn't,
-    # Ascend won't be able to succeed, so the AI will go and do something else.
+    # If this level is solved, and it isn't the top level, go up.
+    my $variant = TAEB::Spoilers::Sokoban->recognise_sokoban_variant;
+    $variant =~ /soko[234]\-./ and TAEB::Spoilers::Sokoban->remaining_pits == 0
+        and $self->depends(1,"Ascend");
+    # If we're in Sokoban already, try exploring around to see if there
+    # are mimics pretending to be boulders.
     TAEB->current_level->known_branch && TAEB->current_level->branch eq 'sokoban'
-        and $self->depends(1,"Ascend"), return;
+        and $self->depends(0.5,"ImproveConnectivity"), return;
     # Otherwise, go to Sokoban.
     $self->depends(1,"GotoSokoban");
 }
 
 use constant description => 'Solving Sokoban';
-use constant references => ['Ascend','GotoSokoban'];
+use constant references => ['Ascend','GotoSokoban','ImproveConnectivity'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
