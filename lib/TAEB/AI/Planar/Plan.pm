@@ -244,7 +244,7 @@ sub try {
 	    $resource->amount < $spendamount and
 		$cando = 0, TAEB->log->ai(
                     $self->name . " failed because $resourcename was needed (" .
-                    $resource->amount . " < " . $spendamount);
+                    $resource->amount . " < " . $spendamount . ")");
 	}
     }
     $cando and defined $action and return $action;

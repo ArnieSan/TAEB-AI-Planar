@@ -1153,7 +1153,10 @@ sub item_drawbacks {
     my $self = shift;
     my $item = shift;
     my $plan = {};
-    # TODO: Weight.
+    # Weight.
+    defined $item->weight and $plan->{'CarryCapacity'} += $item->weight;
+    # TODO: Items with unknown weight should be marked as the maximum
+    # possible weight for their type.
     # Cost.
     $item->cost and $plan->{'Zorkmids'} += $item->cost;
     return $plan;
@@ -1171,7 +1174,7 @@ sub item_drawback_cost {
     for my $resourcename (keys %$plan) {
 	my $resource = $resources->{$resourcename};
 	my $quantity = $plan->{$resourcename};
-	$quantity > $resource->quantity and return undef;
+	$quantity > $resource->amount and return undef;
 	$cost += $resource->cost($quantity);
     }
     return $cost;
