@@ -845,7 +845,7 @@ sub threat_check {
 	    my $coly = $col->[$y] = {};
  	    if ($type eq 'rock' || $type eq 'closeddoor' ||
 		$type eq 'wall' || $type eq 'drawbridge' ||
-		$type eq 'unexplored') {
+		$type eq 'unexplored' || $tile->has_boulder) {
 		$coly->{'phase'} = undef;
 	    }
  	    elsif ($type eq 'pool')       {$coly->{'fly'}  = undef;
@@ -856,6 +856,7 @@ sub threat_check {
  		$coly->{'fly'} = undef;
  		$coly->{'swim'} = undef;
  		$coly->{'walk'} = undef;
+                $coly->{'phase'} = undef;
  	    }
 	}
     }
