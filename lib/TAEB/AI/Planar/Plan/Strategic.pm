@@ -34,7 +34,7 @@ sub mobile_target { 0 }
 
 # Make sure the aim_tile is the same when calculating risk and when
 # performing the action.
-has _aim_tile_cache => (
+has aim_tile_cache => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
 );
@@ -54,7 +54,7 @@ sub calculate_risk {
     if (!defined($aim)) {
 	# We don't have anywhere to aim for, that's a plan
 	# failure. Bail out.
-	$self->_aim_tile_cache(undef);
+	$self->aim_tile_cache(undef);
 	return 0;
     }
     if ($self->stop_early) {
@@ -80,11 +80,11 @@ sub calculate_risk {
 	$aim = $best_tile;
 	if (!defined($aim)) {
 	    # We can't route where we're aiming. Bail out.
-	    $self->_aim_tile_cache(undef);
+	    $self->aim_tile_cache(undef);
 	    return 0;
 	}
     }
-    $self->_aim_tile_cache($aim);
+    $self->aim_tile_cache($aim);
     my $risk = $self->calculate_extra_risk;
     if($aim == TAEB->current_tile) {
 	# A special case; if we don't need to do any pathfinding,
@@ -142,7 +142,7 @@ sub calculate_risk {
 sub aim_tile_turns {
     my $self = shift;
     my $turns = shift;
-    my $aim = $self->_aim_tile_cache;
+    my $aim = $self->aim_tile_cache;
     my $ai = TAEB->ai;
     my $thme = $ai->threat_map->{$aim->level}->[$aim->x]->[$aim->y];
     my %resamounts = ('Time' => $turns);
@@ -167,14 +167,14 @@ sub aim_tile_turns {
 sub action {
     my $self = shift;
     my $ai   = TAEB->ai;
-    return undef unless defined $self->_aim_tile_cache;
+    return undef unless defined $self->aim_tile_cache;
     # Yes, return the reach action even if there isn't one. It's undef
     # in that case, which is exactly what we want; it's an error to
     # try to path somewhere if we're already there, we should try a
     # different plan instead.
     return $self->reach_action
-	if TAEB->current_tile == $self->_aim_tile_cache;
-    my @chain = $ai->calculate_tme_chain($self->_aim_tile_cache);
+	if TAEB->current_tile == $self->aim_tile_cache;
+    my @chain = $ai->calculate_tme_chain($self->aim_tile_cache);
     return undef unless @chain;
     # We want the first step in the chain.
     return $chain[0]->{'tactic'};
@@ -186,7 +186,7 @@ sub action {
 sub succeeded {
     my $self = shift;
     if (defined(shift)) {
-	return 1 if $self->_aim_tile_cache == TAEB->current_tile;
+	return 1 if $self->aim_tile_cache == TAEB->current_tile;
 	return undef;
     }
     return 1 unless $self->has_reach_action;

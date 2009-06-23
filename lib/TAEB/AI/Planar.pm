@@ -1055,18 +1055,25 @@ sub drawing_modes {
         description => 'Show tactical map',
         color => sub {
             my $tile = shift;
-            my $tme = TAEB->ai->tme_from_tile($tile);
+            my $ai = TAEB->ai;
+            my $tme = $ai->tme_from_tile($tile);
             my $risk = defined $tme ? $tme->numerical_risk : undef;
-            defined $risk or return display(COLOR_GRAY);
-            $risk <    5 and return display(COLOR_BLUE);
-            $risk <   10 and return display(COLOR_CYAN);
-            $risk <   15 and return display(COLOR_GREEN);
-            $risk <  100 and return display(COLOR_BROWN);
-            $risk < 1000 and return display(COLOR_YELLOW);
-            $risk < 2000 and return display(COLOR_RED);
-            return display(COLOR_MAGENTA);
+            my $color = sub {
+                defined $risk  or return display(COLOR_GRAY);
+                $risk <     5 and return display(COLOR_BLUE);
+                $risk <    10 and return display(COLOR_CYAN);
+                $risk <    15 and return display(COLOR_GREEN);
+                $risk <   100 and return display(COLOR_BROWN);
+                $risk <  5000 and return display(COLOR_YELLOW);
+                $risk < 10000 and return display(COLOR_RED);
+                return display(COLOR_MAGENTA);
+            }->();
+            defined $ai->current_plan
+                and $ai->current_plan->can('aim_tile_cache')
+                and $tile == $ai->current_plan->aim_tile_cache
+                and $color->reverse(1);
+            return $color;
         },
-        onframe => sub {},
     }
 }
 
