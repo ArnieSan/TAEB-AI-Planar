@@ -680,20 +680,22 @@ sub next_plan_action {
     return ($plan, $action);
 }
 
+our $lastlevelra = -1;
 sub update_tactical_map {
     my $self = shift;
     my $map = $self->tactics_map;
     my $curlevel = TAEB->current_level;
     my $curlevelra = refaddr($curlevel);
-    # Blank the map for the current level, if we need to. (If the map
-    # already exists, then we just let it auto-invalidate due to the
-    # step number being out of date. However, the map has to be
-    # created in the first place somehow.)
-    if (!exists $map->{$curlevel}) {
-	$map->{$curlevel} = [];
-	my $levelmap = $map->{$curlevel};
-	# MAGIC NUMBER alert! Should this be centralised somewhere?
-	$levelmap->[$_] = [] for 0..79;
+    # If we've changed level, reset all the TMEs.
+    if ($lastlevelra != $curlevelra) {
+        for my $levelgroup (TAEB->dungeon->levels) {
+            for my $level (@$levelgroup) {
+                $map->{$level} = [];
+                my $levelmap = $map->{$level};
+                # MAGIC NUMBER alert! Should this be centralised somewhere?
+                $levelmap->[$_] = [] for 0..79;
+            }
+        }
     }
     # Dijkstra's algorithm is used to flood the level with pathfinding
     # data. The heap contains TacticsMapEntry elements.
@@ -705,18 +707,11 @@ sub update_tactical_map {
     while ($heap->count) {
 	my $tme = $heap->extract_top;
 	# If we're off the level, just ignore this TME, to avoid
-	# updating the entire dungeon every step, unless it specifies
-	# prevtile_level incorrectly (and therefore hasn't been
-	# updated since we entered the level we're on).
+	# updating the entire dungeon every step, unless we just
+        # changed level.
 	# The whole dungeon /is/ updated when we change level.
 	next if refaddr($tme->{'tile_level'}) != $curlevelra
-	     && defined $map->{$tme->{'tile_level'}}
-	     && defined	$map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
-		            ->[$tme->{'tile_y'}]
-	     && defined	$map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
-	                    ->[$tme->{'tile_y'}]->{'prevtile_level'}
-	     && refaddr($map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
-		      ->[$tme->{'tile_y'}]->{'prevtile_level'}) == $curlevelra;
+            && $lastlevelra == $curlevelra;
 	# If we've already found an easier way to get here, ignore
 	# this method of getting here.
 	next if exists $map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
@@ -737,6 +732,7 @@ sub update_tactical_map {
 					      $tme->{'tile_y'}])->
 						  check_possibility($tme);
     }
+    $lastlevelra = $curlevelra;
 }
 
 # Add a threat to the threat map.
