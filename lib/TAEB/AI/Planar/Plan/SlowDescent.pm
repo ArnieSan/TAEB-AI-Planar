@@ -24,10 +24,11 @@ sub spread_desirability {
             $seenthislevel = 1;
         }
         # If this is a Sokoban level, solve it; otherwise, explore it.
+        # For now, avoid the mines.
         if($level->known_branch && $level->branch eq 'sokoban') {
             $seensoko and $self->depends($urgency,'SolveSokoban');
             $seensoko = 1;
-        } else {
+        } else if(!$level->known_branch || $level->branch ne 'mines') {
             $self->depends($urgency,'ExploreLevel',$level);
         }
         # We need to avoid the fallback on ExploreLevel for levels
