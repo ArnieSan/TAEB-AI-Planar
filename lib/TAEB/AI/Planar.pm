@@ -1065,7 +1065,7 @@ sub drawing_modes {
                 $risk <    15 and return display(COLOR_GREEN);
                 $risk <   100 and return display(COLOR_BROWN);
                 $risk <  5000 and return display(COLOR_YELLOW);
-                $risk < 10000 and return display(COLOR_RED);
+                $risk < 50000 and return display(COLOR_RED);
                 return display(COLOR_MAGENTA);
             }->();
             defined $ai->current_plan
