@@ -10,6 +10,7 @@ extends 'TAEB::AI::Planar::Plan::Strategic';
 # need to pay, and blindness.
 sub aim_tile {
     my $self = shift;
+    TAEB->known_debt or TAEB->send_message(check => 'debt');
     return undef unless TAEB->debt;
     return undef if TAEB->is_blind;
     return TAEB->current_tile;
