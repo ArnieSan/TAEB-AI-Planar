@@ -25,11 +25,11 @@ sub spread_desirability {
     # Improving connectivity on the level allows us to explore more
     # squares.
     my $self = shift;
-    $self->depends(1,"ExploreHere");
+    $self->depends(1,"ExploreLevel",$self->tile->level);
 }
 
 use constant description => 'Exploring';
-use constant references => ['ExploreHere'];
+use constant references => ['ExploreLevel'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
