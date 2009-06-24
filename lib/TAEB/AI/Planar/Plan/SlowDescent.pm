@@ -6,7 +6,8 @@ extends 'TAEB::AI::Planar::Plan';
 sub spread_desirability {
     my $self = shift;
     $self->depends(1,'ImproveConnectivity');
-    $self->depends(1,'Eliminate',$_) for TAEB->current_level->has_enemies;
+    TAEB->ai->monster_is_peaceful($_) or $self->depends(1,'Eliminate',$_)
+        for TAEB->current_level->has_enemies;
     $self->depends(0.95,'SolveSokoban');
     $self->depends(0.9,'Descend');
 }
