@@ -53,7 +53,9 @@ sub spread_desirability {
 	}
 	# As well as exploring horizontally, we can explore vertically.
 	# Looking underneath objects is one way to help find the stairs.
-	if($tile->is_interesting) {
+        # However, only do this if we've never stepped on the tile; if
+        # we've ever stepped on the tile, we know its terrain.
+	if($tile->is_interesting && !$tile->stepped_on) {
 	    $self->depends(1,"Explore",$tile);
 	}
         if($tile->has_boulder && $tile->type eq 'obscured') {
