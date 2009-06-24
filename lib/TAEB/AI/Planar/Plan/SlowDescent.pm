@@ -39,13 +39,13 @@ sub spread_desirability {
             and $self->depends(0.8,'FallbackExplore',$level);
         return 0;
     });
-    # If the current level isn't connected in the dungeon graph, explore it
-    # until we find stairs for OtherSide to climb.
-    $seenthislevel or $self->depends($urgency,'ExploreHere');
+    # If the current level isn't connected in the dungeon graph, try to
+    # go shallower.
+    $seenthislevel or $self->depends($urgency,'Shallower');
 }
 
 use constant description => 'Exploring the dungeon from top to bottom';
-use constant references => ['ExploreLevel','ExploreHere','FallbackExplore',
+use constant references => ['ExploreLevel','Shallower','FallbackExplore',
                             'SolveSokoban','Eliminate','OtherSide'];
 
 __PACKAGE__->meta->make_immutable;
