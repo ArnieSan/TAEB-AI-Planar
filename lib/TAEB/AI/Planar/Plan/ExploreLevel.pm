@@ -1,8 +1,20 @@
 #!/usr/bin/env perl
-package TAEB::AI::Planar::Plan::ImproveConnectivity;
+package TAEB::AI::Planar::Plan::ExploreLevel;
 use TAEB::OO;
 use TAEB::Util qw/vi2delta/;
 extends 'TAEB::AI::Planar::Plan';
+
+# We take a level as argument.
+has level => (
+    isa     => 'Maybe[TAEB::World::Level]',
+    is      => 'rw',
+    default => undef,
+);
+sub set_arg {
+    my $self = shift;
+    my $level = shift;
+    $self->level($level);
+}
 
 # Returns true if this tile is blocked for the purpose of searching.
 # Tiles are searchable if they have exactly 3 blocked orthogonal
@@ -16,7 +28,7 @@ sub is_search_blocked {
 
 sub spread_desirability {
     my $self = shift;
-    my $level = TAEB->current_level;
+    my $level = $self->level;
     my $mines = $level->known_branch && $level->branch eq 'mines'
         && !$level->is_minetown;
     my $blind = TAEB->is_blind;
@@ -63,7 +75,7 @@ sub spread_desirability {
     }
 }
 
-use constant description => 'Improving connectivity on this level';
+use constant description => 'Exploring a level';
 use constant references => ['Search','Explore','Pay','Eliminate'];
 
 __PACKAGE__->meta->make_immutable;

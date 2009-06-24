@@ -48,10 +48,10 @@ sub calculate_extra_risk {
 sub spread_desirability {
     my $self = shift;
     # If we don't know where we are, explore to find out.
-    # TODO: This isn't exactly ImproveConnectivity, more DiscoverBranch. But
+    # TODO: This isn't exactly ExploreHere, more DiscoverBranch. But
     # the tactics for both are much the same atm.
     TAEB->current_level->known_branch or
-        $self->depends(1,'ImproveConnectivity'),
+        $self->depends(1,'ExploreHere'),
         $self->depends(0.8,'Descend'), return;
     # If we're in the Dungeons already, nothing we can do will help.
     TAEB->current_level->branch eq 'dungeons' and return;
@@ -63,7 +63,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Going to the Dungeons';
-use constant references => ['Descend','Ascend','ImproveConnectivity'];
+use constant references => ['Descend','Ascend','ExploreHere'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

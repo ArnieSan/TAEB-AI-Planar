@@ -90,7 +90,7 @@ sub spread_desirability {
     # If we're in Sokoban already, try exploring around to see if there
     # are mimics pretending to be boulders.
     TAEB->current_level->known_branch && TAEB->current_level->branch eq 'sokoban'
-        and $self->depends(0.5,"ImproveConnectivity"), return;
+        and $self->depends(0.5,"ExploreHere"), return;
     # Otherwise, if we're outside Sokoban and haven't seen an unsolved
     # Sokoban level, go to Sokoban.
     $self->depends(1,"GotoSokoban")
@@ -98,7 +98,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Solving Sokoban';
-use constant references => ['Ascend','GotoSokoban','ImproveConnectivity'];
+use constant references => ['Ascend','GotoSokoban','ExploreHere'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

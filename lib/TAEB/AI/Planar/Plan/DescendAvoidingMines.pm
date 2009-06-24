@@ -38,11 +38,11 @@ sub calculate_extra_risk {
 sub spread_desirability {
     # If we can't see the downstairs, explore to find it.
     my $self = shift;
-    $self->depends(1,"ImproveConnectivity");
+    $self->depends(1,"ExploreHere");
 }
 
 use constant description => 'Going down, avoiding the Mines';
-use constant references => ['ImproveConnectivity'];
+use constant references => ['ExploreHere'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

@@ -69,11 +69,11 @@ sub spread_desirability {
     # If we're two or more levels below the Oracle level, ascend.
     $self->depends(1,"Ascend"), return if TAEB->current_level->z >= $oracle->z + 2;
     # Otherwise, explore this level to find the stairs leading to Sokoban.
-    $self->depends(1,"ImproveConnectivity");
+    $self->depends(1,"ExploreHere");
 }
 
 use constant description => 'Going to Sokoban';
-use constant references => ['ImproveConnectivity','DescendAvoidingMines',
+use constant references => ['ExploreHere','DescendAvoidingMines',
                             'Ascend','GotoDungeons'];
 
 __PACKAGE__->meta->make_immutable;
