@@ -37,12 +37,8 @@ sub spread_desirability {
 	if($tile->is_walkable(0,1)) {
 	   my $orthogonals = scalar $tile->grep_orthogonal(
 	       sub {$self->is_search_blocked(shift)});
-           # Dead-end; a very good place to search, even when not stuck
+           # Dead-end; a very good place to search, even when not stuck.
            $orthogonals == 3 and $self->depends($mines ? 0.5 : 1, "Search", $tile);
-           # If there's even one tile, this place can be used for fallback
-           # search.
-           ($orthogonals == 1 || $orthogonals == 2) and
-               $self->depends($mines ? 0.3 : 0.5, "Search", $tile);
         }
 	# It makes sense to explore tiles we haven't explored yet as
 	# one of the main ways to improve connectivity. Don't try to
@@ -65,7 +61,7 @@ sub spread_desirability {
         }
     });
     # If possible, paying off debt can improve connectivity by
-    # allowing us to move past a shk.
+    # allowing us to move past a shk. TODO: This should be a threat.
     $self->depends(1,"Pay");
     # Eliminating (not mitigating) invisible monsters can help us
     # explore by opening up more of the level.
@@ -73,10 +69,15 @@ sub spread_desirability {
         $enemy->tile->glyph eq 'I'
             and $self->depends(1,"Eliminate",$enemy);
     }
+    # Fallbacks for ExploreLevel are in their own plan, to enable
+    # the level to fallback-search to be different from the level
+    # to be explored.
+    $self->depends(0.5,'FallbackExplore',$level);
 }
 
 use constant description => 'Exploring a level';
-use constant references => ['Search','Explore','Pay','Eliminate'];
+use constant references => ['Search','Explore','Pay','Eliminate',
+                            'FallbackExplore'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

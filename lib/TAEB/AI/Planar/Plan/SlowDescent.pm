@@ -30,6 +30,13 @@ sub spread_desirability {
         } else {
             $self->depends($urgency,'ExploreLevel',$level);
         }
+        # We need to avoid the fallback on ExploreLevel for levels
+        # other than ones for which we can see 2+ stairs; otherwise,
+        # we search high levels rather than levels on which the search
+        # fallback is needed. This excludes levels which are only meant
+        # to have one exit. TODO: that's more levels than level 1.
+        scalar $level->exits < 2 and $level->z != 1
+            and $self->depends(0.8,'FallbackExplore',$level);
         return 0;
     });
     # If the current level isn't connected in the dungeon graph, explore it
@@ -37,8 +44,8 @@ sub spread_desirability {
     $seenthislevel or $self->depends($urgency,'ExploreHere');
 }
 
-use constant description => 'Exploring the dungeon slowly';
-use constant references => ['ExploreLevel','ExploreHere',
+use constant description => 'Exploring the dungeon from top to bottom';
+use constant references => ['ExploreLevel','ExploreHere','FallbackExplore',
                             'SolveSokoban','Eliminate','OtherSide'];
 
 __PACKAGE__->meta->make_immutable;
