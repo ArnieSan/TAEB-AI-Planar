@@ -38,7 +38,7 @@ sub reach_action {
 sub calculate_extra_risk {
     my $self = shift;
     # It's risky to attack something that isn't meleeable.
-    my $risk = 20*!($self->monster->is_meleeable);
+    my $risk = 20000*!($self->monster->is_meleeable);
     $risk += $self->aim_tile_turns(1);
     return $risk;
 }
