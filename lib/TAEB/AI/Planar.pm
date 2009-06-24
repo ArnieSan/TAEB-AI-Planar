@@ -1078,13 +1078,13 @@ sub drawing_modes {
             my $tme = $ai->tme_from_tile($tile);
             my $risk = defined $tme ? $tme->numerical_risk : undef;
             my $color = sub {
-                defined $risk  or return display(COLOR_GRAY);
-                $risk <     5 and return display(COLOR_BLUE);
-                $risk <    10 and return display(COLOR_CYAN);
-                $risk <    15 and return display(COLOR_GREEN);
-                $risk <   100 and return display(COLOR_BROWN);
-                $risk <  5000 and return display(COLOR_YELLOW);
-                $risk < 50000 and return display(COLOR_RED);
+                defined $risk   or return display(COLOR_GRAY);
+                $risk <      5 and return display(COLOR_BLUE);
+                $risk <     10 and return display(COLOR_CYAN);
+                $risk <     15 and return display(COLOR_GREEN);
+                $risk <    100 and return display(COLOR_BROWN);
+                $risk <   5000 and return display(COLOR_YELLOW);
+                $risk < 200000 and return display(COLOR_RED);
                 return display(COLOR_MAGENTA);
             }->();
             defined $ai->current_plan
