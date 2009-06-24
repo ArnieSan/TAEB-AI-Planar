@@ -39,6 +39,7 @@ sub gain_resource_conversion_desire {
     # plans run at a farlook-safe time.)
     my $self = shift;
     my $glyph = $self->tile->glyph;
+    my $mines = $self->tile->known_branch && $self->tile->branch eq 'mines';
     my $ai = TAEB->ai;
     if ($glyph eq '$') {
 	$ai->add_capped_desire($self, $ai->resources->{'Zorkmids'}->value
@@ -49,7 +50,7 @@ sub gain_resource_conversion_desire {
 			       * 30);
     }
     # Interesting tiles without a glyph only happen if we throw things at them.
-    if ($glyph eq ')' || $glyph eq '.') {
+    if ($glyph eq ')' || $glyph eq '.' || ($glyph eq '#' && !$mines)) {
         $ai->add_capped_desire($self, $ai->resources->{'Ammo'}->base_value);
     }
 }
