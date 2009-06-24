@@ -48,7 +48,8 @@ sub gain_resource_conversion_desire {
 	$ai->add_capped_desire($self, $ai->resources->{'Nutrition'}->base_value
 			       * 30);
     }
-    if ($glyph eq ')') {
+    # Interesting tiles without a glyph only happen if we throw things at them.
+    if ($glyph eq ')' || $glyph eq '.') {
         $ai->add_capped_desire($self, $ai->resources->{'Ammo'}->base_value);
     }
 }
