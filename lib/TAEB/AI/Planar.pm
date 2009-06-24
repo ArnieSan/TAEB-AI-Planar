@@ -122,6 +122,13 @@ has plan_index_by_object => (
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# Likewise, by the type of plan.
+has plan_index_by_type => (
+    isa     => 'HashRef[ArrayRef[TAEB::AI::Planar::Plan]]',
+    is      => 'rw',
+    default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 # Plans sometimes need to store per-AI persistent data, mostly for
 # performance reasons. Give them somewhere they can store it without
 # having to hack the core AI and without having different plans clash
@@ -499,6 +506,9 @@ sub next_plan_action {
 	# tiles on which we know there are items, but not what.
 	$tile->is_interesting and
             $self->get_plan("Investigate",$tile)->validate;
+        # Various interesting sorts of terrain get TerrainMeta.
+        $tile->type eq 'stairsup' || $tile->type eq 'stairsdown'
+            and $self->get_plan("TerrainMeta",$tile)->validate;
     });
     $self->get_plan("CharacterMeta")->validate;
     $self->validitychanged(1);
@@ -1004,6 +1014,14 @@ sub create_plan {
 	# Garbage collector magic.
 	weaken $pibo->{$1}->[0];
     }
+    {
+        my $pibt = $self->plan_index_by_type;
+	defined $pibt->{$name}
+	    ? $pibt->{$name} = [$plan]
+	    : unshift @{$pibt->{$name}}, $plan;
+	# Garbage collector magic.
+	weaken $pibt->{$name}->[0];
+    }
 }
 
 around institute => sub {
@@ -1022,6 +1040,7 @@ around institute => sub {
 	"InventoryItemMeta", # metaplan for inventory items
 	"GroundItemMeta",    # metaplan for floor items
 	"Investigate",       # metaplan for interesting tiles
+        "TerrainMeta",       # metaplan for unusual terrain
         "CharacterMeta",     # metaplan for intrinsics, etc
 	# Threat metaplans
 	"Mitigate",          # metaplan for monsters
