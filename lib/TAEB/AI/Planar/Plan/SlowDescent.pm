@@ -19,6 +19,7 @@ sub spread_desirability {
         # exploring it / solving it.
         if($level == TAEB->current_level) {
             TAEB->ai->monster_is_peaceful($_)
+                or $_->tile->in_shop
                 or $self->depends($urgency,'Eliminate',$_)
                 for TAEB->current_level->has_enemies;
             $seenthislevel = 1;
@@ -28,7 +29,7 @@ sub spread_desirability {
         if($level->known_branch && $level->branch eq 'sokoban') {
             $seensoko and $self->depends($urgency,'SolveSokoban');
             $seensoko = 1;
-        } else if(!$level->known_branch || $level->branch ne 'mines') {
+        } elsif(!$level->known_branch || $level->branch ne 'mines') {
             $self->depends($urgency,'ExploreLevel',$level);
         }
         # We need to avoid the fallback on ExploreLevel for levels
