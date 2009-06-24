@@ -19,7 +19,7 @@ sub check_possibility_inner {
     if($tmetile->type ne 'opendoor' && $tmetile->type ne 'closeddoor') {
 	$tmetile->each_adjacent(sub {
 	    my $tile = shift;
-            my $level = TAEB->current_level;
+            my $level = $tile->level;
             if (($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
                 (!$level->known_branch || $level->branch ne 'sokoban')) {
                 $self->generate_plan($tme, "MoveTo", $tile);

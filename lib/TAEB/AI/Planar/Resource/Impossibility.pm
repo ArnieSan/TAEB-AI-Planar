@@ -3,6 +3,13 @@ package TAEB::AI::Planar::Resource::Impossibility;
 use TAEB::OO;
 extends 'TAEB::AI::Planar::Resource';
 
+# Impossibilities are massive.
+has _value => (
+    isa     => 'Num',
+    is      => 'rw',
+    default => 1e7,
+);
+
 # An impossibility is the opposite of a delta; it represents the cost
 # of an impossible action. This is useful only because it can be
 # canceled out by a make_safer_plan that removes the impossibility;
@@ -14,11 +21,6 @@ extends 'TAEB::AI::Planar::Resource';
 # We don't have any impossibilities.
 sub amount {
     return 0;
-}
-
-# Impossibilities are massive.
-sub value {
-    return 1e7;
 }
 
 # Impossibilities don't get scarcer the more they're "used".

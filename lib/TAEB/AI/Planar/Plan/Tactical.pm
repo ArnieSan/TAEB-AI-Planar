@@ -121,7 +121,6 @@ sub add_possible_move {
     my %msp = %{$oldtme->{'make_safer_plans'}};
     my $msp = \%msp;
     my $timetohere = $risk{"Time"} || 0;
-    my $risk_multiplier = $timetohere > 1 ? $timetohere : 1;
     my $thme = $ai->threat_map->{$oldlevel}->[$newx]->[$newy];
     for my $p (keys %$thme) {
 	# Not all possible values of $p are threats.
@@ -129,6 +128,8 @@ sub add_possible_move {
 	# If the threat never gets here in time, ignore it.
 	my ($turns, $reductionplan) = split / /, $p;
 	$turns > $timetohere and next;
+        my $risk_multiplier = ($timetohere-$turns) > 1 ?
+            $timetohere-$turns : 1;
 	# Add risk from the threat.
 	my %threatrisk = %{$thme->{$p}};
 	$risk{$_} += $threatrisk{$_} * $risk_multiplier for keys %threatrisk;

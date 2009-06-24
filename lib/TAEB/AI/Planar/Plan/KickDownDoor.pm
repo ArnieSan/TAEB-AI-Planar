@@ -75,17 +75,16 @@ sub calculate_risk {
     my $chance = (TAEB->dex + TAEB->con + TAEB->numeric_strength)/105;
     $self->cost('Time', 0.693/$chance + 1);
     $self->level_step_danger(TAEB->current_level);
-    # Kicking a shop door is pretty expensive.
-    $tile->is_shop and $self->cost('Zorkmids', 400);
+    # Don't kick down shop doors.
+    $tile->is_shop and $self->cost('Impossibility', 1);
     # Kicking down doors in the Mines is /incredibly/ dangerous,
     # because it means we're in Minetown and the watch and the
-    # shopkeepers will want to kill us. The 150hp here is an estimate
-    # of how much it will cost to take them all on.
+    # shopkeepers will want to kill us.
     # (TODO: It could also mean we're in Mine's End, where it's less
     # dangerous.)
     my $level = TAEB->current_level;
     my $mines = $level->known_branch && $level->branch eq 'mines';
-    $mines and $self->cost('Hitpoints', 150);
+    $mines and $self->cost('Impossibility', 1);
 }
 
 use constant description => 'Kicking down a door';

@@ -13,20 +13,22 @@ sub amount {
 # equal to the cost of 1 nutrition (increased if things cause us
 # hunger). So we're less likely to dawdle when we have hunger we can't
 # fix. (Ideally this should reflect other things than nutrition, but
-# nutrition is a decent approximiation for now.)
+# nutrition is a decent approximiation for now.) Time is still valuable
+# even if nutrition is worthless, though.
 sub value {
     my $self = shift;
     my $nutrition = TAEB->ai->resources->{'Nutrition'};
-    return $nutrition->value;
+    return $nutrition->value || 0.01;
 }
 
 # The cost of an amount of time (as opposed to its risk) is the cost
 # of the nutrition that will be used up during that amount of time.
+# Again, allowing for a minimum value.
 sub cost {
     my $self = shift;
     my $quantity = shift;
     my $nutrition = TAEB->ai->resources->{'Nutrition'};
-    return $nutrition->cost($quantity);
+    return $nutrition->cost($quantity) || 0.01 * $quantity;
 }
 
 # If people like spending time a lot, nutrition becomes more valuable

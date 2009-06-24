@@ -14,9 +14,11 @@ sub amount {
 }
 
 # Deltas are tiny.
-sub value {
-    return 1e-7;
-}
+has _value => (
+    isa     => 'Num',
+    is      => 'rw',
+    default => 1e-7,
+);
 
 # Deltas never run out.
 sub scarcity {

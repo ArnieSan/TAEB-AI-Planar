@@ -5,14 +5,16 @@ extends 'TAEB::AI::Planar::Resource';
 
 # Being a lycanthrope is bad!
 
+# Turning into wolf/rat/jackal form leads to all sorts of trouble.
+has _value => (
+    isa     => 'Num',
+    is      => 'rw',
+    default => 60,
+);
+
 # We have purity iff we aren't a lycanthrope.
 sub amount {
     return !TAEB->is_lycanthropic;
-}
-
-# Turning into wolf/rat/jackal form leads to all sorts of trouble.
-sub value {
-    return 60;
 }
 
 # Scarcity is irrelevant for a resource with only two values.

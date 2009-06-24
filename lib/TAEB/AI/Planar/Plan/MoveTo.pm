@@ -44,9 +44,6 @@ sub check_possibility_inner {
     my $x    = $tile->x;
     my $y    = $tile->y;
     my $l    = $tile->level;
-    my $tmex = $tme->{'tile_x'};
-    my $tmey = $tme->{'tile_y'};
-    my $tmel = $tme->{'tile_level'};
     my $ai   = TAEB->ai;
     my $aistep = $ai->aistep;
     # Bail as fast as we can if a faster way to move to this tile has
@@ -54,6 +51,10 @@ sub check_possibility_inner {
     # computation.
     my $currenttme = $ai->tactics_map->{$l}->[$x]->[$y];
     return if defined $currenttme && $currenttme->{'step'} == $aistep;
+    # Otherwise, continue with the calculation...
+    my $tmex = $tme->{'tile_x'};
+    my $tmey = $tme->{'tile_y'};
+    my $tmel = $tme->{'tile_level'};
     my $type = $tile->type;
 
     # Things which might care about which direction we approach the tile from.
@@ -103,7 +104,10 @@ sub check_possibility_inner {
     # For things that don't care about which direction we approach the tile
     # from, there's an optimisation trick; the first MoveTo aiming at that
     # tile in any given pathfind will necessarily be the one that returns
-    # the most optimal value, so we may as well use it.
+    # the most optimal value, so we may as well use it. (Note that this is
+    # why Walk favours paths which are orthogonal first, diagonal second;
+    # although that's not quite direction-agnostic, doing it that way
+    # doesn't break this optimisation.)
     # Note that this breaks if tiles have different costs to move /off/,
     # but that would break the AI anyway; instead, the cost of moving onto
     # a "sticky" tile should also include the cost to move back off it

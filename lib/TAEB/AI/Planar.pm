@@ -674,8 +674,9 @@ sub next_plan_action {
 	# Seems it was impossible. Oh well...
 	$plan->spread_desirability;
     }
-    TAEB->log->ai("Plan $bestplanname thinks it's possible, ".
-			   "enacting it.", level => 'info');
+    TAEB->log->ai("Plan $bestplanname (risk = " . (join '|',%{$plan->spending_plan})
+                  . " = " . $plan->risk
+                  . ") thinks it's possible, enacting it.", level => 'info');
     return ($plan, $action);
 }
 
@@ -1079,11 +1080,11 @@ sub drawing_modes {
             my $risk = defined $tme ? $tme->numerical_risk : undef;
             my $color = sub {
                 defined $risk   or return display(COLOR_GRAY);
-                $risk <      5 and return display(COLOR_BLUE);
-                $risk <     10 and return display(COLOR_CYAN);
-                $risk <     15 and return display(COLOR_GREEN);
-                $risk <    100 and return display(COLOR_BROWN);
-                $risk <   5000 and return display(COLOR_YELLOW);
+                $risk <    5.1 and return display(COLOR_BLUE);
+                $risk <   10.1 and return display(COLOR_CYAN);
+                $risk <   15.1 and return display(COLOR_GREEN);
+                $risk <  100.1 and return display(COLOR_BROWN);
+                $risk < 5000.1 and return display(COLOR_YELLOW);
                 $risk < 200000 and return display(COLOR_RED);
                 return display(COLOR_MAGENTA);
             }->();
