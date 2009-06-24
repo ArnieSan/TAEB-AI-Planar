@@ -27,11 +27,11 @@ has push_in_row => ( # we could be fast...
 
 sub aim_tile {
     my $self = shift;
-    # If we aren't in Sokoban, bail.
-    TAEB->current_level->known_branch && TAEB->current_level->branch eq 'sokoban'
-        or return undef;
+    # Try to discover a Sokoban level to solve.
+    my $sokolevel = TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level;
+    return unless defined $sokolevel;
     # Consult the spoilers for this level to see where to go next.
-    my $nexttile = TAEB::Spoilers::Sokoban->next_sokoban_step(TAEB->current_level);
+    my $nexttile = TAEB::Spoilers::Sokoban->next_sokoban_step($sokolevel);
     # Nowhere?
     return undef unless defined $nexttile;
     # To an empty square?
@@ -63,7 +63,7 @@ sub reach_action_succeeded {
     # If there isn't a boulder on the square where there used to be one,
     # it worked.
     return 1 if !$self->bouldertile->has_boulder;
-    # If we're on the same aistep as before, there must be a monster
+    # If we're on the same turn as before, there must be a monster
     # in the way, or maybe we skipped a turn due to speed; wait once,
     # and try again.
     return undef if TAEB->turn == $self->push_turn;
@@ -78,16 +78,23 @@ sub calculate_extra_risk {
 
 sub spread_desirability {
     my $self = shift;
-    # If this level is solved, and it isn't the top level, go up.
+    # If this level is solved, and it isn't the top level, and we haven't
+    # seen an unsolved Sokoban level above, go up. (The last restriction is
+    # because interlevel pathing is better than Ascend for going to known
+    # levels.)
     my $variant = TAEB::Spoilers::Sokoban->recognise_sokoban_variant;
-    $variant =~ /soko[234]\-./ and TAEB::Spoilers::Sokoban->remaining_pits == 0
-        and $self->depends(1,"Ascend");
+    $variant =~ /soko[234]\-./
+        and TAEB::Spoilers::Sokoban->remaining_pits == 0
+        and !defined TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level
+        and $self->depends(1,"Ascend"), return;
     # If we're in Sokoban already, try exploring around to see if there
     # are mimics pretending to be boulders.
     TAEB->current_level->known_branch && TAEB->current_level->branch eq 'sokoban'
         and $self->depends(0.5,"ImproveConnectivity"), return;
-    # Otherwise, go to Sokoban.
-    $self->depends(1,"GotoSokoban");
+    # Otherwise, if we're outside Sokoban and haven't seen an unsolved
+    # Sokoban level, go to Sokoban.
+    $self->depends(1,"GotoSokoban")
+        unless defined TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level;
 }
 
 use constant description => 'Solving Sokoban';
