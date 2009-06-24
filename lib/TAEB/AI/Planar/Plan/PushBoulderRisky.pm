@@ -19,7 +19,7 @@ sub calculate_risk {
     my $tme  = shift;
     my $tile = $self->tile;
     $self->cost("Time",5); # add a large don't-do-this penalty
-    $self->level_step_danger($tile->level);
+    $self->level_step_danger($tile->level) for 1..5;
 }
 
 sub check_possibility_inner {
