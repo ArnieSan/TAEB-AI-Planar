@@ -326,7 +326,9 @@ sub next_action {
     # plans can succeed alternately, cancelling each other out); this one
     # does.
     if (scalar $self->old_plans > 2 && $self->current_tactical_plan &&
+        defined $self->old_tactical_plans->[0] &&
         defined $self->old_tactical_plans->[1] &&
+        defined $self->current_plan &&
         defined $self->old_plans->[1] &&
         $self->current_tactical_plan->name eq
         $self->old_tactical_plans->[1]->name &&
