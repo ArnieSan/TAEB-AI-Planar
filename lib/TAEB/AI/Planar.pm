@@ -688,7 +688,8 @@ sub update_tactical_map {
     my $curlevelra = refaddr($curlevel);
     # If we've changed level, reset all the TMEs.
     if ($lastlevelra != $curlevelra) {
-        for my $levelgroup (TAEB->dungeon->levels) {
+        TAEB->log->ai("Level changed, resetting all TMEs...");
+        for my $levelgroup (@{TAEB->dungeon->levels}) {
             for my $level (@$levelgroup) {
                 $map->{$level} = [];
                 my $levelmap = $map->{$level};
@@ -706,31 +707,27 @@ sub update_tactical_map {
     $self->get_tactical_plan("Nop")->check_possibility;
     while ($heap->count) {
 	my $tme = $heap->extract_top;
+        my $tx  = $tme->{'tile_x'};
+        my $ty  = $tme->{'tile_y'};
+        my $tl  = $tme->{'tile_level'};
+        my $row = $map->{$tl}->[$tx];
 	# If we're off the level, just ignore this TME, to avoid
 	# updating the entire dungeon every step, unless we just
         # changed level.
 	# The whole dungeon /is/ updated when we change level.
-	next if refaddr($tme->{'tile_level'}) != $curlevelra
-            && $lastlevelra == $curlevelra;
+	next if refaddr($tl) != $curlevelra && $lastlevelra == $curlevelra;
 	# If we've already found an easier way to get here, ignore
 	# this method of getting here.
-	next if exists $map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
-	                   ->[$tme->{'tile_y'}]
-	     && $map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]
-	            ->[$tme->{'tile_y'}]->{'step'} == $self->aistep;
+	next if exists $row->[$ty] && $row->[$ty]->{'step'} == $self->aistep;
 	# This is the best way to get here; add it to the tactical
 	# map, then spread possibility from it via the MoveFrom
 	# metaplan.
-	$map->{$tme->{'tile_level'}}->[$tme->{'tile_x'}]->[$tme->{'tile_y'}]
-	    = $tme;
+	$row->[$ty] = $tme;
 	# The next line is debug code only, but I seem to use it far too
 	# often. Just comment it out, don't remove it.
-#	TAEB->log->ai("Locking in TME at ".$tme->{'tile_x'}.
-#				", ".$tme->{'tile_y'});
-	$self->get_tactical_plan("MoveFrom", [$tme->{'tile_level'},
-					      $tme->{'tile_x'},
-					      $tme->{'tile_y'}])->
-						  check_possibility($tme);
+#	TAEB->log->ai("Locking in TME " . $tme->{'tactic'}->name . " at $tx, $ty");
+	$self->get_tactical_plan("MoveFrom", [$tl,$tx,$ty])->
+            check_possibility($tme);
     }
     $lastlevelra = $curlevelra;
 }
@@ -798,11 +795,35 @@ sub calculate_tme_chain {
     my $tile  = shift;
     my $tme   = $self->tme_from_tile($tile);
     my $map   = $self->tactics_map;
+    my $tct   = TAEB->current_tile;
     my @chain = ();
+    return unless defined $tme;
     while(defined $tme && defined $tme->{'prevtile_level'}) {
 	unshift @chain, $tme;
 	$tme=$map->{$tme->{'prevtile_level'}}->[$tme->{'prevtile_x'}]
 	         ->[$tme->{'prevtile_y'}];
+        refaddr $tme == refaddr $chain[$_] and
+            die "TME refers to chain element $_ (" . $tme->{'tactic'}->name .
+            " @ " . $tme->{'tile_x'} . ", " . $tme->{'tile_y'} . " (previous " .
+            $tme->{'prevtile_x'} . ", " . $tme->{'prevtile_y'} . "), " .
+            "aistep " . $tme->{'step'} . " which should be " .
+            $self->aistep . ")"
+            for 0..$#chain;
+    }
+    if (defined $tme && (
+            $tme->{'tile_x'} != $tct->x ||
+            $tme->{'tile_y'} != $tct->y ||
+            $tme->{'tile_level'} != $tct->level)) {
+        TAEB->log->ai("TME chain ends with " . $tme->{'tactic'}->name .
+                      " on aistep " . $tme->{'step'} . " at (" .
+                      $tme->{'tile_x'} . ", " .
+                      $tme->{'tile_y'} . ", " . $tme->{'tile_level'} .
+                      ") but should end at (" . $tct->x . ", " . $tct->y . ", " .
+                      $tct->level . ") on aistep " . $self->aistep,
+                      level => 'warning');
+    } elsif (!defined $tme) {
+        TAEB->log->ai("TME chain with positive length ended in undef",
+                      level => 'warning');
     }
     return @chain;
 }
