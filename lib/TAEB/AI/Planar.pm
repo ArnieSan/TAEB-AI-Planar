@@ -3,7 +3,9 @@ package TAEB::AI::Planar;
 use TAEB::OO;
 use Heap::Simple::XS;
 use TAEB::Util qw/refaddr weaken display :colors/;
+use Scalar::Util qw/reftype/;
 use Time::HiRes qw/gettimeofday tv_interval/;
+use Storable;
 use Module::Pluggable
     'search_path' => ['TAEB::AI::Planar::Resource'],
     'sub_name' => 'resource_names',
@@ -1044,12 +1046,7 @@ sub create_plan {
     }
 }
 
-around institute => sub {
-    my $orig = shift;
-    my $self = shift;
-
-    $orig->($self);
-
+sub loadplans {
     # Load plans.
     TAEB->log->ai("Loading plans...");
 
@@ -1084,6 +1081,14 @@ around institute => sub {
 	my @referencedplans = @{$pkg->new->references};
 	@planlist = (@planlist, @referencedplans);
     }
+}
+
+around institute => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    $orig->($self);
+    $self->loadplans;
 };
 
 #####################################################################
@@ -1116,24 +1121,54 @@ sub drawing_modes {
     }
 }
 
-=begin comment
-
 sub STORABLE_freeze {
     my $self = shift;
     my $cloning = shift;
     return if $cloning;
+    my %values;
     my @attrs = $self->meta->get_all_attributes;
     push @attrs, $self->meta->get_all_class_attributes
         if $self->meta->can('get_all_class_attributes');
     for my $attr (@attrs) {
-        next unless $attr->does('TAEB::AI::Planar::Meta::Trait::DontFreeze');
-        my $default = $attr->default($self);
-        $attr->get_write_method_ref->($default);
+        next if $attr->does('TAEB::AI::Planar::Meta::Trait::DontFreeze');
+        $values{$attr->name} = $attr->get_read_method_ref->($self);
     }
-    return ($self);
+    return ('TAEB::AI::Planar persistency', \%values);
 }
 
-=cut
+sub STORABLE_thaw {
+    my $self = shift;
+    my $cloning = shift;
+    my $serialized = shift;
+    my $values = shift;
+    return if $cloning;
+    die "This doesn't seem to be a frozen TAEB::AI::Planar"
+        unless $serialized eq 'TAEB::AI::Planar persistency';
+    my $newself = $self->new(%$values);
+    my @attrs = $newself->meta->get_all_attributes;
+    push @attrs, $newself->meta->get_all_class_attributes
+        if $newself->meta->can('get_all_class_attributes');
+    for my $attr (@attrs) {
+        next unless $attr->does('TAEB::AI::Planar::Meta::Trait::DontFreeze');
+        my $default = $attr->default($newself);
+        $attr->get_write_method_ref->($newself,$default);
+    }
+    $self->loadplans;
+    # Ugh: at this point we have to overwrite the internal object of $self,
+    # according to the API of Storable, which means breaking encapsulation.
+    # Assume it's a blessed scalar, array, or hash.
+    my $package = blessed $self // $self;
+    if   (reftype $newself eq 'SCALAR') {$$self = $$newself;}
+    elsif(reftype $newself eq 'ARRAY' ) {@$self = @$newself;}
+    elsif(reftype $newself eq 'HASH'  ) {%$self = %$newself;}
+    else {die "Unable to determine the internals of a TAEB::AI::Planar object";}
+    bless $self, $package;
+}
+
+sub initialize {
+    my $self = shift;
+    $self->loadplans;
+}
 
 has try_again_step => (
     isa => 'Int',
