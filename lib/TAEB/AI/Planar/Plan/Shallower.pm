@@ -12,7 +12,8 @@ sub spread_desirability {
     if (TAEB->current_level->known_branch) {
         $plan = 'Descend' if TAEB->current_level->branch eq 'sokoban';
     }
-    $self->depends(1,$plan);
+    $self->depends(1,$plan)
+        if $plan ne 'Ascend' || TAEB->current_level->z != 1;
 }
 
 use constant description => 'Aiming towards the top of the dungeon';
