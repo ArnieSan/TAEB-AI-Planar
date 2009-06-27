@@ -28,12 +28,19 @@ sub planspawn {
     && $item->is_safely_edible) {
 	TAEB->ai->get_plan('PermaFood',$self->item)->validate;
     }
+    # Pretty much anything can be dropped.
+    TAEB->ai->get_plan('Drop',$self->item)->validate;
+    # Weapons and armour can be equipped.
+    if($item->isa("NetHack::Item::Weapon") ||
+       $item->isa("NetHack::Item::Armor")) {
+        TAEB->ai->get_plan('Equip',$self->item)->validate;
+    }
 }
 
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Doing something with an item in inventory';
-use constant references => ['PermaFood'];
+use constant references => ['PermaFood','Drop','Equip'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
