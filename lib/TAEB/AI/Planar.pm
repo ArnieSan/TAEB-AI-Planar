@@ -5,6 +5,7 @@ use Heap::Simple::XS;
 use TAEB::Util qw/refaddr weaken display :colors/;
 use Scalar::Util qw/reftype/;
 use Time::HiRes qw/gettimeofday tv_interval/;
+use TAEB::Spoilers::Combat;
 use Storable;
 use Module::Pluggable
     'search_path' => ['TAEB::AI::Planar::Resource'],
@@ -1197,29 +1198,69 @@ subscribe tile_update => sub {
 	for @{$self->plan_index_by_object->{$addr}};
 };
 
+# The benefit that would be gained from wielding/wearing this; or the
+# benefit that is gained from wielding/wearing this, in the case that
+# it's already wielded/worn
+sub use_benefit {
+    my $self = shift;
+    my $item = shift;
+    my $resources = $self->resources;
+    my $value = 0;
+    # Armour counts as its AC, plus any special abilities it
+    # grants. Because we don't wear cursed armour, if it's unBCUed, we
+    # multiply by .8682 (the chance of random armour not being cursed);
+    # in addition, we subtract the AC of our current armour in the same
+    # slot, unless the item is our current armour.
+    if($item->can('ac') && defined $item->ac && $item->ac > 0 &&
+       $item->can('subtype') && !$item->is_cursed) {
+        my $slot = $item->subtype;
+        my $currently_in_slot = TAEB->inventory->equipment->$slot;
+        my $ac = $item->ac;
+        $ac *= .8682 unless defined $item->is_cursed; # i.e. we know it isn't
+        defined $currently_in_slot && $currently_in_slot->can('ac') &&
+            defined $currently_in_slot->ac && $currently_in_slot != $item
+            and $ac -= $currently_in_slot->ac;
+        $value += $resources->{'AC'}->value($ac) unless $ac <= 0;
+    }
+    # Likewise for weapons; for those we count their average damage. 90%
+    # chance that they aren't cursed
+    if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed) {
+        my $current_weapon = TAEB->inventory->equipment->weapon;
+        my $damage = TAEB::Spoilers::Combat->damage($item);
+        $damage *= .9 unless defined $item->is_cursed; # i.e. we know it isn't
+        defined $current_weapon && $current_weapon != $item and
+            $damage -= TAEB::Spoilers::Combat->damage($current_weapon);
+        $value += $resources->{'DamagePotential'}->value($damage)
+            unless $damage <= 0;
+    }
+    return $value;
+}
+
 # Positive aspects of the item value.
 sub item_value {
     my $self = shift;
     my $item = shift;
     my $resources = $self->resources;
+    my $value = 0;
     # If the item is permafood, its value is its nutrition minus its
     # weight; its nutrition is measured in unscarce units (twice the
     # base value for permafood), but its weight is measured in dynamic
     # units. (That allows us to drop things when we get burdened.)
     if($item->isa('NetHack::Item::Food')
     &&!$item->isa('NetHack::Item::Food::Corpse')
-    && $item->is_safely_edible) {
-	return 0 unless $item->nutrition;
+    && $item->is_safely_edible) {{
+	last unless $item->nutrition;
 	return $resources->{'Nutrition'}->base_value * 2 *
 	    $item->nutrition * $item->quantity;
-    }
+    }}
     # Gold has value measured in zorkmids.
     $item->identity and $item->identity eq 'gold piece' and
-	return $resources->{'Zorkmids'}->value($item->quantity);
+	$value += $resources->{'Zorkmids'}->value($item->quantity);
     # Ammo counts as 1 ammo each.
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart)\b/ and
-        return $resources->{'Ammo'}->value(1);
-    return 0;
+        $value += $resources->{'Ammo'}->value(1);
+    $value += $self->use_benefit($item);
+    return $value;
 }
 # Negative aspects of this item's value.
 # This returns a spending plan, not a number like item_value does.
@@ -1266,7 +1307,10 @@ sub pickup {
 sub drop {
     my $self = shift;
     my $item = shift;
-    return $self->item_value($item) < 0;
+    my $value = $self->item_value($item);
+    my $drawbacks = $self->item_drawback_cost($item);
+    return 0 unless defined $drawbacks;
+    return $value < $drawbacks;
 }
 
 __PACKAGE__->meta->make_immutable;
