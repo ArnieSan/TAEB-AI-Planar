@@ -26,6 +26,9 @@ use constant repeated_threat_turns => 5;
 # The overall plan, what we're aiming towards.
 use constant overall_plan => 'SlowDescent';
 
+# Should we ever use travel?
+use constant veto_travel => 0;
+
 # A trick to avoid having to loop over things invalidating them;
 # instead, store an aistep value, and they're invalidated if it
 # doesn't equal the current value.
@@ -1192,6 +1195,12 @@ subscribe tile_update => sub {
     defined $_ and $_->required_success_count(0)
 	for @{$self->plan_index_by_object->{$addr}};
 };
+
+sub safe_to_travel {
+    my $self = shift;
+    return 0 if $self->veto_travel;
+    return 1; # TODO: Don't travel with monsters around
+}
 
 # The benefit that would be gained from wielding/wearing this; or the
 # benefit that is gained from wielding/wearing this, in the case that

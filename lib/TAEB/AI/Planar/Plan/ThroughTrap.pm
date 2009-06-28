@@ -64,6 +64,7 @@ sub check_possibility_inner {
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 
+sub replaceable_with_travel { 0 }
 sub action {
     my $self = shift;
     my $tile = $self->tile;

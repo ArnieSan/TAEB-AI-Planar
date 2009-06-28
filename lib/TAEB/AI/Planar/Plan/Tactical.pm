@@ -59,6 +59,11 @@ sub appropriate_success_count {
     return TAEB->ai->tactical_success_count;
 }
 
+# Some tactical plans can be replaced by travelling instead, to save
+# time. This should be set to 1 if a travel to the destination of the
+# TME would have much the same effect as doing it via actions.
+sub replaceable_with_travel { 0 }
+
 # The main entry point for tactical planning. This causes the plan to
 # either call add_possible_move to add a possible move from where it
 # is at the moment, or to call check_possibility on other plans if

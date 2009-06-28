@@ -38,6 +38,10 @@ has aim_tile_cache => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
 );
+has used_travel_to => (
+    isa => 'Maybe[TAEB::World::Tile]',
+    is  => 'rw',
+);
 
 # Risk. There is both cost and danger in pathing somewhere, but plans
 # may often want to do something even costlier and more dangerous.
@@ -167,6 +171,7 @@ sub aim_tile_turns {
 sub action {
     my $self = shift;
     my $ai   = TAEB->ai;
+    $self->used_travel_to(undef);
     return undef unless defined $self->aim_tile_cache;
     # Yes, return the reach action even if there isn't one. It's undef
     # in that case, which is exactly what we want; it's an error to
@@ -176,8 +181,19 @@ sub action {
 	if TAEB->current_tile == $self->aim_tile_cache;
     my @chain = $ai->calculate_tme_chain($self->aim_tile_cache);
     return undef unless @chain;
-    # We want the first step in the chain.
-    return $chain[0]->{'tactic'};
+    # We want the first step in the chain, unless we can travel.
+    my $firsttactic = $chain[0]->{'tactic'};
+    return $firsttactic
+        unless $ai->safe_to_travel
+            && $firsttactic->replaceable_with_travel;
+    my $chainindex = 0;
+    $chainindex++ while defined $chain[$chainindex+1]
+        && $chain[$chainindex+1]->{'tactic'}->replaceable_with_travel;
+    my $tme = $chain[$chainindex];
+    $chainindex == 0 and return $firsttactic; # only travel 2+ tiles
+    my $tile = $tme->{'tile_level'}->at($tme->{'tile_x'}, $tme->{'tile_y'});
+    $self->used_travel_to($tile);
+    return TAEB::Action->new_action('travel', target_tile => $tile);
 }
 
 # Whether we succeeded. This is called with the tactic as an argument
@@ -185,6 +201,11 @@ sub action {
 # based on a tactic.
 sub succeeded {
     my $self = shift;
+    if ($self->used_travel_to) {
+	return 1 if $self->aim_tile_cache == TAEB->current_tile;
+        return undef if $self->used_travel_to == TAEB->current_tile;
+        return 0;
+    }
     if (defined(shift)) {
 	return 1 if $self->aim_tile_cache == TAEB->current_tile;
 	return undef;
