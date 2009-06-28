@@ -30,7 +30,9 @@ sub aim_tile {
     TAEB->dungeon->nearest_level(sub {
         my $level = shift;
         for my $altar ($level->tiles_of('altar')) {
-            my $risk = $ai->tme_from_tile($altar)->numerical_risk;
+            my $tme = $ai->tme_from_tile($altar);
+            next unless $tme; # it might be unroutable
+            my $risk = $tme->numerical_risk;
             next unless $risk < $bestaltarrisk;
             $bestaltarrisk = $risk;
             $bestaltar = $altar;
