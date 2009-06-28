@@ -1322,7 +1322,8 @@ sub item_drawback_cost {
 	my $resource = $resources->{$resourcename};
 	my $quantity = $plan->{$resourcename};
 	$quantity > $resource->amount and $canafford = 0;
-        if($item->slot && TAEB->inventory->get($item->slot) == $item) {
+        if($item->slot && TAEB->inventory->get($item->slot)
+                       && TAEB->inventory->get($item->slot) == $item) {
             $cost += $resource->value * $quantity;
         } else {
             $cost += $resource->cost($quantity);
