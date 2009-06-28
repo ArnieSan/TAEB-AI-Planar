@@ -47,7 +47,10 @@ has strategic_success_count => (
     default => 0,
 );
 
-# Extra information about what we're doing at the moment.
+# What we're doing at the moment.
+has '+currently' => (
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 has currently_modifiers => (
     isa     => 'Str',
     is      => 'rw',
@@ -1084,14 +1087,6 @@ sub loadplans {
     }
 }
 
-around institute => sub {
-    my $orig = shift;
-    my $self = shift;
-
-    $orig->($self);
-    $self->loadplans;
-};
-
 #####################################################################
 # Things below this line should be elsewhere or handled differently
 
@@ -1154,7 +1149,6 @@ sub STORABLE_thaw {
         my $default = $attr->default($newself);
         $attr->get_write_method_ref->($newself,$default);
     }
-    $self->loadplans;
     # Ugh: at this point we have to overwrite the internal object of $self,
     # according to the API of Storable, which means breaking encapsulation.
     # Assume it's a blessed scalar, array, or hash.
@@ -1169,6 +1163,7 @@ sub STORABLE_thaw {
 sub initialize {
     my $self = shift;
     $self->loadplans;
+    $self->institute;
 }
 
 has try_again_step => (
