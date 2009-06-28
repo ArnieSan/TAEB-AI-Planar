@@ -166,6 +166,13 @@ sub aim_tile_turns {
     return $cost;
 }
 
+# Set when an attempt to travel fails; cleared when the plan succeeds.
+has do_not_travel => (
+    isa => 'Bool',
+    is  => 'rw',
+    default => 0,
+);
+
 # Trying this plan. We follow the path if there is one, else perform
 # the action if we're where we want to be, else bail.
 sub action {
@@ -185,12 +192,14 @@ sub action {
     my $firsttactic = $chain[0]->{'tactic'};
     return $firsttactic
         unless $ai->safe_to_travel
+            && !$self->do_not_travel
+            && !$self->mobile_target
             && $firsttactic->replaceable_with_travel;
     my $chainindex = 0;
     $chainindex++ while defined $chain[$chainindex+1]
         && $chain[$chainindex+1]->{'tactic'}->replaceable_with_travel;
     my $tme = $chain[$chainindex];
-    $chainindex == 0 and return $firsttactic; # only travel 2+ tiles
+    $chainindex <= 1 and return $firsttactic; # only travel 3+ tiles
     my $tile = $tme->{'tile_level'}->at($tme->{'tile_x'}, $tme->{'tile_y'});
     $self->used_travel_to($tile);
     return TAEB::Action->new_action('travel', target_tile => $tile);
@@ -202,14 +211,18 @@ sub action {
 sub succeeded {
     my $self = shift;
     if ($self->used_travel_to) {
-	return 1 if $self->aim_tile_cache == TAEB->current_tile;
+	$self->do_not_travel(0), return 1
+            if $self->aim_tile_cache == TAEB->current_tile;
         return undef if $self->used_travel_to == TAEB->current_tile;
+        $self->do_not_travel(1), return undef unless $self->do_not_travel;
         return 0;
     }
     if (defined(shift)) {
-	return 1 if $self->aim_tile_cache == TAEB->current_tile;
+	$self->do_not_travel(0), return 1
+            if $self->aim_tile_cache == TAEB->current_tile;
 	return undef;
     }
+    $self->do_not_travel(0); # we reached the tile, allow travelling again
     return 1 unless $self->has_reach_action;
     return $self->reach_action_succeeded;
 }

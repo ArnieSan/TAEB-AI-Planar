@@ -825,7 +825,10 @@ sub calculate_tme_chain {
             $tme->{'tile_x'} != $tct->x ||
             $tme->{'tile_y'} != $tct->y ||
             $tme->{'tile_level'} != $tct->level)) {
-        TAEB->log->ai("TME chain ends with " . $tme->{'tactic'}->name .
+        TAEB->log->ai("TME chain (starting at (" . $tile->x . 
+                      ", " . $tile->y . ") on aistep " .
+                      $chain[$#chain]->{'step'} . ") " .
+                      "ends with " . $tme->{'tactic'}->name .
                       " on aistep " . $tme->{'step'} . " at (" .
                       $tme->{'tile_x'} . ", " .
                       $tme->{'tile_y'} . ", " . $tme->{'tile_level'} .
@@ -1199,7 +1202,8 @@ subscribe tile_update => sub {
 sub safe_to_travel {
     my $self = shift;
     return 0 if $self->veto_travel;
-    return 1; # TODO: Don't travel with monsters around
+    return 0 if TAEB->current_level->has_monsters;
+    return 1;
 }
 
 # The benefit that would be gained from wielding/wearing this; or the
