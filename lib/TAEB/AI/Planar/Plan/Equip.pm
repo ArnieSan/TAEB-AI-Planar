@@ -58,8 +58,8 @@ sub gain_resource_conversion_desire {
     my $ai   = TAEB->ai;
     my $item = $self->item;
     # Bump our own desirability.
-    return unless $item->isa('NetHack::Item::Weapon')
-               || $item->isa('NetHack::Item::Armour');
+    return unless $item->type eq 'weapon'
+               || $item->type eq 'armor';
     return if $item->is_wielded;
     return if $item->can('is_worn') && $item->is_worn;
     my $benefit = $ai->use_benefit($item);

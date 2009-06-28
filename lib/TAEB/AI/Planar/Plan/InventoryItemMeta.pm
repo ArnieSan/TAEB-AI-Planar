@@ -31,8 +31,8 @@ sub planspawn {
     # Pretty much anything can be dropped.
     TAEB->ai->get_plan('Drop',$self->item)->validate;
     # Weapons and armour can be equipped.
-    if($item->isa("NetHack::Item::Weapon") ||
-       $item->isa("NetHack::Item::Armor")) {
+    if($item->type eq 'weapon' ||
+       $item->type eq 'armor') {
         TAEB->ai->get_plan('Equip',$self->item)->validate;
     }
     # UnBCUed things can be BCUed.

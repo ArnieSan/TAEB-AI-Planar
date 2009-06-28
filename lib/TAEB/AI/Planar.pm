@@ -1200,7 +1200,7 @@ subscribe tile_update => sub {
 
 # The benefit that would be gained from wielding/wearing this; or the
 # benefit that is gained from wielding/wearing this, in the case that
-# it's already wielded/worn
+# it's already wielded/worn.
 sub use_benefit {
     my $self = shift;
     my $item = shift;
@@ -1233,6 +1233,11 @@ sub use_benefit {
         $value += $resources->{'DamagePotential'}->anticost($damage)
             unless $damage <= 0;
     }
+    $item->slot and TAEB->inventory->get($item->slot) and
+        TAEB->inventory->get($item->slot) == $item or
+        $value -= $resources->{'Delta'}->value;
+    $value -= $resources->{'Delta'} / refaddr($item); # tiebreak
+    return 0 if $value < 0;
     return $value;
 }
 
@@ -1259,7 +1264,34 @@ sub item_value {
     # Ammo counts as 1 ammo each.
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart)\b/ and
         $value += $resources->{'Ammo'}->anticost(1);
-    $value += $self->use_benefit($item);
+    # Things that we could use are useful as a result. However, we
+    # don't want too many items that are redundant to each other. The
+    # item we're currently wielding/wearing counts its full
+    # use-benefit, as does the best other item (in inventory or on the
+    # current tile); but other items are penalised 90% of their benefit
+    # for each nonwielded item better than them.
+    my $use_benefit_factor = 1;
+    my $benefit = $self->use_benefit($item);
+    my $subtype = undef;
+    $subtype = $item->subtype if $item->can('subtype');
+    $subtype = 'weapon' if $item->type eq 'weapon';
+    if ($subtype) {
+        C: for my $check (TAEB->inventory->items, TAEB->current_tile->items) {
+            $check->is_wielded || ($check->can('is_worn') && $check->is_worn)
+                and next;
+            $subtype eq 'weapon' and $check->type ne 'weapon' and next;
+            if($subtype ne 'weapon') {
+                $check->can('subtype') or next C;
+                defined $check->subtype or next C;
+                $check->subtype eq $item->subtype or next C;
+            }
+            $self->use_benefit($check) > $benefit
+                and $use_benefit_factor /= 10;
+        }
+    }
+    $item->is_wielded || ($item->can('is_worn') && $item->is_worn)
+        and $use_benefit_factor = 1;
+    $value += $benefit * $use_benefit_factor;
     return $value;
 }
 # Negative aspects of this item's value.
