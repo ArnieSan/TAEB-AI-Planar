@@ -83,7 +83,7 @@ sub reach_action_succeeded {
 
 sub spread_desirability {
     my $self = shift;
-    my $item = shift;
+    my $item = $self->item;
     $self->depends(1,'BCU',$item);
 }
 

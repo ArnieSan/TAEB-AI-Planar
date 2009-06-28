@@ -86,12 +86,6 @@ sub reach_action_succeeded {
     return 1 if $item->is_wielded || ($item->can('is_worn') && $item->is_worn);    
 }
 
-sub spread_desirability {
-    my $self = shift;
-    my $item = shift;
-    $self->depends(1,'BCU',$item);
-}
-
 # This plan needs a continuous stream of validity from our inventory,
 # or it ceases to exist.
 sub invalidate {shift->validity(0);}

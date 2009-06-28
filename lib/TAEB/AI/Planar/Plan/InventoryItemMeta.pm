@@ -21,6 +21,7 @@ sub set_arg {
 sub planspawn {
     my $self = shift;
     my $item = $self->item;
+    return unless $item;
     # Food can be eaten. This plan doesn't imply that we should eat it, or
     # that it's a good idea; just that we can.
     if($item->isa('TAEB::World::Item::Food')
