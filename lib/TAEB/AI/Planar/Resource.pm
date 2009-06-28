@@ -26,6 +26,14 @@ sub cost {
 	$self->scarcity($self->amount-$quantity);
     return $cost;
 }
+# The same, for gaining the resource.
+sub anticost {
+    my $self = shift;
+    my $quantity = shift;
+    my $cost = $self->_value * $quantity *
+	$self->scarcity($self->amount+$quantity);
+    return $cost;
+}
 
 # We want to spend this resource, make it more valuable.
 # TODO: Make the amount depend on the quantity we want to spend.

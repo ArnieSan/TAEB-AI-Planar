@@ -21,6 +21,8 @@ has taking_off => (
     default => undef,
 );
 
+sub invalidate { shift->validity(0); }
+
 sub aim_tile {
     my $self = shift;
     return undef unless defined $self->item;
@@ -58,7 +60,8 @@ sub gain_resource_conversion_desire {
                || $item->isa('NetHack::Item::Armour');
     return if $item->is_wielded;
     return if $item->can('is_worn') && $item->is_worn;
-    $ai->add_capped_desire($self, $ai->use_benefit($item));
+    my $benefit = $ai->use_benefit($item);
+    $ai->add_capped_desire($self, $benefit);
 }
 
 sub calculate_extra_risk {

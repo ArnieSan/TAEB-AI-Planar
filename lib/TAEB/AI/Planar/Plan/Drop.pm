@@ -36,8 +36,9 @@ sub gain_resource_conversion_desire {
     my $ai   = TAEB->ai;
     my $item = $self->item;
     # Bump our own desirability.
-    $ai->add_capped_desire($self, $ai->item_drawback_cost($item)
-                                - $ai->item_value($item));
+    $self->validity(0), return 0 unless defined $self->item;
+    my (undef, $cost) = $ai->item_drawback_cost($item);
+    $ai->add_capped_desire($self, $cost - $ai->item_value($item));
 }
 
 sub calculate_extra_risk {

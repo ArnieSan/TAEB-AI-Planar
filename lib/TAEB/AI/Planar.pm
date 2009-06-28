@@ -1220,17 +1220,17 @@ sub use_benefit {
         defined $currently_in_slot && $currently_in_slot->can('ac') &&
             defined $currently_in_slot->ac && $currently_in_slot != $item
             and $ac -= $currently_in_slot->ac;
-        $value += $resources->{'AC'}->value($ac) unless $ac <= 0;
+        $value += $resources->{'AC'}->anticost($ac) unless $ac <= 0;
     }
     # Likewise for weapons; for those we count their average damage. 90%
-    # chance that they aren't cursed
+    # chance that they aren't cursed.
     if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed) {
         my $current_weapon = TAEB->inventory->equipment->weapon;
         my $damage = TAEB::Spoilers::Combat->damage($item);
         $damage *= .9 unless defined $item->is_cursed; # i.e. we know it isn't
         defined $current_weapon && $current_weapon != $item and
             $damage -= TAEB::Spoilers::Combat->damage($current_weapon);
-        $value += $resources->{'DamagePotential'}->value($damage)
+        $value += $resources->{'DamagePotential'}->anticost($damage)
             unless $damage <= 0;
     }
     return $value;
@@ -1255,10 +1255,10 @@ sub item_value {
     }}
     # Gold has value measured in zorkmids.
     $item->identity and $item->identity eq 'gold piece' and
-	$value += $resources->{'Zorkmids'}->value($item->quantity);
+	$value += $resources->{'Zorkmids'}->anticost($item->quantity);
     # Ammo counts as 1 ammo each.
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart)\b/ and
-        $value += $resources->{'Ammo'}->value(1);
+        $value += $resources->{'Ammo'}->anticost(1);
     $value += $self->use_benefit($item);
     return $value;
 }
@@ -1279,20 +1279,31 @@ sub item_drawbacks {
 # Item drawbacks, numerically at current values.
 # Returns undef if we can't afford the item (either because it's in a
 # shop and literally too expensive, or if it's dangerous to possess it
-# for other reasons ("oY, loadstone...)
+# for other reasons ("oY, loadstone...) In array context, returns
+# a boolean saying if we can afford the item, followed by the numeric
+# drawback.
+# This uses cost if the item is not in the inventory, and value if it
+# is, to prevent oscillations.
 sub item_drawback_cost {
     my $self = shift;
     my $item = shift;
     my $plan = $self->item_drawbacks($item);
     my $resources = $self->resources;
     my $cost = 0;
+    my $canafford = 1;
     for my $resourcename (keys %$plan) {
 	my $resource = $resources->{$resourcename};
 	my $quantity = $plan->{$resourcename};
-	$quantity > $resource->amount and return undef;
-	$cost += $resource->cost($quantity);
+	$quantity > $resource->amount and $canafford = 0;
+        if($item->slot && TAEB->inventory->get($item->slot) == $item) {
+            $cost += $resource->value * $quantity;
+        } else {
+            $cost += $resource->cost($quantity);
+        }
     }
-    return $cost;
+    return ($canafford, $cost) if wantarray;
+    return $cost if $canafford;
+    return undef;
 }
 sub pickup {
     my $self = shift;
