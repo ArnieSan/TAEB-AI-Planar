@@ -38,6 +38,7 @@ sub spread_desirability {
         # fallback is needed. This excludes levels which are only meant
         # to have one exit. TODO: that's more levels than level 1.
         scalar $level->exits < 2 and $level->z != 1
+            and (!$level->known_branch || $level->branch ne 'mines')
             and $self->depends(0.8,'FallbackExplore',$level);
         return 0;
     });
