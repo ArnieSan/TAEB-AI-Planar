@@ -497,10 +497,10 @@ sub next_plan_action {
     my @refs = (TAEB->current_level->has_enemies,
 		TAEB->inventory->items,
 		TAEB->current_level->items);
-    for my $ref (@refs) {
-	my $addr = refaddr($ref);
-	/\[$addr\]/ and $self->plans->{$_}->validate for keys %{$self->plans};
-    }
+#    for my $ref (@refs) {
+#	my $addr = refaddr($ref);
+#	/\[$addr\]/ and $self->plans->{$_}->validate for keys %{$self->plans};
+#    }
     # Create plans for items and map features, if necessary.
     for my $item (TAEB->inventory->items) {
 	$self->get_plan("InventoryItemMeta",$item)->validate;
