@@ -21,8 +21,6 @@ has taking_off => (
     default => undef,
 );
 
-sub invalidate { shift->validity(0); }
-
 sub aim_tile {
     my $self = shift;
     my $item = $self->item;
