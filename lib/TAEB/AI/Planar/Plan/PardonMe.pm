@@ -66,6 +66,8 @@ sub check_possibility_inner {
 
 sub action {
     my $self = shift;
+    TAEB->known_debt or TAEB->send_message(check => 'debt');
+    TAEB->debt and return TAEB::Action->new_action('pay', item => 'all');
     return TAEB::Action->new_action('Search', iterations => 1);
 }
 
