@@ -78,12 +78,10 @@ sub calculate_extra_risk {
 sub reach_action_succeeded {
     my $self = shift;
     my $item = $self->item;
-    my $blocker = $self->taking_off;
-    if ($blocker) {
-        return 0 if $blocker->is_worn;
-        return;
-    }
-    return 1 if $item->is_wielded || ($item->can('is_worn') && $item->is_worn);    
+    return 1 unless $item->slot;
+    return 1 unless TAEB->inventory->get($item->slot);
+    return 1 unless TAEB->inventory->get($item->slot) == $item;
+    return 0;
 }
 
 # This plan needs a continuous stream of validity from our inventory,
