@@ -1320,7 +1320,12 @@ sub drop {
     my $item = shift;
     my $value = $self->item_value($item);
     my $drawbacks = $self->item_drawback_cost($item);
-    return 0 unless defined $drawbacks;
+    # If we're dropping things on an altar, may as well BCU while we're at it
+    TAEB->current_tile->type eq 'altar'
+        and !$item->is_blessed && !$item->is_uncursed && !$item->is_cursed
+        and !TAEB->is_blind && !TAEB->is_levitating
+        and return 1;
+    return 1 unless defined $drawbacks;
     return $value < $drawbacks;
 }
 

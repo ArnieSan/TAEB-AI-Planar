@@ -35,6 +35,10 @@ sub planspawn {
        $item->isa("NetHack::Item::Armor")) {
         TAEB->ai->get_plan('Equip',$self->item)->validate;
     }
+    # UnBCUed things can be BCUed.
+    if(!$item->is_blessed && !$item->is_cursed && !$item->is_uncursed) {
+        TAEB->ai->get_plan('BCU',$self->item)->validate;
+    }
 }
 
 sub invalidate {shift->validity(0);}

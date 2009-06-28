@@ -25,7 +25,9 @@ sub invalidate { shift->validity(0); }
 
 sub aim_tile {
     my $self = shift;
-    return undef unless defined $self->item;
+    my $item = $self->item;
+    return undef unless defined $item;
+    return undef if !defined $item->is_cursed || $item->is_cursed;
     return TAEB->current_tile;
 }
 
@@ -81,11 +83,18 @@ sub reach_action_succeeded {
     return 1 if $item->is_wielded || ($item->can('is_worn') && $item->is_worn);    
 }
 
+sub spread_desirability {
+    my $self = shift;
+    my $item = shift;
+    $self->depends(1,'BCU',$item);
+}
+
 # This plan needs a continuous stream of validity from our inventory,
 # or it ceases to exist.
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Equipping a new item';
+use constant references => ['BCU'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
