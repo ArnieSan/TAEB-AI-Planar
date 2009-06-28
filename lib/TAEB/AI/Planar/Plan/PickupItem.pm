@@ -56,7 +56,7 @@ sub reach_action {
     # If the item's in a shop but we don't know how much it costs, we
     # can't buy it yet (maybe we can't afford it); use AskForPrice
     # instead.
-    if ($self->tile->in_shop && !defined $self->item->cost) {
+    if ($self->tile->in_shop && !($self->item->cost)) {
         return undef;
     }
     # The actual item that's picked up depends on the personality;
@@ -94,7 +94,7 @@ sub calculate_extra_risk {
 
 sub spread_desirability {
     my $self = shift;
-    if ($self->tile->in_shop && !defined $self->item->cost) {
+    if ($self->tile->in_shop && !($self->item->cost)) {
         $self->depends(1,"AskForPrice",$self->tile);
     }
 }

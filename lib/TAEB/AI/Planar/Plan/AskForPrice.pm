@@ -31,7 +31,7 @@ sub reach_action {
 sub reach_action_succeeded {
     my $self = shift;
     # We succeed if there's an item on the tile we know the cost of.
-    defined $_->cost and return 1 for $self->tile->items;
+    $_->cost and return 1 for $self->tile->items;
     return 0;
 }
 
