@@ -1,19 +1,29 @@
 This file contains things that have caused the Planar AI
 to either die, or to crash. The intention is that looking
 for patterns here will enable bugs or AI deficiencies to be
-noticed.
+noticed. Things marked with a + are now fixed.
 
 - Being stunned
+  - Partially fixed; retry now works properly from this
 - Invisible monsters
-- Getting stuck inside a shop
-  - This is to do with either a lack of implementation of
++ Getting stuck inside a shop
+  + This is to do with either a lack of implementation of
     being able to pay for things, or bugs in PardonMe, or
     both. Why is PardonMe not working?
+    + PardonMe now has a lot of shopkeeper logic, and handles
+      this case correctly
 - Failing to start up properly; is this a framework bug?
 - Invisible monsters. More invisible monsters.
 - Squeezing past a boulder and not knowing how to get back.
-- Panicked after going downstairs for no obvious reason
-  - This makes me even more suspicious that there's a
++ Panicked after going downstairs for no obvious reason
+  + This makes me even more suspicious that there's a
     caching bug related to changing level
+    + This one's been fixed now, I think
 - Forgetting the location of a bugbear and being killed by
   it from 1hp
+- Bumping a shopkeeper when blind
+- Finding a bones file with the same shopkeeper, who still hates
+  TAEBs. (Maybe we should #quit if we anger a shopkeeper, to avoid
+  leaving nasty-to-TAEB bones?)
+- Being made helpless (I'm not entirely sure how) when in a beehive
+  and in melee with a nymph and scorpion, on critically low HP
