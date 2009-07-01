@@ -30,8 +30,9 @@ sub reach_action {
 
 sub reach_action_succeeded {
     my $self = shift;
-    # We succeed if there's an item on the tile we know the cost of.
-    $_->cost and return 1 for $self->tile->items;
+    # We succeed if we know the cost of every item on this tile.
+    !$_->cost and return 0 for $self->tile->items;
+    return 1 if scalar $self->tile->items;
     return 0;
 }
 
