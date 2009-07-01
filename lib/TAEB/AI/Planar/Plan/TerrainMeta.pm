@@ -26,10 +26,14 @@ sub planspawn {
         && !defined $tile->other_side) {
         TAEB->ai->get_plan('OtherSide',$tile)->validate;
     }
+    # We can dip for Excalibur in fountains.
+    if ($tile->type eq 'fountain') {
+        TAEB->ai->get_plan('Excalibur',$tile)->validate;
+    }
 }
 
 use constant description => "Investigating unusual terrain";
-use constant references => ['OtherSide'];
+use constant references => ['OtherSide','Excalibur'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

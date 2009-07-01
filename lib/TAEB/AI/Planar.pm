@@ -542,7 +542,9 @@ sub next_plan_action {
 	$tile->is_interesting and
             $self->get_plan("Investigate",$tile)->validate;
         # Various interesting sorts of terrain get TerrainMeta.
-        $tile->type eq 'stairsup' || $tile->type eq 'stairsdown'
+        $tile->type eq 'fountain'
+            || $tile->type eq 'stairsdown'
+            || $tile->type eq 'stairsup'
             and $self->get_plan("TerrainMeta",$tile)->validate;
     });
     $self->get_plan("CharacterMeta")->validate;
