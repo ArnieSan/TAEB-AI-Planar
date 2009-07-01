@@ -56,10 +56,10 @@ sub spread_desirability {
         # However, only do this if we've never stepped on the tile; if
         # we've ever stepped on the tile, we know its terrain.
 	if($tile->is_interesting && !$tile->stepped_on) {
-	    $self->depends(1,"Explore",$tile);
+	    $self->depends(1,"LookAt",$tile);
 	}
         if($tile->has_boulder && $tile->type eq 'obscured') {
-            $self->depends(1,"Explore",$tile);
+            $self->depends(1,"LookAt",$tile);
         }
     });
     # If possible, paying off debt can improve connectivity by
@@ -79,7 +79,7 @@ sub spread_desirability {
 
 use constant description => 'Exploring a level';
 use constant references => ['Search','Explore','Pay','Eliminate',
-                            'FallbackExplore'];
+                            'LookAt','FallbackExplore'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
