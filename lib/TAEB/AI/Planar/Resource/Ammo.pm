@@ -13,7 +13,7 @@ has _value => (
 # about which projectiles we have too
 sub projectilelist {
     my @projectiles = (TAEB->inventory->find(
-                           identity   => qr/\b(?:dagger|spear|dart)\b/,
+                           identity   => qr/\b(?:dagger|spear|dart|shuriken)\b/,
                            is_wielded => sub { !$_ },
                            cost       => 0,
                        ));
