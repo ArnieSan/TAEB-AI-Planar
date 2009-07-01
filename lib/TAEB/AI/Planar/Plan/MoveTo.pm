@@ -91,12 +91,18 @@ sub check_possibility_inner {
         # anyway.) So continue moving beyond until we find either an
         # obstructed square, or a safely-pushable-to square; but don't
         # push a boulder if it's already on a safely-pushable-to
-        # square (leave it unroutable instead).
-        while (defined $beyond && $beyond->is_walkable(1,1) &&
+        # square (leave it unroutable instead). We use
+        # is_inherently_unwalkable here; monsters can move, and are
+        # often shown as I glyphs, so we want impossibility tracking
+        # to track the monsters rather than assuming the boulder won't
+        # move.
+        while (defined $beyond && !$beyond->has_boulder &&
+               !$beyond->is_inherently_unwalkable(1,1) &&
                !safe_boulder_square($beyond, $tile)) {
             $beyond = $l->at_safe($beyond->x+$dx,$beyond->y+$dy);
         }
-	if(defined $beyond and $beyond->is_walkable(1,1)) {
+	if(defined $beyond && !$beyond->has_boulder &&
+            !$beyond->is_inherently_unwalkable(1,1)) {
 	    $self->generate_plan($tme,$plantype,$tile);
 	}        
     }
