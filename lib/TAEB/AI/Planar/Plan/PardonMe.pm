@@ -68,6 +68,22 @@ sub action {
     my $self = shift;
     TAEB->known_debt or TAEB->send_message(check => 'debt');
     TAEB->debt and return TAEB::Action->new_action('pay', item => 'all');
+    # If it's a shopkeeper we're trying to avoid, try moving so as to
+    # be adjacent to both the shk and where we're aiming; shks tend
+    # not to move if we don't. TODO: Allow for threats in this. Maybe
+    # this should be fallback-to-strategic?
+    if ($self->tile->monster->is_shk &&
+        TAEB->current_tile->type ne 'opendoor') {
+        return TAEB::Action->new_action(
+            'move', direction => delta2vi($_->x - TAEB->x, $_->y - TAEB->y))
+            for $self->tile->grep_adjacent(sub {
+                my $t = shift;
+                $t->is_walkable(0,1) &&
+                    $t->type ne 'opendoor' &&
+                    abs(TAEB->x - $t->x <= 1) &&
+                    abs(TAEB->y - $t->y <= 1);
+            });
+    }
     return TAEB::Action->new_action('Search', iterations => 1);
 }
 
