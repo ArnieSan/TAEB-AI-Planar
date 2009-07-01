@@ -1301,6 +1301,7 @@ sub item_value {
     # units. (That allows us to drop things when we get burdened.)
     if($item->isa('NetHack::Item::Food')
     &&!$item->isa('NetHack::Item::Food::Corpse')
+    && $item->name !~ /\begg\b/o
     && $item->is_safely_edible) {{
 	last unless $item->nutrition;
 	return $resources->{'Nutrition'}->base_value * 2 *
