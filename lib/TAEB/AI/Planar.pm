@@ -221,6 +221,16 @@ has full_tactical_recalculation => (
     default => 1,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# The tile we were on when we last did tactical mapping. This is
+# generally TAEB->current_tile, but not when we're drawing the debug
+# view. It's also used to figure out what changed since the last time
+# we did tactical routing.
+has tactical_target_tile => (
+    isa     => 'Maybe[TAEB::World::Tile]',
+    is      => 'rw',
+    default => undef,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 # Add a possible move to the tactics heap.
 sub add_possible_move {
     my $self = shift;
@@ -705,14 +715,16 @@ sub next_plan_action {
     return ($plan, $action);
 }
 
-our $lastlevelra = -1;
 sub update_tactical_map {
     my $self = shift;
     my $map = $self->tactics_map;
     my $curlevel = TAEB->current_level;
     my $curlevelra = refaddr($curlevel);
+    my $levelchanged = 1;
+    $levelchanged = $self->tactical_target_tile->level != $curlevel
+        if $self->tactical_target_tile;
     # If we've changed level, reset all the TMEs.
-    if ($lastlevelra != $curlevelra) {
+    if ($levelchanged) {
         TAEB->log->ai("Level changed, resetting all TMEs...");
         for my $levelgroup (@{TAEB->dungeon->levels}) {
             for my $level (@$levelgroup) {
@@ -741,7 +753,7 @@ sub update_tactical_map {
 	# updating the entire dungeon every step, unless we just
         # changed level.
 	# The whole dungeon /is/ updated when we change level.
-	next if refaddr($tl) != $curlevelra && $lastlevelra == $curlevelra;
+	next if refaddr($tl) != $curlevelra && !$levelchanged;
 	# If we've already found an easier way to get here, ignore
 	# this method of getting here.
 	next if exists $row->[$ty] && $row->[$ty]->{'step'} == $self->aistep;
@@ -755,7 +767,7 @@ sub update_tactical_map {
 	$self->get_tactical_plan("MoveFrom", [$tl,$tx,$ty])->
             check_possibility($tme);
     }
-    $lastlevelra = $curlevelra;
+    $self->tactical_target_tile(TAEB->current_tile);
     $self->full_tactical_recalculation(0);
 }
 
@@ -822,7 +834,7 @@ sub calculate_tme_chain {
     my $tile  = shift;
     my $tme   = $self->tme_from_tile($tile);
     my $map   = $self->tactics_map;
-    my $tct   = TAEB->current_tile;
+    my $tct   = $self->tactical_target_tile // TAEB->current_tile;
     my @chain = ();
     return unless defined $tme;
     while(defined $tme && defined $tme->{'prevtile_level'}) {
@@ -863,13 +875,14 @@ sub tme_from_tile {
     return $tme if $tme->{'step'} == $self->aistep;
     # If the TME's out of date but on our level, it means we had a routing
     # failure.
-    return undef if $tile->level == TAEB->current_level;
+    my $tct   = $self->tactical_target_tile // TAEB->current_tile;
+    return undef if $tile->level == $tct->level;
     # Get an updated interlevel TME. We recalculate the risk fields of
     # the TME in question by looking at the single-level values, then
     # set its step to mark the fact that it's been recalculated.
     my %risk = ();
     my $t = $tme;
-    while(defined $t && $t->{'tile_level'} != TAEB->current_level) {
+    while(defined $t && $t->{'tile_level'} != $tct->level) {
         $risk{$_} += $t->{'level_risk'}->{$_}
             for keys %{$t->{'level_risk'}};
         $t = $self->tactics_map->{$t->{'prevlevel_level'}}->
