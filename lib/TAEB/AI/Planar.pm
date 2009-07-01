@@ -1284,9 +1284,6 @@ sub use_benefit {
         $value += $resources->{'DamagePotential'}->anticost($damage)
             unless $damage <= 0;
     }
-    $item->slot and TAEB->inventory->get($item->slot) and
-        TAEB->inventory->get($item->slot) == $item or
-        $value -= $resources->{'Delta'}->value;
     $value -= $resources->{'Delta'} / refaddr($item); # tiebreak
     return 0 if $value < 0;
     return $value;
@@ -1314,7 +1311,7 @@ sub item_value {
 	$value += $resources->{'Zorkmids'}->anticost($item->quantity);
     # Ammo counts as 1 ammo each.
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart)\b/ and
-        $value += $resources->{'Ammo'}->anticost(1);
+        $value += $resources->{'Ammo'}->anticost($item->quantity);
     # Things that we could use are useful as a result. However, we
     # don't want too many items that are redundant to each other. The
     # item we're currently wielding/wearing counts its full
@@ -1377,40 +1374,65 @@ sub item_drawback_cost {
     for my $resourcename (keys %$plan) {
 	my $resource = $resources->{$resourcename};
 	my $quantity = $plan->{$resourcename};
-	$quantity > $resource->amount and $canafford = 0;
         if($item->slot && TAEB->inventory->get($item->slot)
                        && TAEB->inventory->get($item->slot) == $item) {
             $cost += $resource->value * $quantity;
         } else {
             $cost += $resource->cost($quantity);
+            $quantity > $resource->amount and $canafford = 0;
         }
     }
     return ($canafford, $cost) if wantarray;
     return $cost if $canafford;
     return undef;
 }
+
+# If we're oscillating between pickup and drop, pick items up one at a
+# time. This measures in main loop steps, not aisteps.
+has last_pickup_step => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => -1,
+);
+has last_drop_step => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => -1,
+);
 sub pickup {
     my $self = shift;
     my $item = shift;
-    # TODO: What if we can't afford everything in the pickup list?
-    # This probably needs announcements...
+    # Pickup announcements would make this work better.
     my $value = $self->item_value($item);
     my $drawbacks = $self->item_drawback_cost($item);
     return 0 unless defined $drawbacks;
-    return $value > $drawbacks;
+    # Pick up only 1 item if we dropped last turn.
+    TAEB->log->ai("Not picking up a second item this step..."), return 0
+        if $self->last_drop_step == TAEB->step-1
+        && $self->last_pickup_step == TAEB->step;
+    TAEB->log->ai("Not picking up $item (value $value, drawbacks $drawbacks)"), return 0
+        if $value <= $drawbacks;
+    $self->last_pickup_step(TAEB->step);
+    TAEB->log->ai("Picking up $item (value $value, drawbacks $drawbacks)");
+    return 1;
 }
 sub drop {
     my $self = shift;
     my $item = shift;
     my $value = $self->item_value($item);
     my $drawbacks = $self->item_drawback_cost($item);
+    $self->last_drop_step(TAEB->step);
     # If we're dropping things on an altar, may as well BCU while we're at it
     TAEB->current_tile->type eq 'altar'
         and !$item->is_blessed && !$item->is_uncursed && !$item->is_cursed
         and !TAEB->is_blind && !TAEB->is_levitating
-        and return 1;
-    return 1 unless defined $drawbacks;
-    return $value < $drawbacks;
+        and TAEB->log->ai("Dropping $item to BCU it"), return 1;
+    TAEB->log->ai("Dropping $item as it has infinite drawbacks"), return 1
+        unless defined $drawbacks;
+    TAEB->log->ai("Dropping $item (value $value, drawbacks $drawbacks)"), return 1
+        if $value < $drawbacks;
+    TAEB->log->ai("Not dropping $item (value $value, drawbacks $drawbacks)");
+    return 0;
 }
 
 __PACKAGE__->meta->make_immutable;
