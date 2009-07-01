@@ -214,6 +214,13 @@ has _tacticsheap => (
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# Are we currently doing a full tactical recalculation?
+has full_tactical_recalculation => (
+    isa     => 'Bool',
+    is      => 'rw',
+    default => 1,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 # Add a possible move to the tactics heap.
 sub add_possible_move {
     my $self = shift;
@@ -715,6 +722,7 @@ sub update_tactical_map {
                 $levelmap->[$_] = [] for 0..79;
             }
         }
+        $self->full_tactical_recalculation(1);
     }
     # Dijkstra's algorithm is used to flood the level with pathfinding
     # data. The heap contains TacticsMapEntry elements.
@@ -748,6 +756,7 @@ sub update_tactical_map {
             check_possibility($tme);
     }
     $lastlevelra = $curlevelra;
+    $self->full_tactical_recalculation(0);
 }
 
 # Add a threat to the threat map.
@@ -832,19 +841,15 @@ sub calculate_tme_chain {
             $tme->{'tile_x'} != $tct->x ||
             $tme->{'tile_y'} != $tct->y ||
             $tme->{'tile_level'} != $tct->level)) {
-        TAEB->log->ai("TME chain (starting at (" . $tile->x . 
-                      ", " . $tile->y . ") on aistep " .
-                      $chain[$#chain]->{'step'} . ") " .
-                      "ends with " . $tme->{'tactic'}->name .
-                      " on aistep " . $tme->{'step'} . " at (" .
-                      $tme->{'tile_x'} . ", " .
-                      $tme->{'tile_y'} . ", " . $tme->{'tile_level'} .
-                      ") but should end at (" . $tct->x . ", " . $tct->y . ", " .
-                      $tct->level . ") on aistep " . $self->aistep,
-                      level => 'warning');
+        die "TME chain (starting at (" . $tile->x . ", " . $tile->y
+            . ") on aistep " . $chain[$#chain]->{'step'} . ") "
+            . "ends with " . $tme->{'tactic'}->name . " on aistep "
+            . $tme->{'step'} . " at (" . $tme->{'tile_x'} . ", "
+            . $tme->{'tile_y'} . ", " . $tme->{'tile_level'} . ") but "
+            . "should end at (" . $tct->x . ", " . $tct->y . ", "
+            . $tct->level . ") on aistep " . $self->aistep;
     } elsif (!defined $tme) {
-        TAEB->log->ai("TME chain with positive length ended in undef",
-                      level => 'warning');
+        die "TME chain with positive length ended in undef";
     }
     return @chain;
 }
@@ -859,7 +864,21 @@ sub tme_from_tile {
     # If the TME's out of date but on our level, it means we had a routing
     # failure.
     return undef if $tile->level == TAEB->current_level;
-    # TODO: Get an updated interlevel TME, if needed.
+    # Get an updated interlevel TME. We recalculate the risk fields of
+    # the TME in question by looking at the single-level values, then
+    # set its step to mark the fact that it's been recalculated.
+    my %risk = ();
+    my $t = $tme;
+    while(defined $t && $t->{'tile_level'} != TAEB->current_level) {
+        $risk{$_} += $t->{'level_risk'}->{$_}
+            for keys %{$t->{'level_risk'}};
+        $t = $self->tactics_map->{$t->{'prevlevel_level'}}->
+            [$t->{'prevlevel_x'}]->[$t->{'prevlevel_y'}];
+    }
+    return undef if $t->{'step'} != $self->aistep; # can't route to stairs
+    $risk{$_} += $t->{'risk'}->{$_} for keys %{$t->{'risk'}};
+    $tme->{'risk'} = \%risk;
+    $tme->{'step'} = $self->aistep;
     return $tme;
 }
 

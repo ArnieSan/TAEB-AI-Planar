@@ -110,6 +110,7 @@ sub add_possible_move {
     # current TME for this square.
     my $currenttme = $ai->tactics_map->{$newlevel}->[$newx]->[$newy];
     return if defined $currenttme and $currenttme->{'step'} == $ai->aistep;
+    my $full_recalc = $ai->full_tactical_recalculation;
     $self->next_plan_calculation;
     $self->spending_plan({});
     $self->calculate_risk($oldtme);
@@ -117,9 +118,6 @@ sub add_possible_move {
     # so far to it.
     my %risk = %{$self->spending_plan};
     $risk{$_} += $oldtme->{'risk'}->{$_} for keys %{$oldtme->{'risk'}};
-
-    # Note: 1-level calculations are done lazily, so aren't calculated
-    # here. (They're only needed when changing level.)
 
     # Work out the added risk from threats, and the plans which will
     # eliminate or reduce it.
@@ -156,6 +154,26 @@ sub add_possible_move {
 	step             => $ai->aistep,
         make_safer_plans => $msp,
     };
+    # If doing a full recalculation, also update one-level information
+    # in the TME. This ignores threats, as there are no threat maps
+    # for levels other than the current one. TODO: Risk of returning
+    # to a level (due to swarms of monsters surrounding the stairs).
+    if($full_recalc) {
+        if ($oldlevel == $newlevel) {
+            $tme->{'prevlevel_level'} = $oldtme->{'prevlevel_level'};
+            $tme->{'prevlevel_x'} = $oldtme->{'prevlevel_x'};
+            $tme->{'prevlevel_y'} = $oldtme->{'prevlevel_y'};
+            my %lrisk = %{$self->spending_plan};
+            $lrisk{$_} += $oldtme->{'level_risk'}->{$_}
+                for keys %{$oldtme->{'level_risk'}};
+            $tme->{'level_risk'} = \%lrisk;
+        } else {
+            $tme->{'prevlevel_level'} = $tme->{'prevtile_level'};
+            $tme->{'prevlevel_x'} = $tme->{'prevtile_x'};
+            $tme->{'prevlevel_y'} = $tme->{'prevtile_y'};
+            $tme->{'level_risk'} = $self->spending_plan;
+        }
+    }
     bless $tme, "TAEB::AI::Planar::TacticsMapEntry";
     $ai->add_possible_move($tme);
 }
