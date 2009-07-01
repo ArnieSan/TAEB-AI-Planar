@@ -281,6 +281,13 @@ has threat_map => (
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
+# When did we last see a monster?
+has last_monster_seen_step => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => 0,
+);
+
 # For profiling
 has lasttimeofday => (
     isa     => 'Maybe[ArrayRef]',
@@ -908,6 +915,7 @@ sub threat_check {
     my $selfspeed = TAEB->speed; # invariant code motion
     for my $enemy (@enemies) {
 	my $tile = $enemy->tile;
+        $self->last_monster_seen_step(TAEB->step);
 	# Work out what type of enemy this is. If we know its spoiler
 	# from its Monster.pm data (i.e. unique glyph and colour),
 	# then use that; otherwise, farlook at it and see if we have a
@@ -1203,6 +1211,7 @@ sub safe_to_travel {
     my $self = shift;
     return 0 if $self->veto_travel;
     return 0 if TAEB->current_level->has_monsters;
+    return 0 if $self->last_monster_seen_step + 3 > TAEB->step;
     return 1;
 }
 
