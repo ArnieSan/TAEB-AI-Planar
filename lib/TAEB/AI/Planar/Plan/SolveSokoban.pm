@@ -33,7 +33,17 @@ sub aim_tile {
     # Consult the spoilers for this level to see where to go next.
     my $nexttile = TAEB::Spoilers::Sokoban->next_sokoban_step($sokolevel);
     # Nowhere?
-    return undef unless defined $nexttile;
+    if (!defined $nexttile) {
+        # We might have completed the level; in that case, the next move
+        # is upstairs.
+        my $variant = TAEB::Spoilers::Sokoban->recognise_sokoban_variant;
+        $variant =~ /soko[234]\-./
+            and TAEB::Spoilers::Sokoban->remaining_pits == 0
+            and !defined TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level
+            and return TAEB->current_level->first_tile(
+                sub {shift->type eq 'stairsup'});
+        return undef;
+    }
     # To an empty square?
     return $nexttile unless $nexttile->has_boulder;
     # Or to push a boulder?
@@ -49,6 +59,9 @@ sub aim_tile {
 sub has_reach_action { 1 }
 sub reach_action {
     my $self = shift;
+    # Go upstairs if we're on the upstairs.
+    return TAEB::Action->new_action('ascend')
+        if TAEB->current_tile->type eq 'stairsup';
     # Wait 1 turn if we tried to push a boulder and it didn't move.
     return TAEB::Action->new_action('search', iterations => 1)
         if $self->need_to_wait;
@@ -91,11 +104,6 @@ sub spread_desirability {
     # seen an unsolved Sokoban level above, go up. (The last restriction is
     # because interlevel pathing is better than Ascend for going to known
     # levels.)
-    my $variant = TAEB::Spoilers::Sokoban->recognise_sokoban_variant;
-    $variant =~ /soko[234]\-./
-        and TAEB::Spoilers::Sokoban->remaining_pits == 0
-        and !defined TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level
-        and $self->depends(1,"Ascend"), return;
     # If we're in Sokoban already, try exploring around to see if there
     # are mimics pretending to be boulders.
     TAEB->current_level->known_branch && TAEB->current_level->branch eq 'sokoban'
@@ -107,7 +115,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Solving Sokoban';
-use constant references => ['Ascend','GotoSokoban','ExploreHere'];
+use constant references => ['GotoSokoban','ExploreHere'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
