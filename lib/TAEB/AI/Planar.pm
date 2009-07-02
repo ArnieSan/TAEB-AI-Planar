@@ -1138,6 +1138,13 @@ sub loadplans {
 #####################################################################
 # Things below this line should be elsewhere or handled differently
 
+has tiles_on_path => (
+    isa => 'HashRef[Int]', # !exists for not on path, 1 for on path, 2 for endpoint
+    is  => 'rw',
+    default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+
 sub drawing_modes {
     tactical => {
         description => 'Show tactical map',
@@ -1162,7 +1169,57 @@ sub drawing_modes {
                 and $color->reverse(1);
             return $color;
         },
-    }
+    },
+    planar_debug => {
+        description => 'Planar-enhanced debug colors',
+        onframe => sub {
+            my $ai = TAEB->ai;
+            my %path = ();
+            defined $ai->current_plan
+                &&  $ai->current_plan->can('aim_tile_cache')
+                or  $ai->tiles_on_path({}), return;
+            my $endpoint = $ai->current_plan->aim_tile_cache;
+            my @chain = $ai->calculate_tme_chain($endpoint);
+            $path{$_->{'tile_level'}->at($_->{'tile_x'},$_->{'tile_y'})} = 1
+                for @chain;
+            $path{$endpoint} = 2;
+            $ai->tiles_on_path(\%path);
+        },
+        color => sub {
+            my $tile = shift;
+            my $ai   = TAEB->ai;
+
+            my $color;
+            # short-circuit optimisation for unexplored tiles
+            return display(COLOR_GRAY) if $tile->type eq 'unexplored';
+            if((blessed $tile) eq 'TAEB::World::Tile') {
+                # Use a slightly different colour scheme for tiles
+                # which have no special overrides of their own
+                $color = $tile->is_interesting
+                    ? display(COLOR_RED)
+                    : $tile->searched >= 20
+                    ? display(COLOR_CYAN)
+                    : $tile->in_shop
+                    ? display(COLOR_BRIGHT_GREEN)
+                    : $tile->in_temple
+                    ? display(COLOR_BRIGHT_CYAN)
+                    : $tile->stepped_on
+                    ? display(COLOR_BROWN)
+                    : $tile->explored
+                    ? display(COLOR_GREEN)
+                    : display(COLOR_GRAY);
+            } else { $color = $tile->debug_color; }
+
+            $color = display(COLOR_MAGENTA) if $ai->tiles_on_path->{$tile};
+            $color = display(COLOR_BRIGHT_MAGENTA)
+                if ($ai->tiles_on_path->{$tile} // 0) == 2;
+
+            $color->reverse(1)
+                if $tile->type eq 'rock'; # known rock, not unexplored
+
+            return $color;
+        },
+    },
 }
 
 sub STORABLE_freeze {
