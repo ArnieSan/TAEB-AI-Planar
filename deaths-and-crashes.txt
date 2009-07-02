@@ -29,3 +29,10 @@ noticed. Things marked with a + are now fixed.
   and in melee with a nymph and scorpion, on critically low HP
 - Being surrounded by a werewolf and its summon-storm, unable to cure
   lycanthropy due to having had to have prayed for help
+- Killed by walking over a cockatrice corpse while blind.
+  - We need a list of situations where moving around when blind is
+    dangerous. Squares on which we've killed a cockatrice is one,
+    shops is another.
+    *        34179  TAEB-Val-Dwa-Fem-Law turned to stone in Sokoban on             
+                    level 8 [max 12].  Petrified by a cockatrice corpse.  122 [126]
+    - Still Planar's best game ever, though.

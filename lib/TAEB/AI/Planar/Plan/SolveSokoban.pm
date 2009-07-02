@@ -76,6 +76,15 @@ sub calculate_extra_risk {
     return $self->aim_tile_turns(1);
 }
 
+# This plan cannot be abandoned when in Sokoban.
+sub abandon {
+    my $self = shift;
+    TAEB->current_level->known_branch
+        and TAEB->current_level->branch eq 'sokoban'
+        and return;
+    $self->mark_impossible(3);
+}
+
 sub spread_desirability {
     my $self = shift;
     # If this level is solved, and it isn't the top level, and we haven't

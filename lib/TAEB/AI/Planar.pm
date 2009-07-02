@@ -331,7 +331,7 @@ sub next_action {
 	# again for a while. (mark_impossible will try a plan twice before
 	# suspending it for a while; and remember that dependencies and
 	# excursions will mark other plans possible when they succeed.)
-	$self->abandoned_plan->mark_impossible;
+	$self->abandoned_plan->abandon;
 	TAEB->log->ai("Plan ".$self->abandoned_plan->name.
 			       " was abandoned.");
         $self->current_plan->reverse_dependencies
@@ -345,7 +345,7 @@ sub next_action {
             defined $self->current_tactical_plan &&
             $self->abandoned_tactical_plan->name ne
             $self->current_tactical_plan->name) {
-	    $self->abandoned_tactical_plan->mark_impossible;
+	    $self->abandoned_tactical_plan->abandon;
 	    TAEB->log->ai("Tactical plan ".
 				   $self->abandoned_tactical_plan->name.
 				   " was abandoned.");
@@ -369,7 +369,7 @@ sub next_action {
         $self->old_tactical_plans->[0]->name ne
         $self->old_tactical_plans->[1]->name) {
         # We're oscillating between two tactics for the same strategy.
-        $self->current_tactical_plan->mark_impossible;
+        $self->current_tactical_plan->abandon;
 	    TAEB->log->ai("Oscillating tactical plan ".
 				   $self->abandoned_tactical_plan->name.
 				   " was abandoned.");
