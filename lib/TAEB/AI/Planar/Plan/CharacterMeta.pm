@@ -12,12 +12,15 @@ sub planspawn {
     if (TAEB->is_lycanthropic) {
         $ai->get_plan('Wolfsbane')->validate;
     }
+    if (TAEB->nutrition <= 49) {
+        $ai->get_plan('PrayForFood')->validate;
+    }
 }
 
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Improving my character';
-use constant references => ['Wolfsbane'];
+use constant references => ['Wolfsbane','PrayForFood'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
