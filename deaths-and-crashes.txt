@@ -27,3 +27,5 @@ noticed. Things marked with a + are now fixed.
   leaving nasty-to-TAEB bones?)
 - Being made helpless (I'm not entirely sure how) when in a beehive
   and in melee with a nymph and scorpion, on critically low HP
+- Being surrounded by a werewolf and its summon-storm, unable to cure
+  lycanthropy due to having had to have prayed for help
