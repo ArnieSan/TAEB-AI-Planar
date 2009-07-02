@@ -1303,6 +1303,7 @@ sub safe_to_travel {
     return 0 if $self->veto_travel;
     return 0 if TAEB->current_level->has_monsters;
     return 0 if $self->last_monster_seen_step + 3 > TAEB->step;
+    return 0 if TAEB->is_blind;
     return 1;
 }
 
