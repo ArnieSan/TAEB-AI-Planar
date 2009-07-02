@@ -25,7 +25,6 @@ sub aim_tile {
     return if TAEB->level < 5;
     return if TAEB->align ne 'Law';
     return unless TAEB->has_item('long sword');
-    $self->_level(TAEB->current_level);
     return $self->tile;
 }
 
@@ -49,8 +48,9 @@ sub reach_action {
 }
 sub reach_action_succeeded {
     my $self = shift;
-    # If we're on a different level, it worked.
-    return TAEB->current_level != $self->_level;
+    return 1 if TAEB->get_artifact("Excalibur");
+    return 0 if $self->tile->type ne 'fountain';
+    return undef; # TODO: figure out when this won't work
 }
 sub calculate_extra_risk {
     my $self = shift;
