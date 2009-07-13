@@ -117,6 +117,8 @@ sub add_possible_move {
     # Make a deep copy of the spending plan, and add the spending plan
     # so far to it.
     my %risk = %{$self->spending_plan};
+    $risk{$_} < 0 and warn "Risk of $_ seems to be negative in ".$self->name
+        for keys %risk;
     $risk{$_} += $oldtme->{'risk'}->{$_} for keys %{$oldtme->{'risk'}};
 
     # Work out the added risk from threats, and the plans which will
@@ -135,6 +137,9 @@ sub add_possible_move {
             $timetohere-$turns : 1;
 	# Add risk from the threat.
 	my %threatrisk = %{$thme->{$p}};
+        $threatrisk{$_} < 0 and 
+            warn "Threat risk of $_ seems to be negative in ".$self->name
+            for keys %threatrisk;
 	$risk{$_} += $threatrisk{$_} * $risk_multiplier for keys %threatrisk;
 	# Add the threat reduction plan.
 	$msp->{$reductionplan} += $ai->resources->{$_}->cost($threatrisk{$_})
