@@ -23,7 +23,7 @@ sub scarcity {
     my $maxhp = TAEB->maxhp;
     $quantity <= 0 and return 1024;
     while (1) {
-	$quantity > $maxhp/$n+1 and return $n*$n;
+	$quantity > $maxhp/($n+1) and return $n*$n;
 	$n++;
 	$n >= 32 and return 1024;
     }
