@@ -45,6 +45,10 @@ sub gain_resource_conversion_desire {
 	$ai->add_capped_desire($self, $ai->resources->{'Zorkmids'}->value
 			       * 50);
     }
+    if ($glyph eq '[') {
+	$ai->add_capped_desire($self, $ai->resources->{'AC'}->value
+			       * 4);
+    }
     if ($glyph eq '%') {
 	$ai->add_capped_desire($self, $ai->resources->{'Nutrition'}->base_value
 			       * 30);
