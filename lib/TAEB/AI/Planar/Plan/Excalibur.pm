@@ -55,6 +55,7 @@ sub reach_action_succeeded {
 sub calculate_extra_risk {
     my $self = shift;
     my $risk = 0;
+    my $count = 0;
     $risk += $self->cost('Time', 1);
     $risk += $self->cost('Hitpoints',5);
     # Don't be too anxious to get Excalibur at low levels, it's
@@ -62,11 +63,12 @@ sub calculate_extra_risk {
     $risk += $self->cost('Hitpoints',10) if TAEB->level < 8;
     $risk += $self->cost('Hitpoints',20) if TAEB->level < 7;
     $risk += $self->cost('Hitpoints',40) if TAEB->level < 6;
-    # Likewise, make sure there are sufficient fountains to be worth
-    # dipping in. To do this, ensure we've seen the Oracle level,
-    # there are sufficiently many fountains there.
-    $risk += $self->cost('DamagePotential',5)
-        unless TAEB->dungeon->special_level->{'oracle'};
+    # If we don't know of a lot of fountains, we might just wind up
+    # with a rusty heap.
+    $risk += $self->cost('DamagePotential',3)
+        unless TAEB->dungeon->special_level->{'oracle'}
+            || TAEB->nearest_level(sub { $count += shift->tiles_of('fountain');
+                                         $count >= 3; });
     return $risk;
 }
 
