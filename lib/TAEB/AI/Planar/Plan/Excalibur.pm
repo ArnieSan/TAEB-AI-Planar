@@ -35,7 +35,8 @@ sub gain_resource_conversion_desire {
     return if TAEB->align ne 'Law';
     return unless TAEB->has_item('long sword');
     # Excalibur does an extra 5.5 damage on average.
-    return TAEB->ai->resources->{'DamagePotential'}->anticost(5.5);
+    TAEB->ai->add_capped_desire($self,
+        TAEB->ai->resources->{'DamagePotential'}->anticost(5.5));
 }
 
 sub has_reach_action { 1 }
