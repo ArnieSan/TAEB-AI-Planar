@@ -24,6 +24,7 @@ sub aim_tile {
     return if TAEB->get_artifact("Excalibur");
     return if TAEB->level < 5;
     return if TAEB->align ne 'Law';
+    return if $self->tile->level->is_minetown;
     return unless TAEB->has_item('long sword');
     return $self->tile;
 }
