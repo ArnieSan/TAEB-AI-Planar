@@ -193,8 +193,17 @@ sub add_capped_desire {
     my $amount = shift;
     my $risk = $plan->risk;
     if(defined $risk) {
+	#my @block;
+
+	#while (my ($res, $value) = each %{ $plan->spending_plan }) {
+	#    push @block, "$res => $value";
+	#}
+
+	#TAEB->log->ai("-> ${\ $plan->name} for $amount - $risk { " . join(", ", @block) .
+	#    " }");
 	$self->_planheap->insert([$plan, $amount-$risk, 1]);
     } else {
+	#TAEB->log->ai("-> ${\ $plan->name} for $amount UNKNOWN RISK");
 	$self->_planheap->insert([$plan, $amount, 0]);
     }
 }
@@ -607,6 +616,7 @@ sub next_plan_action {
 	$plan = undef;
 	{
 	    my $heapentry = $self->_planheap->extract_first;
+	    #TAEB->log->ai("<- ${$heapentry}[0]");
 	    my $withrisk;
 	    # If there was no result, bail out to the block that tries
 	    # to manipulate things to give us a result.
