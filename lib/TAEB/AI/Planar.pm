@@ -24,7 +24,15 @@ extends 'TAEB::AI';
 use constant repeated_threat_turns => 5;
 
 # The overall plan, what we're aiming towards.
-use constant overall_plan => 'SlowDescent';
+has overall_plan => (
+    isa     => 'Str',
+    is      => 'rw',
+    default => sub {
+	TAEB->config->get_ai_config->{'overall_plan'} // 'SlowDescent';
+    },
+    trigger => sub { shift->loadplans },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 
 # Should we ever use travel?
 use constant veto_travel => 0;
@@ -609,7 +617,7 @@ sub next_plan_action {
     # so far (using plans as the hash keys), or undef if it's untried.
     my %planstate = ();
     my $bestplanname;
-    my $majorplan = overall_plan;
+    my $majorplan = $self->overall_plan;
     $self->currently_modifiers('');
     while (1) {
 	my $desire;
@@ -1109,6 +1117,7 @@ sub create_plan {
 }
 
 sub loadplans {
+    my $self = shift;
     # Load plans.
     TAEB->log->ai("Loading plans...");
 
@@ -1129,7 +1138,7 @@ sub loadplans {
 	"MoveFrom",          # tactical metaplan for tiles
 	"Nop",               # stub tactical plan
 	# Goal metaplans
-	overall_plan);       # metaplan for strategy
+	$self->overall_plan);# metaplan for strategy
     my %processed = ();
 
     # Load each plan, and recursively load its references.
