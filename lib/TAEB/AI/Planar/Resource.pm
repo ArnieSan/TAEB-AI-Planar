@@ -15,24 +15,25 @@ sub base_value {
 # just be _value*scarcity, but for some things, like time, it's weird.
 sub value {
     my $self = shift;
-    return $self->_value * $self->scarcity($self->amount);
+    my $have = shift // $self->amount;
+    return $self->_value * $self->scarcity($have) *
+        ($self->is_lasting ? TAEB->ai->analysis_window : 1);
 }
+
+# Is this going to help us for a long time?
+sub is_lasting { 0 }
 
 # Calculate the cost of a certain amount of this resource.
 sub cost {
     my $self = shift;
     my $quantity = shift;
-    my $cost = $self->_value * $quantity *
-	$self->scarcity($self->amount-$quantity);
-    return $cost;
+    return $self->value($self->amount - $quantity) * $quantity;
 }
 # The same, for gaining the resource.
 sub anticost {
     my $self = shift;
     my $quantity = shift;
-    my $cost = $self->_value * $quantity *
-	$self->scarcity($self->amount+$quantity);
-    return $cost;
+    return $self->value($self->amount + $quantity) * $quantity;
 }
 
 # We want to spend this resource, make it more valuable.

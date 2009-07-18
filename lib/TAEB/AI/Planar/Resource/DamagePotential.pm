@@ -10,6 +10,8 @@ has _value => (
     default => 40,
 );
 
+sub is_lasting { 1 }
+
 sub amount {
     return TAEB::Spoilers::Combat->damage(
         TAEB->inventory->equipment->weapon // '-');

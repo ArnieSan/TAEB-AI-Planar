@@ -12,6 +12,8 @@ has _value => (
     default => 60,
 );
 
+sub is_lasting { 1 }
+
 # We have purity iff we aren't a lycanthrope.
 sub amount {
     return !TAEB->is_lycanthropic;

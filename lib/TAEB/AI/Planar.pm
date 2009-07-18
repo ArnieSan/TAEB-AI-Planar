@@ -21,7 +21,21 @@ extends 'TAEB::AI';
 # instance, 20 means treat a monster that would attack us every
 # turn as as dangerous as something which might do 20 times the
 # damage to us, but only once.
-use constant repeated_threat_turns => 5;
+
+# Conversely, this multiplies the value of permanent resources; when
+# this is high, we really like getting items, cursechecking, etc.  Note
+# that in many cases the risk of getting items is multiplied by this, so
+# the desire had better be too.
+
+# In general, this has the effect of making TAEB more of a "neat freak",
+# while lower values give it more options.  So we make it depend on the
+# difficulty of finding actions; it increases when ideas are easy, and
+# decreases when they aren't.
+has analysis_window => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => 1,
+);
 
 # The overall plan, what we're aiming towards.
 has overall_plan => (
@@ -685,6 +699,8 @@ sub next_plan_action {
                 $self->update_tactical_map;
 		$self->_planheap->clear;
 		%planstate = ();
+		$self->analysis_window($self->analysis_window / 2)
+		    if $self->analysis_window >= 2;
 	    }
 	    $self->add_capped_desire($self->get_plan($majorplan),
 				     1e8);
@@ -729,6 +745,8 @@ sub next_plan_action {
 	# Seems it was impossible. Oh well...
 	$plan->spread_desirability;
     }
+    $self->analysis_window($self->analysis_window + 1)
+	if $self->analysis_window < 50;
     TAEB->log->ai("Plan $bestplanname (risk = " . (join '|',%{$plan->spending_plan})
                   . " = " . $plan->risk
                   . ") thinks it's possible, enacting it.", level => 'info');

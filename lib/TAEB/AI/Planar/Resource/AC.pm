@@ -9,6 +9,8 @@ has _value => (
     default => 40,
 );
 
+sub is_lasting { 1 }
+
 sub amount {
     return 10 - TAEB->ac; # counting up from 0
 }
