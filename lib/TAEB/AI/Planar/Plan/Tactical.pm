@@ -2,7 +2,7 @@
 package TAEB::AI::Planar::Plan::Tactical;
 use TAEB::OO;
 use TAEB::AI::Planar::TacticsMapEntry;
-use TAEB::Util qw/delta2vi/;
+use TAEB::Util qw/delta2vi refaddr/;
 extends 'TAEB::AI::Planar::Plan';
 
 # Tactical plans. These are similar to strategic plans, but plan
@@ -108,7 +108,7 @@ sub add_possible_move {
     my $ai = TAEB->ai;
     # We can save a lot of time by not bothering if there's already a
     # current TME for this square.
-    my $currenttme = $ai->tactics_map->{$newlevel}->[$newx]->[$newy];
+    my $currenttme = $ai->tactics_map->{refaddr $newlevel}->[$newx]->[$newy];
     return if defined $currenttme and $currenttme->{'step'} == $ai->aistep;
     my $full_recalc = $ai->full_tactical_recalculation;
     $self->next_plan_calculation;

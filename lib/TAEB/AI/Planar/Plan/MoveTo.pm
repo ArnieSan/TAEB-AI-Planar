@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::MoveTo;
 use TAEB::OO;
+use TAEB::Util 'refaddr';
 use TAEB::AI::Planar::TacticsMapEntry;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
@@ -49,7 +50,7 @@ sub check_possibility_inner {
     # Bail as fast as we can if a faster way to move to this tile has
     # already been locked into the tactical map, to save needless
     # computation.
-    my $currenttme = $ai->tactics_map->{$l}->[$x]->[$y];
+    my $currenttme = $ai->tactics_map->{refaddr $l}->[$x]->[$y];
     return if defined $currenttme && $currenttme->{'step'} == $aistep;
     # Otherwise, continue with the calculation...
     my $tmex = $tme->{'tile_x'};

@@ -748,8 +748,8 @@ sub update_tactical_map {
         TAEB->log->ai("Level changed, resetting all TMEs...");
         for my $levelgroup (@{TAEB->dungeon->levels}) {
             for my $level (@$levelgroup) {
-                $map->{$level} = [];
-                my $levelmap = $map->{$level};
+                $map->{refaddr $level} = [];
+                my $levelmap = $map->{refaddr $level};
                 # MAGIC NUMBER alert! Should this be centralised somewhere?
                 $levelmap->[$_] = [] for 0..79;
             }
@@ -768,7 +768,7 @@ sub update_tactical_map {
         my $tx  = $tme->{'tile_x'};
         my $ty  = $tme->{'tile_y'};
         my $tl  = $tme->{'tile_level'};
-        my $row = $map->{$tl}->[$tx];
+        my $row = $map->{refaddr $tl}->[$tx];
 	# If we're off the level, just ignore this TME, to avoid
 	# updating the entire dungeon every step, unless we just
         # changed level.
@@ -859,7 +859,7 @@ sub calculate_tme_chain {
     return unless defined $tme;
     while(defined $tme && defined $tme->{'prevtile_level'}) {
 	unshift @chain, $tme;
-	$tme=$map->{$tme->{'prevtile_level'}}->[$tme->{'prevtile_x'}]
+	$tme=$map->{refaddr $tme->{'prevtile_level'}}->[$tme->{'prevtile_x'}]
 	         ->[$tme->{'prevtile_y'}];
         refaddr $tme == refaddr $chain[$_] and
             die "TME refers to chain element $_ (" . $tme->{'tactic'}->name .
@@ -888,7 +888,7 @@ sub calculate_tme_chain {
 sub tme_from_tile {
     my $self = shift;
     my $tile = shift;
-    my $map  = $self->tactics_map->{$tile->level};
+    my $map  = $self->tactics_map->{refaddr $tile->level};
     return undef unless defined $map; # it might be on an unpathed level
     my $tme  = $map->[$tile->x]->[$tile->y];
     return undef unless defined $tme; # we might not be able to route there
@@ -905,7 +905,7 @@ sub tme_from_tile {
     while(defined $t && $t->{'tile_level'} != $tct->level) {
         $risk{$_} += $t->{'level_risk'}->{$_}
             for keys %{$t->{'level_risk'}};
-        $t = $self->tactics_map->{$t->{'prevlevel_level'}}->
+        $t = $self->tactics_map->{refaddr $t->{'prevlevel_level'}}->
             [$t->{'prevlevel_x'}]->[$t->{'prevlevel_y'}];
     }
     return undef if $t->{'step'} != $self->aistep; # can't route to stairs
