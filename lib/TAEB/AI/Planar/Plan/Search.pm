@@ -64,7 +64,7 @@ sub tile_searchability {
     $pmap = $pmap->{'map'};
     return 50 if 3 == scalar $tile->grep_orthogonal(
         sub {$self->is_search_blocked(shift);});
-    return log(searchability($pmap,$tile)+1);
+    return searchability($pmap,$tile);
 }
 
 #####################################################################
@@ -122,16 +122,18 @@ sub wall_interest {
     return 0 unless $tile->type eq 'wall'
                  || $tile->type eq 'rock'
                  || $tile->type eq 'unexplored'; # just in case
-    my $factor = 1e1;
+    my $factor = 0.1;
 
     my ($px, $py) = panel($tile);
     my ($dx, $dy) = vi2delta($dir);
 
     if ($pmap->{$px + $dx}{$py + $dy}) {
-        $factor = $tile->type eq 'wall' ? 1e20 : 1e5;
+        $factor = $tile->type eq 'wall' ? 6 : 1;
     }
 
-    return $factor * exp(- $tile->searched*5);
+    $factor -= $tile->searched*0.2;
+
+    return (($factor > 0) ? $factor : 0);
 }
 
 sub searchability {
