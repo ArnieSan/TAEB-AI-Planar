@@ -61,6 +61,9 @@ sub calculate_extra_risk {
     my $self = shift;
     my $risk = $self->cost("Ammo",1);
     $risk += $self->aim_tile_turns(1);
+    # Chasing unicorns is fruitless
+    $risk += $self->cost("Impossibility", 1) if $self->monster->is_unicorn &&
+	$self->aim_tile_cache != $self->aim_tile;
     return $risk;
 }
 
