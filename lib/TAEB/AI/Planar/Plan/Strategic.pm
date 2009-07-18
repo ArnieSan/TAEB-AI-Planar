@@ -109,10 +109,8 @@ sub calculate_risk {
 	return 0;
     }
     # Before returning the risk, spread risk-reduction dependencies.
-    my $am_reducer = 0;
     for my $planname (keys %{$target_tme->{'make_safer_plans'}}) {
 	my $plan = $ai->plans->{$planname};
-	$am_reducer = 1 if $plan == $self;
 	my $amount = $target_tme->{'make_safer_plans'}->{$planname};
 	if(!defined $plan) {
 	    TAEB->log->ai("Plan $planname has gone missing...");
@@ -134,12 +132,17 @@ sub calculate_risk {
 	## END DEBUG CODE
 	$plan->reverse_dependencies->{$self} = $self;
 	$ai->add_capped_desire($plan, $self->desire);
+	# This needs to run before the plan calculates risk in order to
+	# have any effect.  Fortunately, we're running at a point before
+	# the plan would run even if it was riskless.  NB INVARIANT
+	$plan->in_make_safer_on_step(TAEB->ai->aistep);
         $self->add_dependency_path($plan);
     }
     # Grab the total risk from the last TME in the chain.  If we're not
     # dealing with the problem, penalize according to analysis_window.
     $risk += $self->cost_from_tme($target_tme) *
-	($am_reducer ? 1 : TAEB->ai->analysis_window);
+	($self->in_make_safer_on_step == TAEB->ai->aistep
+		? 1 : TAEB->ai->analysis_window);
     return $risk;
 }
 # Used in calculate_extra_risk; this represents the cost of spending

@@ -115,6 +115,14 @@ has risk_valid_on_step => (
     default => -1,
 );
 
+# This plan was called by the make_safer mechanism, and as such does
+# not suffer the "letting threat stand" longsightedness penalties.
+has in_make_safer_on_step => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => -1,
+);
+
 # Calculate the risk of carrying out this plan, and spread
 # desirability to other plans which reduce its risk. (Typically, such
 # spreading would increase the desirability of the risk-reducing plans
@@ -335,6 +343,8 @@ sub depends {
     my $ratio = shift;
     my $ai = TAEB->ai;
     my $on = $ai->get_plan(@_);
+    $on->in_make_safer_on_step(TAEB->ai->aistep)
+	if $self->in_make_safer_on_step == TAEB->ai->aistep;
     $on->reverse_dependencies->{$self} = $self;
     $ai->add_capped_desire($on, $self->desire + 1e6 * log $ratio);
     $self->add_dependency_path($on);
@@ -345,6 +355,8 @@ sub depends_risky {
     my $ratio = shift;
     my $ai = TAEB->ai;
     my $on = $ai->get_plan(@_);
+    $on->in_make_safer_on_step(TAEB->ai->aistep)
+	if $self->in_make_safer_on_step == TAEB->ai->aistep;
     $on->reverse_dependencies->{$self} = $self;
     $ai->add_capped_desire($on, $self->desire_with_risk + 1e6 * log $ratio);
     $self->add_dependency_path($on);
