@@ -563,6 +563,9 @@ sub next_plan_action {
     for my $item (TAEB->inventory->items) {
 	$self->get_plan("InventoryItemMeta",$item)->validate;
     }
+    for my $mon (TAEB->current_level->monsters) {
+	$self->get_plan("MonsterMeta",$mon)->validate;
+    }
     for my $item (TAEB->current_level->items) {
 	$self->get_plan("GroundItemMeta",$item)->validate;
     }
@@ -1146,6 +1149,7 @@ sub loadplans {
 	"InventoryItemMeta", # metaplan for inventory items
 	"GroundItemMeta",    # metaplan for floor items
 	"Investigate",       # metaplan for interesting tiles
+	"MonsterMeta",       # metaplan for monsters
         "TerrainMeta",       # metaplan for unusual terrain
         "CharacterMeta",     # metaplan for intrinsics, etc
 	# Threat metaplans
