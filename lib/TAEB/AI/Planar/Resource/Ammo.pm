@@ -12,11 +12,14 @@ has _value => (
 # Split out from amount to avoid code duplication; other things care
 # about which projectiles we have too
 sub projectilelist {
-    my @projectiles = (TAEB->inventory->find(
-                           identity   => qr/\b(?:dagger|spear|dart|shuriken)\b/,
+    my @projectiles;
+    for my $type (qw/dagger spear shuriken dart/) {
+	push @projectiles, (TAEB->inventory->find(
+                           identity   => qr/\b$type\b/,
                            is_wielded => sub { !$_ },
                            cost       => 0,
                        ));
+    }
     return @projectiles;
 }
 sub amount {
