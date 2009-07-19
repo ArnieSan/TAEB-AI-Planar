@@ -32,7 +32,7 @@ extends 'TAEB::AI';
 # difficulty of finding actions; it increases when ideas are easy, and
 # decreases when they aren't.
 has analysis_window => (
-    isa     => 'Int',
+    isa     => 'Num',
     is      => 'rw',
     default => 1,
 );
