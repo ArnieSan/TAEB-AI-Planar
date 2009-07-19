@@ -4,6 +4,11 @@ use TAEB::OO;
 extends 'TAEB::AI::Planar::Resource';
 
 sub amount {
+    if (! TAEB->known_debt) {
+	warn "This shouldn't happen ever, debt is unknown at next_action time";
+	return 0; # rather than overestimating
+    }
+
     return TAEB->gold - TAEB->debt;
 }
 
