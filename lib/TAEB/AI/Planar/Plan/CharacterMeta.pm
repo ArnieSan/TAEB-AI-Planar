@@ -15,12 +15,15 @@ sub planspawn {
     if (TAEB->nutrition <= 49) {
         $ai->get_plan('PrayForFood')->validate;
     }
+    if (TAEB->hp < TAEB->maxhp) {
+	$ai->get_plan('Rest')->validate;
+    }
 }
 
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Improving my character';
-use constant references => ['Wolfsbane','PrayForFood'];
+use constant references => ['Wolfsbane','PrayForFood','Rest'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
