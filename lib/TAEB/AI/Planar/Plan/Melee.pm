@@ -40,6 +40,7 @@ sub calculate_extra_risk {
     # It's risky to attack something that isn't meleeable.
     my $risk = 20000*!($self->monster->is_meleeable);
     $risk += $self->aim_tile_turns(1);
+    $risk += $self->attack_monster_risk($self->monster);
     return $risk;
 }
 

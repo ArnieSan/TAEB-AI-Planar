@@ -173,6 +173,24 @@ sub aim_tile_turns {
     return $cost;
 }
 
+# Special costs of attacking monsters.  For now, don't even think about
+# attacking lawful monsters; eventually this will be more sophisticated,
+# and handle things like all the HP we expect to lose attacking them.
+sub attack_monster_risk {
+    my ($self, $mon) = @_;
+    my $spoiler = $mon->spoiler // return; # Is are always safe (for now)
+    my $risk = 0;
+
+    # XXX priests, unicorns
+    return 0 if ($mon->disposition // '') eq 'hostile';
+
+    # for most monsters, estimate how much it'll hurt if we anger them
+    $risk += $self->cost("Impossibility", 1) if $spoiler->name =~
+	/shopkeeper|watchman|watch captain|priest/;
+
+    return $risk;
+}
+
 # Set when an attempt to travel fails; cleared when the plan succeeds.
 has do_not_travel => (
     isa => 'Bool',
