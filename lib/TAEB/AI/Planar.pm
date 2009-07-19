@@ -1376,7 +1376,8 @@ sub use_benefit {
     }
     # Likewise for weapons; for those we count their average damage. 90%
     # chance that they aren't cursed.
-    if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed) {
+    if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed
+	&& $item->hands == 1) { #XXX ignore to-handers for now
         my $current_weapon = TAEB->inventory->equipment->weapon;
         my $damage = TAEB::Spoilers::Combat->damage($item);
         $damage *= .9 unless defined $item->is_cursed; # i.e. we know it isn't
