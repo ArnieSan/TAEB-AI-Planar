@@ -2,8 +2,8 @@
 package TAEB::AI::Planar::Plan;
 use TAEB::OO;
 
-use constant   difficulty_fading     => 1;
-use constant d_difficulty_fading     => 0.05;
+use constant   difficulty_fading     => 2;
+use constant d_difficulty_fading     => 1;
 use constant d_difficulty_increase   => 3;
 use constant d_difficulty_multiplier => 3;
 
@@ -34,7 +34,7 @@ has required_success_count => (
     default => 0,
 );
 has d_difficulty => (
-    isa => 'Num',
+    isa => 'Int',
     is  => 'rw',
     default => 0,
 );
@@ -75,7 +75,7 @@ sub mark_impossible {
     $d_difficulty -= $elapsed * d_difficulty_fading;
     $d_difficulty < d_difficulty_increase
 	and $d_difficulty = d_difficulty_increase;
-    $self->required_success_count($asc + int($d_difficulty));
+    $self->required_success_count($asc + $d_difficulty);
     $d_difficulty += d_difficulty_increase;
     $d_difficulty *= d_difficulty_multiplier;
     $d_difficulty = $max_new_d_difficulty
