@@ -1013,6 +1013,18 @@ sub threat_check {
 	    # Use the built-in TAEB maximum-damage function.
 	    my $damagepotential = $enemy->maximum_melee_damage;
 	    $danger = {'Hitpoints' => $damagepotential};
+	    # We hates nymphs
+	    my $attack;
+	    if ($attack = $spoiler->has_attack('stealitem')) {
+		for my $r (qw/AC DamagePotential Zorkmids/) {
+		    $danger->{$r} = $self->resources->{$r}->amount / 10;
+		}
+	    }
+	    # Yellow lights make us waste lots of time
+	    if ($attack = $spoiler->has_attack('blind')) {
+		$attack->{damage} =~ /(\d+)d(\d+)/;
+		$danger->{'Time'} = $1 * ($2 + 1) / 2;
+	    }
 	    $relspeed = $$spoiler{speed} / $selfspeed;
 	} else { # use a stock value as we don't know...
 	    $danger = {'Hitpoints' => 5};
