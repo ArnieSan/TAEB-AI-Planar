@@ -15,13 +15,28 @@ sub check_possibility_inner {
     my $self = shift;
     my $tme  = shift;
     # Set off move-to metaplans for adjacent tiles.
+    my $mf_cache = (TAEB->ai->plan_caches->{'MoveFrom'} //= { step => -1 });
+
+    my $can_squeeze;
+
+    if ($mf_cache->{step} == TAEB->ai->aistep) {
+	$can_squeeze = $mf_cache->{squeeze};
+    } else {
+	my $can_squeeze = TAEB->inventory->weight < 600 &&
+	    (TAEB->current_level->branch // '') ne 'sokoban';
+	$mf_cache->{step} = TAEB->ai->aistep;
+	$mf_cache->{squeeze} = $can_squeeze;
+    }
+
     my $tmetile = $self->tme_tile($tme);
     if($tmetile->type ne 'opendoor' && $tmetile->type ne 'closeddoor') {
 	$tmetile->each_adjacent(sub {
 	    my $tile = shift;
             my $level = $tile->level;
             if (($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
-                (!$level->known_branch || $level->branch ne 'sokoban')) {
+		$level->at($tile->x, $tmetile->y)->is_walkable(1) ||
+		$level->at($tmetile->x, $tile->y)->is_walkable(1) ||
+		$can_squeeze) {
                 $self->generate_plan($tme, "MoveTo", $tile);
             }
 	    if (($tile->type eq 'opendoor' || $tile->type eq 'closeddoor')
