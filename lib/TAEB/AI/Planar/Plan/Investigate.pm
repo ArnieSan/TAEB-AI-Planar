@@ -63,35 +63,8 @@ sub gain_resource_conversion_desire {
     }
 }
 
-sub planspawn {
-    my $self = shift;
-    # If there's an interesting tile with a corpse on, create a
-    # FloorFood plan for each possible corpse that might be on the
-    # tile, to see if we'd want to eat it. The created FloorFood will
-    # always plan-fail, but with Investigate as a dependency. (In
-    # other words, if you know what's there, eat it; if you don't
-    # know what's there but feel like eating it, investigate to see
-    # if you want to eat it.)
-    # Because we can't see what's there for certain, we use the list
-    # of kill-times instead.
-    my @kill_list = @{ $self->tile->kill_times };
-    for my $killelement (@kill_list) {
-	my $monster = $killelement->[0];
-	# Don't bother investigating if the kill was so long ago that
-	# the corpse will be rotten for certain by now.
-	next if $killelement->[2] >= TAEB->turn - 100;
-	my $spoiler = TAEB::Spoilers::Monster->lookup(name => $monster);
-        if(defined $spoiler) {
-	    TAEB->ai->get_plan("FloorFood",[$self->tile,$spoiler])
-		->validate;
-	} else {
-	    TAEB->log->ai("Couldn't find the spoilers for $monster...");
-	}
-    }
-}
-
 use constant description => "Seeing what's on a tile";
-use constant references => ['FloorFood'];
+use constant references => [];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
