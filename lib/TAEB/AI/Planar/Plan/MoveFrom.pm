@@ -22,7 +22,7 @@ sub check_possibility_inner {
     if ($mf_cache->{step} == TAEB->ai->aistep) {
 	$can_squeeze = $mf_cache->{squeeze};
     } else {
-	my $can_squeeze = TAEB->inventory->weight < 600 &&
+	$can_squeeze = TAEB->inventory->weight < 600 &&
 	    (TAEB->current_level->branch // '') ne 'sokoban';
 	$mf_cache->{step} = TAEB->ai->aistep;
 	$mf_cache->{squeeze} = $can_squeeze;
