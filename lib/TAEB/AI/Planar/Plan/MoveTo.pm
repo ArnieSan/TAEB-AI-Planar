@@ -50,6 +50,8 @@ sub check_possibility_inner {
     # Bail as fast as we can if a faster way to move to this tile has
     # already been locked into the tactical map, to save needless
     # computation.
+    #D# TAEB->log->ai("Evaluating MoveTo($x,$y) from " . $tme->{tile_x} . "," .
+    #D#	    $tme->{tile_y} . "...");
     my $currenttme = $ai->tactics_map->{refaddr $l}->[$x]->[$y];
     return if defined $currenttme && $currenttme->{'step'} == $aistep;
     # Otherwise, continue with the calculation...
@@ -78,6 +80,7 @@ sub check_possibility_inner {
     # PushBoulderRisky instead.
     if($tile->has_boulder
        && (!defined $l->branch || $l->branch ne 'sokoban')) {
+        #D# TAEB->log->ai("Considering to push boulder");
         my $dx = $x - $tmex;
         my $dy = $y - $tmey;
 	my $beyond = $l->at_safe($x+$dx,$y+$dy);
@@ -136,7 +139,10 @@ sub check_possibility_inner {
 	$levelcache->[$_] = [] for 0..79;
 	$cache->{$l} = $levelcache;
     }
-    return if ($levelcache->[$x]->[$y] // -1) == $aistep;
+    if (($levelcache->[$x]->[$y] // -1) == $aistep) {
+	#D#TAEB->log->ai("We've already considered moving here");
+	return;
+    }
     $levelcache->[$x]->[$y] = $aistep;
 
     # We can just walk to passable tiles. There could be something blocking

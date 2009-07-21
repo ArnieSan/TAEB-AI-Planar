@@ -28,10 +28,16 @@ sub check_possibility_inner {
 	$mf_cache->{squeeze} = $can_squeeze;
     }
 
+    #D#TAEB->log->ai(sprintf (("Checking possibility of MoveFrom(%i,%i,%i), " .
+    #D#	"can_squeeze = $can_squeeze"), $tme->{tile_x}, $tme->{tile_y},
+    #D#	$tme->{tile_level}->z));
+
     my $tmetile = $self->tme_tile($tme);
     if($tmetile->type ne 'opendoor' && $tmetile->type ne 'closeddoor') {
 	$tmetile->each_adjacent(sub {
 	    my $tile = shift;
+	    #D# TAEB->log->ai("Evaluating move (non door) to " . $tile->x . "," .
+	    #D#	$tile->y);
             my $level = $tile->level;
             if (($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
 		$level->at($tile->x, $tmetile->y)->is_walkable(1) ||
