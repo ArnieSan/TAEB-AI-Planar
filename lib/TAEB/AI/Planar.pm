@@ -820,6 +820,7 @@ sub add_threat {
     my $tile = shift;
     my $relspeed = shift;
     my $movetype = shift;
+    my $adjonly = shift;
     my $threatmap = $self->threat_map->{TAEB->current_level};
     # We flood the threat map with information about this threat.
     # This is done using a heap with elements of the form
@@ -846,6 +847,7 @@ sub add_threat {
 	next if $y < 1;
 	next if $y > 21;
 	next if $visitmap[$x]->[$y];
+	return if $adjonly && $t > 0;
 	$visitmap[$x]->[$y] = 1;
 	my $rt = $t / $relspeed;
 	$threatmap->[$x]->[$y]->{"$rt $planname"} = $danger;
@@ -1031,7 +1033,8 @@ sub threat_check {
 	}
 	my $plan = $self->get_plan("Mitigate",$enemy);
 	# TODO: walk/fly/swim
-	$self->add_threat($plan->name,$danger,$tile,$relspeed,'walk');
+	$self->add_threat($plan->name,$danger,$tile,$relspeed,'walk',
+	    $enemy->is_unicorn);
 	$plan->validate();
     }
     # As an entirely different type of threat (where 'threat' is
