@@ -1371,6 +1371,7 @@ sub safe_to_travel {
 sub use_benefit {
     my $self = shift;
     my $item = shift;
+    my $cost = shift // 'anticost';
     my $resources = $self->resources;
     my $value = 0;
     # Armour counts as its AC, plus any special abilities it
@@ -1387,7 +1388,7 @@ sub use_benefit {
         defined $currently_in_slot && $currently_in_slot->can('ac') &&
             defined $currently_in_slot->ac && $currently_in_slot != $item
             and $ac -= $currently_in_slot->ac;
-        $value += $resources->{'AC'}->anticost($ac) unless $ac <= 0;
+        $value += $resources->{'AC'}->$cost($ac) unless $ac <= 0;
     }
     # Likewise for weapons; for those we count their average damage. 90%
     # chance that they aren't cursed.
@@ -1398,7 +1399,7 @@ sub use_benefit {
         $damage *= .9 unless defined $item->is_cursed; # i.e. we know it isn't
         defined $current_weapon && $current_weapon != $item and
             $damage -= TAEB::Spoilers::Combat->damage($current_weapon);
-        $value += $resources->{'DamagePotential'}->anticost($damage)
+        $value += $resources->{'DamagePotential'}->$cost($damage)
             unless $damage <= 0;
     }
     $value -= $resources->{'Delta'} / refaddr($item); # tiebreak
@@ -1411,6 +1412,7 @@ sub item_value {
     my $self = shift;
     my $item = shift;
     my $resources = $self->resources;
+    my $cost = shift // 'anticost';
     my $value = 0;
     # If the item is permafood, its value is its nutrition minus its
     # weight; its nutrition is measured in unscarce units (twice the
@@ -1426,10 +1428,10 @@ sub item_value {
     }}
     # Gold has value measured in zorkmids.
     $item->identity and $item->identity eq 'gold piece' and
-	$value += $resources->{'Zorkmids'}->anticost($item->quantity);
+	$value += $resources->{'Zorkmids'}->$cost($item->quantity);
     # Ammo counts as 1 ammo each.
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart)\b/ and
-        $value += $resources->{'Ammo'}->anticost($item->quantity);
+        $value += $resources->{'Ammo'}->$cost($item->quantity);
     # Things that we could use are useful as a result. However, we
     # don't want too many items that are redundant to each other. The
     # item we're currently wielding/wearing counts its full
@@ -1437,7 +1439,7 @@ sub item_value {
     # current tile); but other items are penalised 90% of their benefit
     # for each nonwielded item better than them.
     my $use_benefit_factor = 1;
-    my $benefit = $self->use_benefit($item);
+    my $benefit = $self->use_benefit($item,$cost);
     my $subtype = undef;
     $subtype = $item->subtype if $item->can('subtype');
     $subtype = 'weapon' if $item->type eq 'weapon';
@@ -1451,7 +1453,7 @@ sub item_value {
                 defined $check->subtype or next C;
                 $check->subtype eq $item->subtype or next C;
             }
-            $self->use_benefit($check) > $benefit
+            $self->use_benefit($check,$cost) > $benefit
                 and $use_benefit_factor /= 10;
         }
     }
@@ -1481,10 +1483,11 @@ sub item_drawbacks {
 # a boolean saying if we can afford the item, followed by the numeric
 # drawback.
 # This uses cost if the item is not in the inventory, and value if it
-# is, to prevent oscillations.
+# is, to prevent oscillations. XXX is this still needed
 sub item_drawback_cost {
     my $self = shift;
     my $item = shift;
+    my $costm = shift // 'cost';
     my $plan = $self->item_drawbacks($item);
     my $resources = $self->resources;
     my $cost = 0;
@@ -1496,7 +1499,7 @@ sub item_drawback_cost {
                        && TAEB->inventory->get($item->slot) == $item) {
             $cost += $resource->value * $quantity;
         } else {
-            $cost += $resource->cost($quantity);
+            $cost += $resource->$costm($quantity);
             $quantity > $resource->amount and $canafford = 0;
         }
     }

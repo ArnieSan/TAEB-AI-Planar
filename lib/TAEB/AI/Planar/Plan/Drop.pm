@@ -37,8 +37,8 @@ sub gain_resource_conversion_desire {
     my $item = $self->item;
     # Bump our own desirability.
     $self->validity(0), return 0 unless defined $self->item;
-    my (undef, $cost) = $ai->item_drawback_cost($item);
-    my $value = $ai->item_value($item);
+    my (undef, $cost) = $ai->item_drawback_cost($item,'anticost');
+    my $value = $ai->item_value($item,'cost');
     TAEB->log->ai("$item: value $value, cost $cost");
     $ai->add_capped_desire($self, $cost - $value);
 }
