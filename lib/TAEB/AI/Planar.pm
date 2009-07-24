@@ -1432,9 +1432,10 @@ sub item_value {
     # Gold has value measured in zorkmids.
     $item->identity and $item->identity eq 'gold piece' and
 	$value += $resources->{'Zorkmids'}->$cost($item->quantity);
-    # Ammo counts as 1 ammo each.
+    # Ammo counts as 1 ammo each; low-grade ammo is devalued.
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart)\b/ and
-        $value += $resources->{'Ammo'}->$cost($item->quantity);
+        $value += $resources->{'Ammo'}->$cost($item->quantity /
+	    ($item->identity =~ /dagger/ ? 1 : 10));
     # Pick axes help us dig.
     $item->match(identity => ['pick-axe', 'dwarvish mattock']) and
 	$value += $resources->{'Tunnelling'}->$cost($item->quantity * 1e8);

@@ -6,14 +6,15 @@ extends 'TAEB::AI::Planar::Resource';
 has _value => (
     isa => 'Num',
     is  => 'rw',
-    default => 15, # one ammo is quite a lot compared to 1 turn or 1 nutrition
+    default => 20, # one ammo is quite a lot compared to 1 turn or 1 nutrition
 );
 
 # Split out from amount to avoid code duplication; other things care
 # about which projectiles we have too
 sub projectilelist {
+    my $daggers = shift;
     my @projectiles;
-    for my $type (qw/dagger spear shuriken dart/) {
+    for my $type ($daggers ? 'dagger' : qw/dagger spear shuriken dart/) {
 	push @projectiles, (TAEB->inventory->find(
                            identity   => qr/\b$type\b/,
                            is_wielded => sub { !$_ },
@@ -23,7 +24,7 @@ sub projectilelist {
     return @projectiles;
 }
 sub amount {
-    return scalar projectilelist;
+    return (scalar projectilelist 1) * 0.9 + (scalar projectilelist 1) * 0.1;
 }
 
 # Ammo is less useful the more we have.
