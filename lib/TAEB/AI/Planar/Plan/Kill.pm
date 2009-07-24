@@ -83,7 +83,7 @@ sub gain_resource_conversion_desire {
     my @types = @{ $loot{$spoiler->name} // [] };
 
     while (my ($freq, $item) = splice @types, 0, 2) {
-	$value += $freq * TAEB->ai->item_value(NetHack::Item->new($item));
+	$value += $freq * TAEB->ai->item_value(TAEB->new_item($item));
     }
 
     TAEB->ai->add_capped_desire($self, $value);
