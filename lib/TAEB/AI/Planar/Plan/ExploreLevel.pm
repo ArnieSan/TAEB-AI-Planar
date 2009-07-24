@@ -47,8 +47,12 @@ sub spread_desirability {
 	# an option which is never the correct one. As an exception to
 	# this, we /do/ try to explore unexplored tiles when blind, so
 	# that LightTheWay kicks in and attempts to route there.
+	
+	# Also, we don't want to explore rock or walls, because there's
+	# not a lot to see behind them and digging out entire levels takes
+	# lots of time.
 	if(!$tile->explored &&
-	   ($blind || $tile->type !~ /^(?:rock|unexplored)$/o)) {
+	   ($blind || $tile->type !~ /^(?:rock|wall|unexplored)$/o)) {
 	    $self->depends(1,"Explore",$tile);
 	}
 	# As well as exploring horizontally, we can explore vertically.
