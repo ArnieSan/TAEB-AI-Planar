@@ -43,6 +43,7 @@ sub gain_resource_conversion_desire {
     my $item  = $self->item;
     my $ai    = TAEB->ai;
     my $value = $ai->item_value($item);
+    #return if $ai->has_contermeasure("BePickless", $self->tile);
     if ($value > 0) {
 	$ai->add_capped_desire($self, $value);
     }
