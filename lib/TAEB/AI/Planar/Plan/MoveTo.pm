@@ -161,18 +161,27 @@ sub check_possibility_inner {
     # tiles become explored when we walk next to them, and if tiles
     # are more than distance 1 away we don't yet know if they're
     # unexplored.
+    my $into_blindness;
     if($type eq 'unexplored' && $tmel->at($tmex,$tmey)->stepped_on) {
 	$self->generate_plan($tme,"LightTheWay",$tile);
+	$into_blindness = 1;
     }
     # Certain traps are passable, at a cost.
     if($type eq 'trap') {
 	$self->generate_plan($tme,"ThroughTrap",$tile);
     }
+    # we want to path through unexplored because much of it will be rock
+    # but if we're blind, we have no way of knowing when to stop digging (yet?)
+    if($type eq 'rock' || ($type eq 'unexplored' && !$into_blindness) ||
+	    $type eq 'wall' || $type eq 'boulder') {
+	$self->generate_plan($tme,"Tunnel",$tile);
+    }
     # TODO: Need much more here
 }
 
 use constant references => ['OpenDoor','KickDownDoor','Walk','PushBoulder',
-                            'PushBoulderRisky','LightTheWay','ThroughTrap'];
+                            'PushBoulderRisky','LightTheWay','ThroughTrap',
+			    'Tunnel'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
