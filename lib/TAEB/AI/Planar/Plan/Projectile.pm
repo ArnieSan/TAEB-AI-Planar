@@ -17,7 +17,7 @@ sub set_arg {
 }
 
 sub get_projectile {
-    my $projectile = (TAEB::AI::Planar::Resource::Ammo->projectilelist)[0];
+    my $projectile = (TAEB::AI::Planar::Resource::Ammo::projectilelist 0)[0];
     $projectile and return $projectile;
     return;
 }
@@ -59,7 +59,8 @@ sub reach_action {
 
 sub calculate_extra_risk {
     my $self = shift;
-    my $risk = $self->cost("Ammo",1);
+    my $risk = $self->cost("Ammo",
+	$self->get_projectile->identity =~ /dagger/ ? 1 : 0.1);
     $risk += $self->aim_tile_turns(1);
     # Chasing unicorns is fruitless
     $risk += $self->cost("Impossibility", 1) if $self->monster->is_unicorn &&
