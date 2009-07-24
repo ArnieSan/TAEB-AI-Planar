@@ -47,6 +47,7 @@ sub calculate_risk {
     (undef, my $time) = $self->get_pick_and_time;
 
     $self->cost("Time", $time + 1); # we'll have to walk anyway
+    $self->level_step_danger;
 }
 
 my %dig = ( wall => 1, rock => 1, closeddoor => 1 );
