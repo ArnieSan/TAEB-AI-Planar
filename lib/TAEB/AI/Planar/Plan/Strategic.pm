@@ -192,10 +192,10 @@ sub attack_monster_risk {
 }
 
 # Set when an attempt to travel fails; cleared when the plan succeeds.
-has do_not_travel => (
-    isa => 'Bool',
-    is  => 'rw',
-    default => 0,
+has travel_failed_turn => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => -1000,
 );
 
 # Trying this plan. We follow the path if there is one, else perform
@@ -217,7 +217,7 @@ sub action {
     my $firsttactic = $chain[0]->{'tactic'};
     return $firsttactic
         unless $ai->safe_to_travel
-            && !$self->do_not_travel
+            && $self->travel_failed_turn < TAEB->turn - 50
             && !$self->mobile_target
             && $firsttactic->replaceable_with_travel;
     my $chainindex = 0;
@@ -236,18 +236,20 @@ sub action {
 sub succeeded {
     my $self = shift;
     if ($self->used_travel_to) {
-	$self->do_not_travel(0), return 1
+	$self->travel_failed_turn(-1000), return 1
             if $self->aim_tile_cache == TAEB->current_tile;
         return undef if $self->used_travel_to == TAEB->current_tile;
-        $self->do_not_travel(1), return undef unless $self->do_not_travel;
+        $self->travel_failed_turn(TAEB->turn), return undef
+	    unless $self->travel_failed_turn < TAEB->turn - 50;
         return 0;
     }
     if (defined(shift)) {
-	$self->do_not_travel(0), return 1
+	$self->travel_failed_turn(-1000), return 1
             if $self->aim_tile_cache == TAEB->current_tile;
 	return undef;
     }
-    $self->do_not_travel(0); # we reached the tile, allow travelling again
+    $self->travel_failed_turn(-1000);
+    # we reached the tile, allow travelling again
     return 1 unless $self->has_reach_action;
     return $self->reach_action_succeeded;
 }
