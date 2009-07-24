@@ -1435,6 +1435,9 @@ sub item_value {
     # Ammo counts as 1 ammo each.
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart)\b/ and
         $value += $resources->{'Ammo'}->$cost($item->quantity);
+    # Pick axes help us dig.
+    $item->match(identity => ['pick-axe', 'dwarvish mattock']) and
+	$value += $resources->{'Tunnelling'}->$cost($item->quantity * 1e8);
     # Things that we could use are useful as a result. However, we
     # don't want too many items that are redundant to each other. The
     # item we're currently wielding/wearing counts its full
