@@ -37,8 +37,11 @@ sub gain_resource_conversion_desire {
     my $item = $self->item;
     # Bump our own desirability.
     $self->validity(0), return 0 unless defined $self->item;
-    my (undef, $cost) = $ai->item_drawback_cost($item,'anticost');
-    my $value = $ai->item_value($item,'cost');
+    my ($affordable, $cost) = $ai->item_drawback_cost($item,'anticost');
+    my $value = $ai->item_value($item, 'cost');
+    # If an item breaks resource constraints, drop it no matter how
+    # useful it is.
+    $value = 0 unless $affordable;
     TAEB->log->ai("$item: value $value, cost $cost");
     $ai->add_capped_desire($self, $cost - $value);
 }

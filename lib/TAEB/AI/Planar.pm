@@ -1501,6 +1501,8 @@ sub item_drawback_cost {
         if($item->slot && TAEB->inventory->get($item->slot)
                        && TAEB->inventory->get($item->slot) == $item) {
             $cost += $resource->value * $quantity;
+            # Does this item break resource constraints?
+            $resource->amount < 0 and $canafford = 0;
         } else {
             $cost += $resource->$costm($quantity);
             $quantity > $resource->amount and $canafford = 0;
