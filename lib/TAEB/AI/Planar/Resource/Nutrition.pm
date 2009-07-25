@@ -21,8 +21,8 @@ sub scarcity {
     ($quantity > 1000) and return 0; # only eat if useful
     ($quantity > 150)  and return 1;
     ($quantity > 50)   and return 3;
-    ($quantity > 0)    and return 10;
-    return 100; # fainting, we need nutrition really badly
+    ($quantity > 0)    and return 100;
+    return 10000; # fainting, we need nutrition really badly, more than hp
 }
 
 __PACKAGE__->meta->make_immutable;
