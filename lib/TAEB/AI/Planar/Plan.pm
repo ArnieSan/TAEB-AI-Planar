@@ -82,10 +82,10 @@ sub mark_impossible {
         if $d_difficulty > $max_new_d_difficulty;
     $self->d_difficulty($d_difficulty);
     $self->last_marked_impossible($asc);
-    TAEB->log->ai("Marking " . $self->name .
-    	" impossible/abandoned with max $max_new_d_difficulty");
-    TAEB->log->ai("New difficulty " . ($self->required_success_count - $asc));
-    TAEB->log->ai("New d_difficulty $d_difficulty");
+    #D#TAEB->log->ai("Marking " . $self->name .
+    #D#	" impossible/abandoned with max $max_new_d_difficulty");
+    #D#TAEB->log->ai("New difficulty " . ($self->required_success_count - $asc));
+    #D#TAEB->log->ai("New d_difficulty $d_difficulty");
 }
 
 # The risk of carrying out this plan, undef if it hasn't been
