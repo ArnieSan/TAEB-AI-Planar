@@ -1550,8 +1550,8 @@ sub pickup {
 sub drop {
     my $self = shift;
     my $item = shift;
-    my $value = $self->item_value($item);
-    my $drawbacks = $self->item_drawback_cost($item);
+    my $value = $self->item_value($item, 'cost');
+    my $drawbacks = $self->item_drawback_cost($item, 'anticost');
     $self->last_drop_step(TAEB->step);
     # If we're dropping things on an altar, may as well BCU while we're at it
     TAEB->current_tile->type eq 'altar'
