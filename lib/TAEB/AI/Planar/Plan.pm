@@ -2,9 +2,9 @@
 package TAEB::AI::Planar::Plan;
 use TAEB::OO;
 
-use constant   difficulty_fading     => 2;
+use constant   difficulty_fading     => 3;
 use constant d_difficulty_fading     => 1;
-use constant d_difficulty_increase   => 3;
+use constant d_difficulty_increase   => 9;
 use constant d_difficulty_multiplier => 3;
 
 # The difficulty that carrying out this plan has, and the amount its
@@ -55,17 +55,16 @@ sub difficulty {
 }
 
 # Most plans are abandoned by marking them impossible, without increasing
-# d_difficulty above 3.
+# d_difficulty above 5.
 sub abandon {
     my $self = shift;
-    $self->mark_impossible(3);
+    $self->mark_impossible(5);
 }
 
 # How to mark a plan as impossible. This has to retroactively figure
 # out how much d_difficulty faded since it was last marked impossible
 # (to prevent the need to update d_difficulty everywhere every step).
 sub mark_impossible {
-    return;
     my $self = shift;
     my $max_new_d_difficulty = shift // 1000;
     my $asc = $self->appropriate_success_count;
@@ -83,9 +82,10 @@ sub mark_impossible {
         if $d_difficulty > $max_new_d_difficulty;
     $self->d_difficulty($d_difficulty);
     $self->last_marked_impossible($asc);
-    #D#TAEB->log->ai("Marking " . $self->name .
-    #D#	" impossible with max $max_new_d_difficulty");
-    #D#TAEB->log->ai("New d_difficulty $d_difficulty");
+    TAEB->log->ai("Marking " . $self->name .
+    	" impossible/abandoned with max $max_new_d_difficulty");
+    TAEB->log->ai("New difficulty " . ($self->required_success_count - $asc));
+    TAEB->log->ai("New d_difficulty $d_difficulty");
 }
 
 # The risk of carrying out this plan, undef if it hasn't been

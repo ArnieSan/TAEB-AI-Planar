@@ -389,6 +389,7 @@ sub next_action {
     # strategic plan. The above check doesn't detect this (the tactical
     # plans can succeed alternately, cancelling each other out); this one
     # does.
+    my $force_tactical_failure = 0;
     if (scalar $self->old_plans > 2 && $self->current_tactical_plan &&
         defined $self->old_tactical_plans->[0] &&
         defined $self->old_tactical_plans->[1] &&
@@ -404,6 +405,7 @@ sub next_action {
 	    TAEB->log->ai("Oscillating tactical plan ".
 				   $self->abandoned_tactical_plan->name.
 				   " was abandoned.");
+        $force_tactical_failure = 1;
     }
     unshift @{$self->old_plans}, $self->current_plan;
     unshift @{$self->old_tactical_plans}, $self->current_tactical_plan;
@@ -412,6 +414,7 @@ sub next_action {
     if (defined $self->current_tactical_plan) {
 	# Work out success based on the current tactical plan
 	$succeeded = $self->current_tactical_plan->succeeded;
+        $succeeded = undef if $force_tactical_failure;
 	defined $succeeded and $succeeded and
 	    $self->tactical_success_count($self->tactical_success_count+1),
 	    TAEB->log->ai("OK, tactic ".
