@@ -3,12 +3,14 @@ package TAEB::AI::Planar::Resource::Zorkmids;
 use TAEB::OO;
 extends 'TAEB::AI::Planar::Resource';
 
-sub amount {
-    if (! TAEB->known_debt) {
-	warn "This shouldn't happen ever, debt is unknown at next_action time";
-	return 0; # rather than overestimating
-    }
+has _value => (
+    isa => 'Num',
+    is  => 'rw',
+    default => 0.1, # gold is better spent than hoarded
+);
 
+sub amount {
+    TAEB->known_debt or TAEB->send_message(check => 'debt');
     return TAEB->gold - TAEB->debt;
 }
 
