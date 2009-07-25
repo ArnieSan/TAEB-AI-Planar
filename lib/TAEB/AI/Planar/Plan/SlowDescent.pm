@@ -15,15 +15,6 @@ sub spread_desirability {
     TAEB->dungeon->shallowest_level(sub {
         my $level = shift;
         $urgency -= 0.001;
-        # Eliminate monsters on the current level with the same urgency as
-        # exploring it / solving it.
-        if($level == TAEB->current_level) {
-            TAEB->ai->monster_is_peaceful($_)
-                or $_->tile->in_shop
-                or $self->depends($urgency,'Eliminate',$_)
-                for TAEB->current_level->has_enemies;
-            $seenthislevel = 1;
-        }
         # If this is a Sokoban level, solve it; otherwise, explore it.
         # For now, avoid the mines.
         if($level->known_branch && $level->branch eq 'sokoban') {
