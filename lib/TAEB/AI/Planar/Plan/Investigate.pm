@@ -43,7 +43,7 @@ sub gain_resource_conversion_desire {
     my $ai = TAEB->ai;
     if ($glyph eq '$') {
 	$ai->add_capped_desire($self, $ai->resources->{'Zorkmids'}->value
-			       * 50);
+			       * 500);
     }
     if ($glyph eq '[') {
 	$ai->add_capped_desire($self, $ai->resources->{'AC'}->value
