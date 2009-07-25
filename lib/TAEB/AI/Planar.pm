@@ -1531,8 +1531,9 @@ sub pickup {
     my $drawbacks = $self->item_drawback_cost($item);
     return 0 unless defined $drawbacks;
     # Pick up only 1 item if we dropped last turn.
-    TAEB->log->ai("Not picking up a second item this step..."), return 0
-        if $self->last_drop_step == TAEB->step-1
+    TAEB->log->ai("Not picking up a second item this step..."),
+        $self->last_drop_step(TAEB->step), return 0
+        if $self->last_drop_step >= TAEB->step-1
         && $self->last_pickup_step == TAEB->step;
     TAEB->log->ai("Not picking up $item (value $value, drawbacks $drawbacks)"), return 0
         if $value <= $drawbacks;
@@ -1549,6 +1550,7 @@ sub drop {
     # If we're dropping things on an altar, may as well BCU while we're at it
     TAEB->current_tile->type eq 'altar'
         and !$item->is_blessed && !$item->is_uncursed && !$item->is_cursed
+        and $item->identity ne 'gold piece'
         and !TAEB->is_blind && !TAEB->is_levitating
         and TAEB->log->ai("Dropping $item to BCU it"), return 1;
     TAEB->log->ai("Dropping $item as it has infinite drawbacks"), return 1

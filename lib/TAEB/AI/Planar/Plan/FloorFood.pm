@@ -99,6 +99,8 @@ sub calculate_extra_risk {
     $risk += 1000 if $corpse->{'speed_toggle'};
     # Acidic corpses just deal damage, so they cost in hitpoints.
     $risk += $self->cost('Hitpoints', 15) if $corpse->{'acidic'};
+    # If we eat a corpse in a shop, we're going to have to buy it.
+    $risk += $self->cost('Zorkmids', 6) if $self->tile->in_shop;
     $self->_risk($risk + $self->aim_tile_turns(3+($spoiler->weight>>6)));
     return $self->_risk;
 }
