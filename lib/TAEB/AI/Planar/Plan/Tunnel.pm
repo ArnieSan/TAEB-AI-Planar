@@ -57,12 +57,13 @@ sub check_possibility_inner {
     my $tile = $self->tile;
     return if !$dig{ $tile->type } && !$tile->has_boulder;
 
-    (my $pick, undef) = $self->get_pick_and_time;
-    return unless $pick;
-
     return if $tile->in_shop;
+    return if $tile->nondiggable;
     return if $tile->level->is_minetown;
     return if ($tile->level->branch // '') eq 'sokoban'; #XXX other nondig
+
+    (my $pick, undef) = $self->get_pick_and_time;
+    return unless $pick;
 
     if (defined $tile->monster) {
 	# We need to generate a plan to scare the monster out of the
