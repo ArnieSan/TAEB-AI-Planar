@@ -1540,6 +1540,14 @@ sub item_value {
     # Pick axes help us dig.
     $item->match(identity => ['pick-axe', 'dwarvish mattock']) and
 	$value += $resources->{'Tunnelling'}->$cost($item->quantity * 1e8);
+    # Luckstones give us luck, but only if we don't already have one.
+    if ($item->identity && $item->identity eq 'luckstone') {
+	my $count = @{[ TAEB->has_item('luckstone') ]};
+
+	if ($count == 0 || ($count == 1 && $cost eq 'cost')) {
+	    $value += $resources->{'Luck'}->$cost(3);
+	}
+    }
     # Things that we could use are useful as a result. However, we
     # don't want too many items that are redundant to each other. The
     # item we're currently wielding/wearing counts its full
