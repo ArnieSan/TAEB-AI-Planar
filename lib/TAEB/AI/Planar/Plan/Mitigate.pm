@@ -22,6 +22,7 @@ sub spread_desirability {
     $self->depends(0.5,"CombatFallback");
 }
 
+# This requires a continuous stream of validity from the threat map
 sub invalidate {shift->validity(0);}
 
 use constant description => "Mitigating a threatening monster";
