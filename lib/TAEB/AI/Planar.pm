@@ -960,6 +960,7 @@ sub tme_from_tile {
     $risk{$_} += $t->{'risk'}->{$_} for keys %{$t->{'risk'}};
     $tme->{'risk'} = \%risk;
     $tme->{'step'} = $self->aistep;
+    $tme->{'make_safer_plans'} = $t->{'make_safer_plans'};
     return $tme;
 }
 

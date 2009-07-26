@@ -125,25 +125,30 @@ sub add_possible_move {
     # eliminate or reduce it.
     my %msp = %{$oldtme->{'make_safer_plans'}};
     my $msp = \%msp;
-    my $timetohere = $risk{"Time"} || 0;
-    my $thme = $ai->threat_map->{$oldlevel}->[$newx]->[$newy];
-    for my $p (keys %$thme) {
-	# Not all possible values of $p are threats.
-	defined($thme->{$p}) or next;
-	# If the threat never gets here in time, ignore it.
-	my ($turns, $reductionplan) = split / /, $p;
-	$turns > $timetohere and next;
-        my $risk_multiplier = ($timetohere-$turns) > 1 ?
-            $timetohere-$turns : 1;
-	# Add risk from the threat.
-	my %threatrisk = %{$thme->{$p}};
-        $threatrisk{$_} < 0 and 
-            warn "Threat risk of $_ seems to be negative in ".$self->name
-            for keys %threatrisk;
-	$risk{$_} += $threatrisk{$_} * $risk_multiplier for keys %threatrisk;
-	# Add the threat reduction plan.
-	$msp->{$reductionplan} += $ai->resources->{$_}->cost($threatrisk{$_})
-	    for keys %threatrisk;
+    if ($newlevel == TAEB->current_level) {
+	# Note: This conditional only matters the turn after full
+	# recalculation.  Interlevel updating always ignores threats.
+	# XXX Should it?
+	my $timetohere = $risk{"Time"} || 0;
+	my $thme = $ai->threat_map->{$oldlevel}->[$newx]->[$newy];
+	for my $p (keys %$thme) {
+	    # Not all possible values of $p are threats.
+	    defined($thme->{$p}) or next;
+	    # If the threat never gets here in time, ignore it.
+	    my ($turns, $reductionplan) = split / /, $p;
+	    $turns > $timetohere and next;
+	    my $risk_multiplier = ($timetohere-$turns) > 1 ?
+		$timetohere-$turns : 1;
+	    # Add risk from the threat.
+	    my %threatrisk = %{$thme->{$p}};
+	    $threatrisk{$_} < 0 and 
+		warn "Threat risk of $_ seems to be negative in ".$self->name
+		for keys %threatrisk;
+	    $risk{$_} += $threatrisk{$_} * $risk_multiplier for keys %threatrisk;
+	    # Add the threat reduction plan.
+	    $msp->{$reductionplan} += $ai->resources->{$_}->cost($threatrisk{$_})
+		for keys %threatrisk;
+	}
     }
 
     # Create the new TME.
@@ -163,6 +168,9 @@ sub add_possible_move {
     # in the TME. This ignores threats, as there are no threat maps
     # for levels other than the current one. TODO: Risk of returning
     # to a level (due to swarms of monsters surrounding the stairs).
+
+    # FIXME: Actually, there are threat maps for other levels.  Why
+    # are we ignoring them again?
     if($full_recalc) {
         if ($oldlevel == $newlevel) {
             $tme->{'prevlevel_level'} = $oldtme->{'prevlevel_level'};
