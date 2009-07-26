@@ -113,8 +113,7 @@ sub calculate_risk {
 	my $plan = $ai->plans->{$planname};
 	my $amount = $target_tme->{'make_safer_plans'}->{$planname};
 	if(!defined $plan) {
-	    TAEB->log->ai("Plan $planname has gone missing...");
-	    next;
+	    die "Plan $planname has gone missing...";
 	}
 	#$self->desire < $amount and $amount = $self->desire;
 	## START DEBUG CODE
