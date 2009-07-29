@@ -65,7 +65,8 @@ sub abandon {
 # out how much d_difficulty faded since it was last marked impossible
 # (to prevent the need to update d_difficulty everywhere every step).
 sub mark_impossible {
-    return;
+    return if TAEB->config->get_ai_config->{'stubborn'};
+
     my $self = shift;
     my $max_new_d_difficulty = shift // 1000;
     my $asc = $self->appropriate_success_count;
