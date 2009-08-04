@@ -15,6 +15,7 @@ sub spread_desirability {
     TAEB->dungeon->shallowest_level(sub {
         my $level = shift;
         $urgency -= 0.001;
+        $level == TAEB->current_level and $seenthislevel = 1;
         # If this is a Sokoban level, solve it; otherwise, explore it.
         # For now, avoid the mines.
         if($level->known_branch && $level->branch eq 'sokoban') {

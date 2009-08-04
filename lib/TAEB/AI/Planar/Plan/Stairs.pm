@@ -40,7 +40,7 @@ sub action {
 
 sub succeeded {
     my $self = shift;
-    return TAEB->current_tile == $self->tile;
+    return TAEB->current_tile == $self->tile->other_side;
 }
 
 use constant description => 'Using stairs';
