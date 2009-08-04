@@ -11,7 +11,9 @@ sub get_pick_and_time {
     return @$c if $c->[2] == TAEB->ai->aistep;
 
     my @picks = map { [ ($_->numeric_enchantment // 0) -
-	    $_->greatest_erosion, $_ ] }
+#                        $_->greatest_erosion, $_ ] }
+                        ($_->burnt + $_->rusty > $_->rotted + $_->corroded ?
+                         $_->burnt + $_->rusty : $_->rotted + $_->corroded), $_ ] }
 	TAEB->inventory->find(['pick-axe', 'dwarvish mattock']);
 
     return (@$c = (undef, undef, TAEB->ai->aistep)) unless @picks;
