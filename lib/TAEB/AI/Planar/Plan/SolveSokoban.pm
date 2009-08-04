@@ -29,7 +29,7 @@ sub aim_tile {
     my $self = shift;
     my $ai = TAEB->ai;
     # Try to discover a Sokoban level to solve.
-    my $sokolevel = TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level;
+    my $sokolevel = TAEB::Spoilers::Sokoban->first_solvable_sokoban_level;
     return unless defined $sokolevel;
     # Consult the spoilers for this level to see where to go next.
     # Use our own tactical routing map for efficiency and correctness
@@ -104,14 +104,19 @@ sub abandon {
 
 sub spread_desirability {
     my $self = shift;
-    # If this level is solved, and it isn't the top level, and we haven't
-    # seen an unsolved Sokoban level above, go up. (The last restriction is
-    # because interlevel pathing is better than Ascend for going to known
-    # levels.)
-    # If we're in Sokoban already, try exploring around to see if there
-    # are mimics pretending to be boulders.
-    TAEB->current_level->known_branch && TAEB->current_level->branch eq 'sokoban'
-        and $self->depends(0.5,"ExploreHere"), return;
+    # If this level is solved, and it isn't the top level, and we
+    # haven't seen an unsolved Sokoban level above, go up. (The last
+    # restriction is because interlevel pathing is better than Ascend
+    # for going to known levels.) If we're in Sokoban already, try
+    # exploring around to see if there are mimics pretending to be
+    # boulders.
+    if (TAEB->current_level->known_branch
+        && TAEB->current_level->branch eq 'sokoban')
+    {
+        $self->depends(1,"OtherSide",$_) for TAEB->current_level->exits;
+        $self->depends(0.5,"ExploreHere");
+        return;
+    }
     # Otherwise, if we're outside Sokoban and haven't seen an unsolved
     # Sokoban level, go to Sokoban.
     $self->depends(1,"GotoSokoban")
