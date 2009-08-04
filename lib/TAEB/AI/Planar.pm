@@ -1396,7 +1396,7 @@ sub use_benefit {
     # Likewise for weapons; for those we count their average damage. 90%
     # chance that they aren't cursed.
     if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed
-	&& $item->hands == 1) { #XXX ignore to-handers for now
+	&& $item->hands == 1) { #XXX ignore two-handers for now
         my $current_weapon = TAEB->inventory->equipment->weapon;
         my $damage = TAEB::Spoilers::Combat->damage($item);
         $damage *= .9 unless defined $item->is_cursed; # i.e. we know it isn't
@@ -1443,7 +1443,7 @@ sub item_value {
     # don't want too many items that are redundant to each other. The
     # item we're currently wielding/wearing counts its full
     # use-benefit, as does the best other item (in inventory or on the
-    # current tile); but other items are penalised 90% of their benefit
+    # floor anywhere); but other items are penalised 90% of their benefit
     # for each nonwielded item better than them.
     my $use_benefit_factor = 1;
     my $benefit = $self->use_benefit($item,$cost);
@@ -1451,7 +1451,8 @@ sub item_value {
     $subtype = $item->subtype if $item->can('subtype');
     $subtype = 'weapon' if $item->type eq 'weapon';
     if ($subtype) {
-        C: for my $check (TAEB->inventory->items, TAEB->current_tile->items) {
+        C: for my $check (TAEB->inventory->items,
+                          map {$_->items} (map {@$_} (@{TAEB->dungeon->levels}))) {
             $check->is_wielded || ($check->can('is_worn') && $check->is_worn)
                 and next;
             $subtype eq 'weapon' and $check->type ne 'weapon' and next;
