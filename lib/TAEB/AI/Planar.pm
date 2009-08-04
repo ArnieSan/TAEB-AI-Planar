@@ -402,9 +402,9 @@ sub next_action {
         $self->old_tactical_plans->[1]->name) {
         # We're oscillating between two tactics for the same strategy.
         $self->current_tactical_plan->abandon;
-	    TAEB->log->ai("Oscillating tactical plan ".
-				   $self->abandoned_tactical_plan->name.
-				   " was abandoned.");
+        TAEB->log->ai("Oscillating tactical plan ".
+                      $self->current_tactical_plan->name.
+                      " was abandoned.");
         $force_tactical_failure = 1;
     }
     unshift @{$self->old_plans}, $self->current_plan;
