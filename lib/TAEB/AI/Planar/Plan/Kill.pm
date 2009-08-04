@@ -71,7 +71,7 @@ sub gain_resource_conversion_desire {
     my $mon = $self->monster;
     my $spoiler = $mon->spoiler // return; # don't bother chasing down Is
 
-    my $value;
+    my $value = 0;
 
     my $corpse = $spoiler->corpse_type;
 
