@@ -9,6 +9,10 @@ has bouldertile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
 );
+has monster => (
+    isa => 'Maybe[TAEB::World::Monster]',
+    is  => 'rw',
+);
 has need_to_wait => (
     isa     => 'Bool',
     is      => 'rw',
@@ -28,6 +32,8 @@ has push_in_row => ( # we could be fast...
 sub aim_tile {
     my $self = shift;
     my $ai = TAEB->ai;
+    # Reset monster information.
+    $self->monster(undef);
     # Try to discover a Sokoban level to solve.
     my $sokolevel = TAEB::Spoilers::Sokoban->first_solvable_sokoban_level;
     return unless defined $sokolevel;
@@ -53,6 +59,15 @@ sub aim_tile {
     # Or to push a boulder?
     my $p = $self->push_in_row;
     $self->bouldertile($nexttile);
+    # If there's a monster beyond the boulder, get rid of it.
+    # That's done by returning undef here, and falling back to Eliminate.
+    my $beyond = $nexttile->level->at_safe(
+        $nexttile->x * 2 - TAEB->current_tile->x,
+        $nexttile->y * 2 - TAEB->current_tile->y);
+    if($beyond && $beyond->has_monster) {
+        $self->monster($beyond->monster);
+        return undef;
+    }
     $self->push_turn == TAEB->turn ? $p++ : ($p = 0);
     $self->need_to_wait($p > 3);
     $self->push_in_row($p);
@@ -109,10 +124,11 @@ sub spread_desirability {
     # restriction is because interlevel pathing is better than Ascend
     # for going to known levels.) If we're in Sokoban already, try
     # exploring around to see if there are mimics pretending to be
-    # boulders.
+    # boulders, and killing monsters that are in the way.
     if (TAEB->current_level->known_branch
         && TAEB->current_level->branch eq 'sokoban')
     {
+        $self->depends(1,"Eliminate",$self->monster) if $self->monster;
         $self->depends(1,"OtherSide",$_) for TAEB->current_level->exits;
         $self->depends(0.5,"ExploreHere");
         return;
@@ -124,7 +140,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Solving Sokoban';
-use constant references => ['GotoSokoban','ExploreHere'];
+use constant references => ['GotoSokoban','ExploreHere','Eliminate'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

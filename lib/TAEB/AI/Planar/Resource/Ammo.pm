@@ -24,7 +24,7 @@ sub projectilelist {
     return @projectiles;
 }
 sub amount {
-    return (scalar projectilelist 1) * 0.9 + (scalar projectilelist 1) * 0.1;
+    return (scalar projectilelist 1) * 0.9 + (scalar projectilelist 0) * 0.1;
 }
 
 # Ammo is less useful the more we have.

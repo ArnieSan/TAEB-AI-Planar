@@ -260,7 +260,7 @@ sub succeeded {
     if (defined(shift)) {
 	$self->travel_failed_turn(-1000),
             $self->travel_try_again_after(5),
-            return 1
+            return ($self->has_reach_action ? undef : 1)
                 if $self->aim_tile_cache == TAEB->current_tile;
 	return undef;
     }
