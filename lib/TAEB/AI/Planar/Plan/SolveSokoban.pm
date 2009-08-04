@@ -27,11 +27,15 @@ has push_in_row => ( # we could be fast...
 
 sub aim_tile {
     my $self = shift;
+    my $ai = TAEB->ai;
     # Try to discover a Sokoban level to solve.
     my $sokolevel = TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level;
     return unless defined $sokolevel;
     # Consult the spoilers for this level to see where to go next.
-    my $nexttile = TAEB::Spoilers::Sokoban->next_sokoban_step($sokolevel);
+    # Use our own tactical routing map for efficiency and correctness
+    # (TAEB's built-in routing can't route past monsters, Planar can).
+    my $nexttile = TAEB::Spoilers::Sokoban->next_sokoban_step(
+        $sokolevel, sub {defined $ai->tme_from_tile(shift);});
     # Nowhere?
     if (!defined $nexttile) {
         # We might have completed the level; in that case, the next move

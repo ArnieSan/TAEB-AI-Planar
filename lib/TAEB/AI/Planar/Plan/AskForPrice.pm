@@ -18,7 +18,10 @@ sub aim_tile {
     my $self = shift;
     my $tile = $self->tile;
     my @shk = grep { $_->is_shk } TAEB->current_level->monsters;
-    return $tile if $tile->in_shop && $tile->item_count && scalar @shk;
+    return $tile if $tile->in_shop
+                 && $tile->item_count
+                 && scalar (grep { $_->cost } ($tile->items))
+                 && scalar @shk;
     $self->validity(0);
     return undef;
 }
