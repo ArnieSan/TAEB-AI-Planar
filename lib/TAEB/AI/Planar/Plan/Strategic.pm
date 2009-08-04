@@ -197,6 +197,18 @@ has travel_failed_turn => (
     is      => 'rw',
     default => -1000,
 );
+# How long to wait after unsuccessful travel. This is multiplied by
+# 10 after each failure (even the first); and so starting this at 5
+# means that the first time, we wait 50 turns. This exponential
+# backoff is required because of the potential that travel sends us
+# in the wrong direction. TODO: If we know for certain that it was
+# a monster that caused the routing failure, don't be as harsh when
+# doing the backoff.
+has travel_try_again_after => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => 5,
+);
 
 # Trying this plan. We follow the path if there is one, else perform
 # the action if we're where we want to be, else bail.
@@ -217,7 +229,8 @@ sub action {
     my $firsttactic = $chain[0]->{'tactic'};
     return $firsttactic
         unless $ai->safe_to_travel
-            && $self->travel_failed_turn < TAEB->turn - 50
+            && $self->travel_failed_turn <
+               TAEB->turn - $self->travel_try_again_after
             && !$self->mobile_target
             && $firsttactic->replaceable_with_travel;
     my $chainindex = 0;
@@ -236,20 +249,24 @@ sub action {
 sub succeeded {
     my $self = shift;
     if ($self->used_travel_to) {
-	$self->travel_failed_turn(-1000), return 1
+	$self->travel_failed_turn(-1000), return
+            ($self->has_reach_action ? undef : 1)
             if $self->aim_tile_cache == TAEB->current_tile;
         return undef if $self->used_travel_to == TAEB->current_tile;
-        $self->travel_failed_turn(TAEB->turn), return undef
-	    unless $self->travel_failed_turn < TAEB->turn - 50;
-        return 0;
+        $self->travel_failed_turn(TAEB->turn);
+        $self->travel_try_again_after($self->travel_try_again_after * 10);
+        return undef; # even if travel fails, the plan may be viable
     }
     if (defined(shift)) {
-	$self->travel_failed_turn(-1000), return 1
-            if $self->aim_tile_cache == TAEB->current_tile;
+	$self->travel_failed_turn(-1000),
+            $self->travel_try_again_after(5),
+            return 1
+                if $self->aim_tile_cache == TAEB->current_tile;
 	return undef;
     }
-    $self->travel_failed_turn(-1000);
     # we reached the tile, allow travelling again
+    $self->travel_failed_turn(-1000);
+    $self->travel_try_again_after(5);
     return 1 unless $self->has_reach_action;
     return $self->reach_action_succeeded;
 }
