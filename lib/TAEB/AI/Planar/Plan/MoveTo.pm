@@ -174,7 +174,7 @@ sub check_possibility_inner {
     # we want to path through unexplored because much of it will be rock
     # but if we're blind, we have no way of knowing when to stop digging (yet?)
     if($type eq 'rock' || ($type eq 'unexplored' && !$into_blindness) ||
-	    $type eq 'wall' || $type eq 'boulder') {
+	    $type eq 'wall' || $tile->has_boulder) {
 	$self->generate_plan($tme,"Tunnel",$tile);
     }
     # TODO: Need much more here
