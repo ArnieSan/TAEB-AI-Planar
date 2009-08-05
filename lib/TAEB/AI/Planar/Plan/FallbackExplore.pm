@@ -22,9 +22,10 @@ sub spread_desirability {
     my $mines = $level->known_branch && $level->branch eq 'mines'
         && !$level->is_minetown;
     my $blind = TAEB->is_blind;
+    my $ai = TAEB->ai;
     $level->each_tile(sub {
 	my $tile = shift;
-	if($tile->is_walkable(0,1)) {
+	if($ai->tile_walkable($tile)) {
 	   my $orthogonals = scalar $tile->grep_orthogonal(
 	       sub {TAEB::AI::Planar::Plan::ExploreLevel
                         ->is_search_blocked(shift)});

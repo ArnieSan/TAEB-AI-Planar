@@ -16,13 +16,14 @@ sub spread_desirability {
     my $self = shift;
     my $level = TAEB->current_level;
     my $mines = $level->known_branch && $level->branch eq 'mines';
+    my $ai = TAEB->ai;
     # There are several possible reasons to fallback.
     # One common reason is that we're out of things to do.
     $level->each_tile(sub {
 	my $tile = shift;
 	# Be a lot more aggressive about searching, if we're in
 	# fallback mode.
-	if(!$mines && $tile->is_walkable(0) &&
+	if(!$mines && $ai->tile_walkable($tile) &&
 	   scalar $tile->grep_adjacent(
 	       sub {$self->is_search_blocked(shift)}) >= 3) {
 	    $self->depends(1,"Search",$tile);

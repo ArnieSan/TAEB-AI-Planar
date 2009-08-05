@@ -66,6 +66,7 @@ sub check_possibility_inner {
 
 sub action {
     my $self = shift;
+    my $ai = TAEB->ai;
     TAEB->known_debt or TAEB->send_message(check => 'debt');
     TAEB->debt and return TAEB::Action->new_action('pay', item => 'all');
     # If it's a shopkeeper we're trying to avoid, try moving so as to
@@ -78,7 +79,8 @@ sub action {
             'move', direction => delta2vi($_->x - TAEB->x, $_->y - TAEB->y))
             for $self->tile->grep_adjacent(sub {
                 my $t = shift;
-                $t->is_walkable(0,1) &&
+                $ai->tile_walkable($t) &&
+                    !$t->monster &&
                     $t->type ne 'opendoor' &&
                     abs(TAEB->x - $t->x <= 1) &&
                     abs(TAEB->y - $t->y <= 1);

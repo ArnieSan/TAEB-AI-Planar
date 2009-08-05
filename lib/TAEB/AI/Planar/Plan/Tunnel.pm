@@ -95,6 +95,8 @@ sub action {
 
 sub succeeded {
     my $self = shift;
+    # Don't use tile_walkable here, it'll have a cached value from
+    # the wrong aistep
     return $self->tile->is_walkable(0,1);
 }
 

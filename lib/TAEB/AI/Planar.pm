@@ -1355,6 +1355,27 @@ has try_again_step => (
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
+has walkability_cache => (
+    isa     => 'HashRef[Maybe[Bool]]',
+    is      => 'rw',
+    default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+# A cached version of is_walkable (actually !is_inherently_unwalkable,
+# but marking boulders as unwalkable).
+sub tile_walkable {
+    my $self = shift;
+    my $tile = shift;
+    return 0 if $tile->has_boulder;
+    if (shift) {
+        return 1 if !TAEB->senses->is_blind
+                 && $tile->type eq 'unexplored';
+    }
+    my $cache = $self->walkability_cache;
+    return $cache->{$tile} if defined $cache->{$tile};
+    return ($cache->{$tile} = (!$tile->is_inherently_unwalkable(0, 1)));
+}
+
 # Responding to messages.
 subscribe door => sub {
     my $self = shift;
@@ -1364,15 +1385,18 @@ subscribe door => sub {
 	$self->try_again_step(TAEB->step);
     }
 };
-subscribe tile_update => sub {
+subscribe tile_type_change => sub {
     # This might have made plans with the tile in question as an
     # argument possible, when they weren't before. We look through
     # the plan index by object to find them.
     my $self = shift;
-    my $tile = shift;
+    my $what = shift;
+    my $tile = $what->tile;
     my $addr = refaddr($tile);
     defined $_ and $_->required_success_count(0)
 	for @{$self->plan_index_by_object->{$addr}};
+    # Also, invalidate the walkability cache for that tile.
+    $self->walkability_cache->{$tile} = undef;
 };
 
 sub safe_to_travel {

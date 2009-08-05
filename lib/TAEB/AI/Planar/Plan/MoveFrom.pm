@@ -14,8 +14,9 @@ extends 'TAEB::AI::Planar::Plan::Tactical';
 sub check_possibility_inner {
     my $self = shift;
     my $tme  = shift;
+    my $ai = TAEB->ai;
     # Set off move-to metaplans for adjacent tiles.
-    my $mf_cache = (TAEB->ai->plan_caches->{'MoveFrom'} //= { step => -1 });
+    my $mf_cache = ($ai->plan_caches->{'MoveFrom'} //= { step => -1 });
 
     my $can_squeeze;
 
@@ -40,8 +41,8 @@ sub check_possibility_inner {
 	    #D#	$tile->y);
             my $level = $tile->level;
             if (($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
-		$level->at($tile->x, $tmetile->y)->is_walkable(1,1) ||
-		$level->at($tmetile->x, $tile->y)->is_walkable(1,1) ||
+		$ai->tile_walkable($level->at($tile->x, $tmetile->y),1) ||
+		$ai->tile_walkable($level->at($tmetile->x, $tile->y),1) ||
 		$can_squeeze) {
                 $self->generate_plan($tme, "MoveTo", $tile);
             }

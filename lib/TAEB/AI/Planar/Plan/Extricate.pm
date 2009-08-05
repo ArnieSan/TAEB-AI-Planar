@@ -29,6 +29,7 @@ has consecutive_tries => (
 # Failing even that, bail.
 sub reach_action {
     my $self = shift;
+    my $ai = TAEB->ai;
     if($self->last_movement_turn == TAEB->turn) {
 	$self->consecutive_tries($self->consecutive_tries + 1);
     } else {
@@ -46,7 +47,7 @@ sub reach_action {
 				      $goto->y - TAEB->y));
     TAEB->current_tile->each_diagonal(sub {
 	my $tile = shift;
-	$tile->is_walkable(0,1) and $goto = $tile;
+	$ai->tile_walkable($tile) && !$tile->monster and $goto = $tile;
     });
     $goto and return TAEB::Action->new_action(
 	'move', direction => delta2vi($goto->x - TAEB->x,

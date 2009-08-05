@@ -27,12 +27,13 @@ sub set_additional_args {
 # adjacent squares which are adjacent to each other.
 sub safe_boulder_square {
     my $tile = shift;
+    my $ai = shift;
     my $tiletocountassafe = shift // $tile;
     my %xhash = ();
     my %yhash = ();
     $tile->each_orthogonal(sub {
         my $t = shift;
-        $t->is_walkable(1,1) || $t == $tiletocountassafe
+        $ai->tile_walkable($t,1) || $t == $tiletocountassafe
             and $xhash{$t->x}=1, $yhash{$t->y}=1;
     });
     return scalar keys %xhash > 1 && scalar keys %yhash > 1;
@@ -85,7 +86,7 @@ sub check_possibility_inner {
         my $dy = $y - $tmey;
         last if $dx && $dy; # don't push boulders diagonally
 	my $beyond = $l->at_safe($x+$dx,$y+$dy);
-        my $plantype = (safe_boulder_square($tile) ?
+        my $plantype = (safe_boulder_square($tile, $ai) ?
                         "PushBoulderRisky" : "PushBoulder");
 	if(defined $beyond and $beyond->type eq 'unexplored') {
 	    $self->generate_plan($tme,$plantype,$tile);
@@ -103,7 +104,7 @@ sub check_possibility_inner {
         # move.
         while (defined $beyond && !$beyond->has_boulder &&
                !$beyond->is_inherently_unwalkable(1,1) &&
-               !safe_boulder_square($beyond, $tile)) {
+               !safe_boulder_square($beyond, $ai, $tile)) {
             $beyond = $l->at_safe($beyond->x+$dx,$beyond->y+$dy);
         }
 	if(defined $beyond && !$beyond->has_boulder &&
