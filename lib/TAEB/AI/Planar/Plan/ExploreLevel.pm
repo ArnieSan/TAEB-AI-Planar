@@ -16,16 +16,6 @@ sub set_arg {
     $self->level($level);
 }
 
-# Returns true if this tile is blocked for the purpose of searching.
-# Tiles are searchable if they have exactly 3 blocked orthogonal
-# neighbours.
-sub is_search_blocked {
-    my $self = shift;
-    my $tile = shift;
-    return (($tile->type eq 'rock' || $tile->type eq 'wall') &&
-	    !$tile->has_boulder);
-}
-
 sub spread_desirability {
     my $self = shift;
     my $level = $self->level;
@@ -47,58 +37,65 @@ sub spread_desirability {
     $cache or $ai->plan_caches->{'ExploreLevel'} = $cache = {};
     $level->each_tile(sub {
         my $tile = shift;
+        # Yes, the cached value is also cached...
+        my $tilecache = ($cache->{$tile} //= 0);
+        my $explored  = $tile->explored;
+        my $tiletype  = $tile->type;
 
 	# Don't explore rock or walls; explore 'unexplored' tiles only
-        # if they're adjacent to an explored, corridor or obscured
-        # tile. This needs caching to work quickly:
+        # if they're adjacent to an explored, walkable tile. This
+        # needs caching to work quickly:
         # cache =  0: no information stored
-        # cache =  1: tile is unexplored, !explored, and adjacent to
-        #             an explored tile or corridor
-        # cache =  2: tile is !explored and not rock/wall/unexplored
-        # cache =  3: tile is !explored corridor or obscured
-        # cache = -1: tile is rock or wall
-        # cache = -2: tile is explored
+        # cache =  1: unexplored, !explored, and adjacent to
+        #             an explored tile or known-walkable tile
+        # cache =  2: !explored and not rock/wall/unexplored
+        # cache =  3: !explored walkable
+        # cache = -1: rock or wall
+        # cache = -2: explored, not rock or wall, and might be a dead end
+        # cache = -3: explored, not rock or wall, and not a dead end
         # Whenever a tile becomes explored, the cache value of all
         # ajdacent unexplored and !explored tiles becomes 1; this is
         # the only way a tile's cache value can become 1.
-        $cache->{$tile} //= 0;
-        if ($cache->{$tile} > -2 && $tile->explored) {
+        if ($tiletype =~ /^(?:rock|wall)$/o && !$tile->has_boulder) {
+            $cache->{$tile} = -1;
+        } elsif ($tilecache > -1 && $explored) {
             $cache->{$tile} = -2;
             $tile->each_adjacent(sub {
                 my $x = shift;
                 $x->type eq 'unexplored' and $cache->{$x} = 1;
             });
-        }
-        if ($cache->{$tile} < 3 && !$tile->explored &&
-            $tile->type =~ /^(?:corridor|obscured)$/o) {
+        } elsif ($tilecache < 3 && !$explored && $ai->tile_walkable($tile)) {
             $cache->{$tile} = 3;
             $tile->each_adjacent(sub {
                 my $x = shift;
                 $x->type eq 'unexplored' and $cache->{$x} = 1;
             });
-        }
-        if (!$cache->{$tile} && $tile->type !~ /^(?:rock|wall|unexplored)$/o) {
+        } elsif (!$tilecache && $tiletype ne 'unexplored') {
             $cache->{$tile} = 2;
         }
     });
     $level->each_tile(sub {
 	my $tile = shift;
+        my $tilecache = $cache->{$tile};
 
-        # Search dead-ends.
-	if($tile->is_walkable(0,1)) {
-	   my $orthogonals = scalar $tile->grep_orthogonal(
-	       sub {$self->is_search_blocked(shift)});
+        # Search dead-end corridors and doorways, if we've explored the
+        # square to search from first.
+	if($tilecache == -2) {
+	   my $orthogonals = scalar ($tile->grep_orthogonal(
+	       sub {$cache->{(shift)} == -1}));
            # Dead-end; a very good place to search, even when not stuck.
-           $orthogonals == 3 and $self->depends($mines ? 0.5 : 1, "Search", $tile);
+           if($orthogonals == 3) {
+               $self->depends($mines ? 0.5 : 1, "Search", $tile);
+           } else {
+               # If this tile is explored, but not currently a dead end,
+               # it never will be. So mark this tile as 'not a dead end'.
+               $cache->{$tile} = -3;
+           }
         }
 
 	# Use the cached values for exploration.
-	if ($cache->{$tile} > 0) {
-            if ($tile->type =~ /^(?:rock|wall)$/o) {
-                $cache->{$tile} = -1;
-            } else {
-                $self->depends(1,"Explore",$tile);
-            }
+	if ($tilecache > 0) {
+            $self->depends(1,"Explore",$tile);
         }
 	# As well as exploring horizontally, we can explore vertically.
 	# Looking underneath objects is one way to help find the stairs.
@@ -106,14 +103,10 @@ sub spread_desirability {
         # we've ever stepped on the tile, we know its terrain.
 	if($tile->is_interesting && !$tile->stepped_on) {
 	    $self->depends(1,"LookAt",$tile);
-	}
-        if($tile->has_boulder && $tile->type eq 'obscured') {
+	} elsif($tile->type eq 'obscured' && $tile->has_boulder) {
             $self->depends(1,"LookAt",$tile);
         }
     });
-    # If possible, paying off debt can improve connectivity by
-    # allowing us to move past a shk. TODO: This should be a threat.
-    $self->depends(1,"Pay");
     # Eliminating (not mitigating) invisible monsters can help us
     # explore by opening up more of the level.
     for my $enemy (TAEB->current_level->has_enemies) {

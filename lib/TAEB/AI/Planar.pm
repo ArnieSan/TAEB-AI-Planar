@@ -1217,8 +1217,9 @@ sub drawing_modes {
             $status ==  1 and $color = display(COLOR_YELLOW);
             $status ==  2 and $color = display(COLOR_RED);
             $status ==  3 and $color = display(COLOR_MAGENTA);
-            $status == -1 and $color = display(COLOR_CYAN);
-            $status == -2 and $color = display(COLOR_BLUE);
+            $status == -1 and $color = display(COLOR_GREEN);
+            $status == -2 and $color = display(COLOR_CYAN);
+            $status == -3 and $color = display(COLOR_BLUE);
             $color->reverse(1);
             return $color;
         },

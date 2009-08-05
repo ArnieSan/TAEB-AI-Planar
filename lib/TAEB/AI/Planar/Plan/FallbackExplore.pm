@@ -16,6 +16,16 @@ sub set_arg {
     $self->level($level);
 }
 
+# Returns true if this tile is blocked for the purpose of searching.
+# Tiles are searchable if they have exactly 3 blocked orthogonal
+# neighbours.
+sub is_search_blocked {
+    my $self = shift;
+    my $tile = shift;
+    return ($tile->type eq 'rock' || $tile->type eq 'wall')
+        && !$tile->has_boulder;
+}
+
 sub spread_desirability {
     my $self = shift;
     my $level = $self->level;
@@ -27,8 +37,7 @@ sub spread_desirability {
 	my $tile = shift;
 	if($ai->tile_walkable($tile)) {
 	   my $orthogonals = scalar $tile->grep_orthogonal(
-	       sub {TAEB::AI::Planar::Plan::ExploreLevel
-                        ->is_search_blocked(shift)});
+	       sub {$self->is_search_blocked(shift)});
            ($orthogonals == 1 || $orthogonals == 2) and
                $self->depends($mines ? 0.7 : 1, "Search", $tile);
         }
