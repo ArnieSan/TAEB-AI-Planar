@@ -49,12 +49,13 @@ sub spread_desirability {
         my $tile = shift;
 
 	# Don't explore rock or walls; explore 'unexplored' tiles only
-        # if they're adjacent to an explored tile. This needs caching
-        # to work quickly:
+        # if they're adjacent to an explored, corridor or obscured
+        # tile. This needs caching to work quickly:
         # cache =  0: no information stored
         # cache =  1: tile is unexplored, !explored, and adjacent to
-        #             an explored tile
+        #             an explored tile or corridor
         # cache =  2: tile is !explored and not rock/wall/unexplored
+        # cache =  3: tile is !explored corridor or obscured
         # cache = -1: tile is rock or wall
         # cache = -2: tile is explored
         # Whenever a tile becomes explored, the cache value of all
@@ -63,6 +64,14 @@ sub spread_desirability {
         $cache->{$tile} //= 0;
         if ($cache->{$tile} > -2 && $tile->explored) {
             $cache->{$tile} = -2;
+            $tile->each_adjacent(sub {
+                my $x = shift;
+                $x->type eq 'unexplored' and $cache->{$x} = 1;
+            });
+        }
+        if ($cache->{$tile} < 3 && !$tile->explored &&
+            $tile->type =~ /^(?:corridor|obscured)$/o) {
+            $cache->{$tile} = 3;
             $tile->each_adjacent(sub {
                 my $x = shift;
                 $x->type eq 'unexplored' and $cache->{$x} = 1;
