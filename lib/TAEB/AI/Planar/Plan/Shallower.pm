@@ -18,3 +18,8 @@ sub spread_desirability {
 
 use constant description => 'Aiming towards the top of the dungeon';
 use constant references  => ['Ascend','Descend'];
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
+1;
