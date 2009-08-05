@@ -42,7 +42,7 @@ sub check_possibility_inner {
 	$self->generate_plan($tme,"ScareMonster",$tile);
 	return;
     }
-    return unless $tile->is_walkable;
+    return unless $tile->is_walkable(0,1);
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 

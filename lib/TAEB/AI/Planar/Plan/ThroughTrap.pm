@@ -59,7 +59,7 @@ sub check_possibility_inner {
 	$self->generate_plan($tme,"ScareMonster",$tile);
 	return;
     }
-    return unless $tile->is_walkable; # avoid traps in Sokoban
+    return unless $tile->is_walkable(1,1); # avoid traps in Sokoban
     return unless defined trap_costs->{$tile->trap_type};
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }

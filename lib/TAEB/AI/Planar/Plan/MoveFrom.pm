@@ -40,8 +40,8 @@ sub check_possibility_inner {
 	    #D#	$tile->y);
             my $level = $tile->level;
             if (($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
-		$level->at($tile->x, $tmetile->y)->is_walkable(1) ||
-		$level->at($tmetile->x, $tile->y)->is_walkable(1) ||
+		$level->at($tile->x, $tmetile->y)->is_walkable(1,1) ||
+		$level->at($tmetile->x, $tile->y)->is_walkable(1,1) ||
 		$can_squeeze) {
                 $self->generate_plan($tme, "MoveTo", $tile);
             }

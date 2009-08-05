@@ -95,7 +95,7 @@ sub action {
 
 sub succeeded {
     my $self = shift;
-    return $self->tile->is_walkable;
+    return $self->tile->is_walkable(0,1);
 }
 
 use constant description => 'Digging through a wall';

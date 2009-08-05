@@ -72,7 +72,7 @@ sub check_possibility_inner {
     my $self = shift;
     my $tme  = shift;
     my $tile = $self->tile;
-    return unless $tile->is_walkable;
+    return unless $tile->is_walkable(0,1);
     my $door = $self->locate_door($tme);
     return if defined $door->monster;
     return unless $door->type eq 'opendoor' || $door->type eq 'closeddoor';
