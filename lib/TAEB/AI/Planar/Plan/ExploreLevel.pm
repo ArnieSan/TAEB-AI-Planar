@@ -32,30 +32,65 @@ sub spread_desirability {
     my $mines = $level->known_branch && $level->branch eq 'mines'
         && !$level->is_minetown;
     my $blind = TAEB->is_blind;
+    my $ai = TAEB->ai;
+
+    # It makes sense to explore tiles we haven't explored yet as
+    # one of the main ways to improve connectivity. Don't try to
+    # explore tiles with unknown pathability, or which are rock,
+    # though; that just wastes time in the strategy analyser for
+    # an option which is never the correct one. As an exception to
+    # this, we /do/ try to explore unexplored tiles when blind, so
+    # that LightTheWay kicks in and attempts to route there.
+
+    # Work out a cached exploration graph.
+    my $cache = $ai->plan_caches->{'ExploreLevel'};
+    $cache or $ai->plan_caches->{'ExploreLevel'} = $cache = {};
+    $level->each_tile(sub {
+        my $tile = shift;
+
+	# Don't explore rock or walls; explore 'unexplored' tiles only
+        # if they're adjacent to an explored tile. This needs caching
+        # to work quickly:
+        # cache =  0: no information stored
+        # cache =  1: tile is unexplored, !explored, and adjacent to
+        #             an explored tile
+        # cache =  2: tile is !explored and not rock/wall/unexplored
+        # cache = -1: tile is rock or wall
+        # cache = -2: tile is explored
+        # Whenever a tile becomes explored, the cache value of all
+        # ajdacent unexplored and !explored tiles becomes 1; this is
+        # the only way a tile's cache value can become 1.
+        $cache->{$tile} //= 0;
+        if ($cache->{$tile} > -2 && $tile->explored) {
+            $cache->{$tile} = -2;
+            $tile->each_adjacent(sub {
+                my $x = shift;
+                $x->type eq 'unexplored' and $cache->{$x} = 1;
+            });
+        }
+        if (!$cache->{$tile} && $tile->type !~ /^(?:rock|wall|unexplored)$/o) {
+            $cache->{$tile} = 2;
+        }
+    });
     $level->each_tile(sub {
 	my $tile = shift;
+
+        # Search dead-ends.
 	if($tile->is_walkable(0,1)) {
 	   my $orthogonals = scalar $tile->grep_orthogonal(
 	       sub {$self->is_search_blocked(shift)});
            # Dead-end; a very good place to search, even when not stuck.
            $orthogonals == 3 and $self->depends($mines ? 0.5 : 1, "Search", $tile);
         }
-	# It makes sense to explore tiles we haven't explored yet as
-	# one of the main ways to improve connectivity. Don't try to
-	# explore tiles with unknown pathability, or which are rock,
-	# though; that just wastes time in the strategy analyser for
-	# an option which is never the correct one. As an exception to
-	# this, we /do/ try to explore unexplored tiles when blind, so
-	# that LightTheWay kicks in and attempts to route there.
-	
-	# Don't explore rock or walls; explore 'unexplored' tiles only
-        # if they're adjacent to an explored tile.
-	if(!$tile->explored &&
-           (($tile->type !~ /^(?:rock|wall|unexplored)$/o) ||
-            ($tile->type eq 'unexplored' &&
-             $tile->any_adjacent(sub {shift->explored})))) {
-	    $self->depends(1,"Explore",$tile);
-	}
+
+	# Use the cached values for exploration.
+	if ($cache->{$tile} > 0) {
+            if ($tile->type =~ /^(?:rock|wall)$/o) {
+                $cache->{$tile} = -1;
+            } else {
+                $self->depends(1,"Explore",$tile);
+            }
+        }
 	# As well as exploring horizontally, we can explore vertically.
 	# Looking underneath objects is one way to help find the stairs.
         # However, only do this if we've never stepped on the tile; if
