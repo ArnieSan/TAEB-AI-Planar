@@ -1386,6 +1386,29 @@ sub safe_to_travel {
     return 1;
 }
 
+has item_subtype_cache => (
+    isa     => 'HashRef[Str]',
+    is      => 'rw',
+    default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+# NetHack::Item is just far too slow at this...
+# Luckily, subtypes don't change, so they can be cached.
+# Before doing this, about 16% of Planar's time was spent in
+# NetHack::Item calculating item subtypes.
+sub item_subtype {
+    my $self = shift;
+    my $item = shift;
+    my $cache = $self->item_subtype_cache;
+    return $cache->{$item} if exists $cache->{$item};
+    my $subtype = undef;
+    if ($item->can('subtype')) {
+        $subtype = $item->subtype;
+    }
+    $cache->{$item} = $subtype;
+    return $subtype;
+}
+
 # The benefit that would be gained from wielding/wearing this; or the
 # benefit that is gained from wielding/wearing this, in the case that
 # it's already wielded/worn.
@@ -1401,8 +1424,8 @@ sub use_benefit {
     # in addition, we subtract the AC of our current armour in the same
     # slot, unless the item is our current armour.
     if($item->can('ac') && defined $item->ac && $item->ac > 0 &&
-       $item->can('subtype') && !$item->is_cursed) {
-        my $slot = $item->subtype;
+       $self->item_subtype($item) && !$item->is_cursed) {
+        my $slot = $self->item_subtype($item);
         my $currently_in_slot = TAEB->inventory->equipment->$slot;
         my $ac = $item->ac;
         $ac *= .8682 unless defined $item->is_cursed; # i.e. we know it isn't
@@ -1465,8 +1488,7 @@ sub item_value {
     # for each nonwielded item better than them.
     my $use_benefit_factor = 1;
     my $benefit = $self->use_benefit($item,$cost);
-    my $subtype = undef;
-    $subtype = $item->subtype if $item->can('subtype');
+    my $subtype = $self->item_subtype($item);
     $subtype = 'weapon' if $item->type eq 'weapon';
     if ($subtype) {
         C: for my $check (TAEB->inventory->items,
@@ -1475,9 +1497,8 @@ sub item_value {
                 and next;
             $subtype eq 'weapon' and $check->type ne 'weapon' and next;
             if($subtype ne 'weapon') {
-                $check->can('subtype') or next C;
-                defined $check->subtype or next C;
-                $check->subtype eq $item->subtype or next C;
+                my $check_subtype = $self->item_subtype($check);
+                $check_subtype && $check_subtype eq $subtype or next C;
             }
             $self->use_benefit($check,$cost) > $benefit
                 and $use_benefit_factor /= 10;
