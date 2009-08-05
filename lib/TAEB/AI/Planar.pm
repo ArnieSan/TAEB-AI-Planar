@@ -1420,16 +1420,18 @@ has item_subtype_cache => (
 # Luckily, subtypes don't change, so they can be cached.
 # Before doing this, about 16% of Planar's time was spent in
 # NetHack::Item calculating item subtypes.
+# Note that we mustn't allow NHI to stringise the hash keys
+# itself, or it ends up calculating the subtype in the process...
 sub item_subtype {
     my $self = shift;
     my $item = shift;
     my $cache = $self->item_subtype_cache;
-    return $cache->{$item} if exists $cache->{$item};
+    return $cache->{refaddr $item} if exists $cache->{refaddr $item};
     my $subtype = undef;
     if ($item->can('subtype')) {
         $subtype = $item->subtype;
     }
-    $cache->{$item} = $subtype;
+    $cache->{refaddr $item} = $subtype;
     return $subtype;
 }
 
