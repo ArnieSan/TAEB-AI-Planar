@@ -37,10 +37,13 @@ sub stop_early {
 sub stop_early_blocked_by {
     my $self = shift;
     my $tile = shift;
+    my $monster = $self->monster;
     return 1 if $tile->type eq 'rock';
     return 1 if $tile->type eq 'wall';
     return 1 if $tile->has_friendly;
     return 1 if $tile->type eq 'sink';
+    return 1 if $tile->type eq 'unexplored'
+             && $monster->glyph eq 'I' || TAEB->is_blind;
     return 0;
 }
 sub mobile_target { 1 }
