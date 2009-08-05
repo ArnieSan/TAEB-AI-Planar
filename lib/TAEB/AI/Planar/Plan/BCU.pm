@@ -64,6 +64,7 @@ sub gain_resource_conversion_desire {
     # except incidentally.
     # Weapons are 10% likely to be cursed; armour's 13.18% likely.
     $item->type eq 'weapon'
+        and $item->identity !~ /\b(?:dagger|spear|shuriken|dart)\b/o
         and $benefit = TAEB::Spoilers::Combat->damage($item)
                      * $resources->{'DamagePotential'}->value * 0.1;
     $item->type eq 'armor'
