@@ -191,24 +191,25 @@ sub attack_monster_risk {
     return $risk;
 }
 
-# Set when an attempt to travel fails; cleared when the plan succeeds.
-has travel_failed_turn => (
+# The maximum distance to try to travel. This is divided by 4 upon
+# each failed travel (to a minimum of 1), multiplied by 2 upon each
+# successful travel (to a maximum of 256).
+has travel_distance => (
     isa     => 'Int',
     is      => 'rw',
-    default => -1000,
+    default => 256,
 );
-# How long to wait after unsuccessful travel. This is multiplied by
-# 10 after each failure (even the first); and so starting this at 5
-# means that the first time, we wait 50 turns. This exponential
-# backoff is required because of the potential that travel sends us
-# in the wrong direction. TODO: If we know for certain that it was
-# a monster that caused the routing failure, don't be as harsh when
-# doing the backoff.
-has travel_try_again_after => (
-    isa     => 'Int',
-    is      => 'rw',
-    default => 5,
-);
+sub increase_travel_distance {
+    my $self = shift;
+    my $d = $self->travel_distance;
+    $self->travel_distance($d*2) if $d < 256;
+}
+sub decrease_travel_distance {
+    my $self = shift;
+    my $d = $self->travel_distance;
+    $d = 4 if $d < 4;
+    $self->travel_distance($d/4);
+}
 
 # Trying this plan. We follow the path if there is one, else perform
 # the action if we're where we want to be, else bail.
@@ -229,13 +230,12 @@ sub action {
     my $firsttactic = $chain[0]->{'tactic'};
     return $firsttactic
         unless $ai->safe_to_travel
-            && $self->travel_failed_turn <
-               TAEB->turn - $self->travel_try_again_after
             && !$self->mobile_target
             && $firsttactic->replaceable_with_travel;
     my $chainindex = 0;
     $chainindex++ while defined $chain[$chainindex+1]
-        && $chain[$chainindex+1]->{'tactic'}->replaceable_with_travel;
+        && $chain[$chainindex+1]->{'tactic'}->replaceable_with_travel
+        && $chainindex < $self->travel_distance;
     my $tme = $chain[$chainindex];
     $chainindex <= 1 and return $firsttactic; # only travel 3+ tiles
     my $tile = $tme->{'tile_level'}->at($tme->{'tile_x'}, $tme->{'tile_y'});
@@ -249,24 +249,21 @@ sub action {
 sub succeeded {
     my $self = shift;
     if ($self->used_travel_to) {
-	$self->travel_failed_turn(-1000), return
+	$self->increase_travel_distance, return
             ($self->has_reach_action ? undef : 1)
             if $self->aim_tile_cache == TAEB->current_tile;
         return undef if $self->used_travel_to == TAEB->current_tile;
-        $self->travel_failed_turn(TAEB->turn);
-        $self->travel_try_again_after($self->travel_try_again_after * 10);
-        return undef; # even if travel fails, the plan may be viable
+        $self->decrease_travel_distance;
+        return undef; # try travelling again, but not as far this time
     }
     if (defined(shift)) {
-	$self->travel_failed_turn(-1000),
-            $self->travel_try_again_after(5),
+	$self->increase_travel_distance,
             return ($self->has_reach_action ? undef : 1)
                 if $self->aim_tile_cache == TAEB->current_tile;
 	return undef;
     }
     # we reached the tile, allow travelling again
-    $self->travel_failed_turn(-1000);
-    $self->travel_try_again_after(5);
+    $self->increase_travel_distance;
     return 1 unless $self->has_reach_action;
     return $self->reach_action_succeeded;
 }
