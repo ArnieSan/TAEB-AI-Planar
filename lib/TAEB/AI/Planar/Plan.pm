@@ -273,7 +273,6 @@ sub try {
 	}
     }
     $cando and defined $action and return $action;
-    $self->mark_impossible;
     return undef;
 }
 
