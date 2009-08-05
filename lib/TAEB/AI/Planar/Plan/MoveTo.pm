@@ -79,10 +79,11 @@ sub check_possibility_inner {
     # in a safe location, but only if specifically aiming there; so we use
     # PushBoulderRisky instead.
     if($tile->has_boulder
-       && (!defined $l->branch || $l->branch ne 'sokoban')) {
+       && (!defined $l->branch || $l->branch ne 'sokoban')) {{
         #D# TAEB->log->ai("Considering to push boulder");
         my $dx = $x - $tmex;
         my $dy = $y - $tmey;
+        last if $dx && $dy; # don't push boulders diagonally
 	my $beyond = $l->at_safe($x+$dx,$y+$dy);
         my $plantype = (safe_boulder_square($tile) ?
                         "PushBoulderRisky" : "PushBoulder");
@@ -109,7 +110,7 @@ sub check_possibility_inner {
             !$beyond->is_inherently_unwalkable(1,1)) {
 	    $self->generate_plan($tme,$plantype,$tile);
 	}        
-    }
+    }}
 
     # For things that don't care about which direction we approach the tile
     # from, there's an optimisation trick; the first MoveTo aiming at that
