@@ -1205,6 +1205,24 @@ has tiles_on_path => (
 );
 
 sub drawing_modes {
+    exploration_cache => {
+        description => 'Show exploration cache',
+        color => sub {
+            my $tile = shift;
+            my $ai = TAEB->ai;
+            my $status = $ai->plan_caches->{'ExploreLevel'}->{$tile};
+            my $color;
+            $status //= 0;
+            $status ==  0 and $color = display(COLOR_GRAY);
+            $status ==  1 and $color = display(COLOR_YELLOW);
+            $status ==  2 and $color = display(COLOR_RED);
+            $status ==  3 and $color = display(COLOR_MAGENTA);
+            $status == -1 and $color = display(COLOR_CYAN);
+            $status == -2 and $color = display(COLOR_BLUE);
+            $color->reverse(1);
+            return $color;
+        },
+    },
     tactical => {
         description => 'Show tactical map',
         color => sub {
