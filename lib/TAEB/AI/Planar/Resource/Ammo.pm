@@ -14,7 +14,7 @@ has _value => (
 sub projectilelist {
     my $daggers = shift;
     my @projectiles;
-    for my $type ($daggers ? 'dagger' : qw/dagger spear shuriken dart/) {
+    for my $type ($daggers ? 'dagger' : qw/dagger spear shuriken dart rock/) {
 	push @projectiles, (TAEB->inventory->find(
                            identity   => qr/\b$type\b/,
                            is_wielded => sub { !$_ },
@@ -31,10 +31,10 @@ sub amount {
 sub scarcity {
     my $self = shift;
     my $quantity = shift;
-    return 1 if $quantity < 5;
-    return 0.8 if $quantity < 10;
-    return 0.6 if $quantity < 15;
-    return 0.4 if $quantity < 20;
+    return 4 if $quantity < 5;
+    return 2 if $quantity < 10;
+    return 1 if $quantity < 15;
+    return 0.5 if $quantity < 20;
     return 0.2 if $quantity < 25;
     return 0.1;
 }
