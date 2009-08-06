@@ -1003,7 +1003,7 @@ sub threat_check {
 	# spoiler from that. Also, if not an always-hostile, farlook to
         # determine disposition; peacefuls can be angered.
 	$enemy->definitely_known && $enemy->definitely('always_hostile')
-            or $tile->glyph eq 'I' or $enemy->farlook;
+            or $tile->glyph eq 'I' or TAEB->is_hallucinating or $enemy->farlook;
 	my $spoiler = $enemy->spoiler;
 	my $danger = {};
 	my $relspeed = 0.99; # to encourage running away from unknown monsters
