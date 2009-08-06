@@ -1415,7 +1415,8 @@ sub safe_to_travel {
     return 0 if $self->last_monster_seen_step + 3 > TAEB->step;
     return 0 if TAEB->is_blind;
     return 0 if TAEB->current_level->known_branch
-             && TAEB->current_level->branch eq 'sokoban';
+             && TAEB->current_level->branch eq 'sokoban'
+             && TAEB::Spoilers::Sokoban->remaining_pits > 0;
     return 1;
 }
 
