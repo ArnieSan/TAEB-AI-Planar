@@ -13,6 +13,10 @@ has monster => (
     isa => 'Maybe[TAEB::World::Monster]',
     is  => 'rw',
 );
+has mimictile => (
+    isa => 'Maybe[TAEB::World::Tile]',
+    is  => 'rw',
+);
 has need_to_wait => (
     isa     => 'Bool',
     is      => 'rw',
@@ -54,6 +58,11 @@ sub aim_tile {
                 sub {shift->type eq 'stairsup'});
         return undef;
     }
+    # Wake a mimic beyond the boulder, instead of pushing at it.
+    return undef
+            if $self->mimictile
+            && $self->mimictile->glyph ne $self->mimictile->floor_glyph
+            && (!$self->mimictile->has_monster || $self->mimictile->glyph eq 'I');
     # To an empty square?
     return $nexttile unless $nexttile->has_boulder;
     # Or to push a boulder?
@@ -66,6 +75,7 @@ sub aim_tile {
         $nexttile->y * 2 - TAEB->current_tile->y);
     if($beyond && $beyond->has_monster) {
         $self->monster($beyond->monster);
+        $self->mimictile($beyond);
         return undef;
     }
     $self->push_turn == TAEB->turn ? $p++ : ($p = 0);
@@ -125,22 +135,39 @@ sub spread_desirability {
     # for going to known levels.) If we're in Sokoban already, try
     # exploring around to see if there are mimics pretending to be
     # boulders, and killing monsters that are in the way.
+    my $firstlevel = TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level;
+    if (defined $firstlevel) {
+        $firstlevel->each_tile(sub {
+            my $tile = shift;
+            if($tile->has_boulder) {
+                $self->depends(1,"WakeMimic",$tile)
+                    unless TAEB::Spoilers::Sokoban->
+                           probably_has_genuine_boulder($tile);
+            }
+            if($tile->glyph eq 'm') {
+                $self->depends(1,"Eliminate",$tile->monster);
+            }
+        });
+    }
     if (TAEB->current_level->known_branch
-        && TAEB->current_level->branch eq 'sokoban')
-    {
+        && TAEB->current_level->branch eq 'sokoban') {
         $self->depends(1,"Eliminate",$self->monster) if $self->monster;
         $self->depends(1,"OtherSide",$_) for TAEB->current_level->exits;
+        $self->depends(1,"WakeMimic",$self->mimictile)
+            if $self->mimictile
+            && $self->mimictile->glyph ne $self->mimictile->floor_glyph
+            && (!$self->mimictile->has_monster || $self->mimictile->glyph eq 'I');
         $self->depends(0.5,"ExploreHere");
         return;
     }
     # Otherwise, if we're outside Sokoban and haven't seen an unsolved
     # Sokoban level, go to Sokoban.
     $self->depends(1,"GotoSokoban")
-        unless defined TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level;
+        unless defined $firstlevel;
 }
 
 use constant description => 'Solving Sokoban';
-use constant references => ['GotoSokoban','ExploreHere','Eliminate'];
+use constant references => ['GotoSokoban','ExploreHere','Eliminate','WakeMimic'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
