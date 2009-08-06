@@ -25,7 +25,7 @@ has consecutive_tries => (
 );
 
 # Move diagonally into a wall, if we can.
-# Otherwise, move diagonally to an arbitrary passable square.
+# Otherwise, move adjacently to an arbitrary passable square.
 # Failing even that, bail.
 sub reach_action {
     my $self = shift;
@@ -45,7 +45,7 @@ sub reach_action {
     $goto and return TAEB::Action->new_action(
 	'move', direction => delta2vi($goto->x - TAEB->x,
 				      $goto->y - TAEB->y));
-    TAEB->current_tile->each_diagonal(sub {
+    TAEB->current_tile->each_adjacent(sub {
 	my $tile = shift;
 	$ai->tile_walkable($tile) && !$tile->monster and $goto = $tile;
     });
