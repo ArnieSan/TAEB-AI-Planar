@@ -6,6 +6,7 @@ use TAEB::Util qw/refaddr weaken display :colors any/;
 use Scalar::Util qw/reftype/;
 use Time::HiRes qw/gettimeofday tv_interval/;
 use TAEB::Spoilers::Combat;
+use TAEB::Spoilers::Sokoban;
 use Storable;
 use Module::Pluggable
     'search_path' => ['TAEB::AI::Planar::Resource'],
@@ -1277,12 +1278,17 @@ sub drawing_modes {
                 # which have no special overrides of their own
                 $color = $tile->is_interesting
                     ? display(COLOR_RED)
-                    : $tile->searched >= 20
-                    ? display(COLOR_CYAN)
                     : $tile->in_shop
                     ? display(COLOR_BRIGHT_GREEN)
                     : $tile->in_temple
                     ? display(COLOR_BRIGHT_CYAN)
+                    : TAEB::Spoilers::Sokoban->
+                      probably_has_genuine_boulder($tile)
+                    ? display(COLOR_WHITE)
+                    : $tile->has_boulder
+                    ? display(COLOR_ORANGE)
+                    : $tile->searched >= 20
+                    ? display(COLOR_CYAN)
                     : $tile->stepped_on
                     ? display(COLOR_BROWN)
                     : $tile->explored
