@@ -15,6 +15,8 @@ noticed. Things marked with a + are now fixed.
 - Failing to start up properly; is this a framework bug?
 - Invisible monsters. More invisible monsters.
 - Squeezing past a boulder and not knowing how to get back.
+  - Planar will now smash boulders outside Soko to get back, but
+    that's only a partial fix as it doesn't always have a pickaxe
 + Panicked after going downstairs for no obvious reason
   + This makes me even more suspicious that there's a
     caching bug related to changing level
@@ -22,6 +24,9 @@ noticed. Things marked with a + are now fixed.
 - Forgetting the location of a bugbear and being killed by
   it from 1hp
 - Bumping a shopkeeper when blind
+  - This one happens relatively often. I wonder if there's an easy
+    solution? You can often sort-of guess where a shop is by the
+    location.
 - Finding a bones file with the same shopkeeper, who still hates
   TAEBs. (Maybe we should #quit if we anger a shopkeeper, to avoid
   leaving nasty-to-TAEB bones?)
@@ -33,6 +38,12 @@ noticed. Things marked with a + are now fixed.
   - We need a list of situations where moving around when blind is
     dangerous. Squares on which we've killed a cockatrice is one,
     shops is another.
-    *        34179  TAEB-Val-Dwa-Fem-Law turned to stone in Sokoban on             
-                    level 8 [max 12].  Petrified by a cockatrice corpse.  122 [126]
+    * 34179  TAEB-Val-Dwa-Fem-Law turned to stone in Sokoban on             
+             level 8 [max 12].  Petrified by a cockatrice corpse.  122 [126]
     - Still Planar's best game ever, though.
+- Being confused in Bigroom when on low health
+   - It was doing just fine before it was confused, adopting a hit-
+     and run tactic running around the edges as fast as possible,
+     sniping at the enemies every now and then. But the confusion
+     messed up its movements, so the hit-and-run broke down, and it
+     died to being hit by the things it thought it could outrun.
