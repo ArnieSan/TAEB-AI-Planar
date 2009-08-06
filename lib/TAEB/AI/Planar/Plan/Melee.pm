@@ -42,7 +42,8 @@ sub calculate_extra_risk {
     $risk = $self->cost('Impossibility', 1)
         unless $self->monster->is_meleeable;
     $risk += $self->aim_tile_turns(1);
-    $risk += $self->attack_monster_risk($self->monster);
+    $risk += $self->attack_monster_risk($self->monster)
+        // $self->cost('Hitpoints', 5); # stock value for hallu
     return $risk;
 }
 
