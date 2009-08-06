@@ -1267,8 +1267,10 @@ sub drawing_modes {
             $ai->tiles_on_path(\%path);
         },
         color => sub {
-            my $tile = shift;
-            my $ai   = TAEB->ai;
+            my $tile  = shift;
+            my $ai    = TAEB->ai;
+            my $level = $tile->level;
+            my $sokoban = $level->known_branch && $level->branch eq 'sokoban';
 
             my $color;
             # short-circuit optimisation for unexplored tiles
@@ -1282,10 +1284,10 @@ sub drawing_modes {
                     ? display(COLOR_BRIGHT_GREEN)
                     : $tile->in_temple
                     ? display(COLOR_BRIGHT_CYAN)
-                    : TAEB::Spoilers::Sokoban->
+                    : $sokoban && TAEB::Spoilers::Sokoban->
                       probably_has_genuine_boulder($tile)
                     ? display(COLOR_WHITE)
-                    : $tile->has_boulder
+                    : $sokoban && $tile->has_boulder
                     ? display(COLOR_ORANGE)
                     : $tile->searched >= 20
                     ? display(COLOR_CYAN)
