@@ -27,10 +27,10 @@ has push_turn => (
     is      => 'rw',
     default => -1
 );
-has push_in_row => ( # we could be fast...
+has push_backoff => (
     isa     => 'Num',
     is      => 'rw',
-    default => 0
+    default => 1
 );
 
 sub aim_tile {
@@ -62,11 +62,11 @@ sub aim_tile {
     return undef
             if $self->mimictile
             && $self->mimictile->glyph ne $self->mimictile->floor_glyph
-            && (!$self->mimictile->has_monster || $self->mimictile->glyph eq 'I');
+            && (!$self->mimictile->has_monster || $self->mimictile->glyph eq 'I')
+            && $self->push_turn + $self->push_backoff >= TAEB->turn;
     # To an empty square?
     return $nexttile unless $nexttile->has_boulder;
     # Or to push a boulder?
-    my $p = $self->push_in_row;
     $self->bouldertile($nexttile);
     # If there's a monster beyond the boulder, get rid of it.
     # That's done by returning undef here, and falling back to Eliminate.
@@ -76,11 +76,8 @@ sub aim_tile {
     if($beyond && $beyond->has_monster) {
         $self->monster($beyond->monster);
         $self->mimictile($beyond);
-        return undef;
+        return undef if $self->push_turn + $self->push_backoff >= TAEB->turn;
     }
-    $self->push_turn == TAEB->turn ? $p++ : ($p = 0);
-    $self->need_to_wait($p > 3);
-    $self->push_in_row($p);
     $self->push_turn(TAEB->turn);
     return TAEB->current_tile;
 }
@@ -91,9 +88,6 @@ sub reach_action {
     # Go upstairs if we're on the upstairs.
     return TAEB::Action->new_action('ascend')
         if TAEB->current_tile->type eq 'stairsup';
-    # Wait 1 turn if we tried to push a boulder and it didn't move.
-    return TAEB::Action->new_action('search', iterations => 1)
-        if $self->need_to_wait;
     # Otherwise, push the boulder.
     return TAEB::Action->new_action('move',
         direction => delta2vi($self->bouldertile->x - TAEB->current_tile->x,
@@ -104,11 +98,13 @@ sub reach_action_succeeded {
     my $self = shift;
     # If there isn't a boulder on the square where there used to be one,
     # it worked.
-    return 1 if !$self->bouldertile->has_boulder;
+    $self->push_backoff(1), return 1
+        if !$self->bouldertile->has_boulder;
     # If we're on the same turn as before, there must be a monster
     # in the way, or maybe we skipped a turn due to speed; wait once,
     # and try again.
-    return undef if TAEB->turn == $self->push_turn;
+    $self->push_backoff($self->push_backoff*3), return undef
+        if TAEB->turn == $self->push_turn;
     # Otherwise, we failed.
     return 0;
 }
