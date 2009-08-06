@@ -257,9 +257,9 @@ sub succeeded {
         return undef; # try travelling again, but not as far this time
     }
     if (defined(shift)) {
-	$self->increase_travel_distance,
-            return ($self->has_reach_action ? undef : 1)
-                if $self->aim_tile_cache == TAEB->current_tile;
+        return ($self->has_reach_action ? undef : 1)
+            if $self->aim_tile_cache == TAEB->current_tile;
+        $self->increase_travel_distance;
 	return undef;
     }
     # we reached the tile, allow travelling again
