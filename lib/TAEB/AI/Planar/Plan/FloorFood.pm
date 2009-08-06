@@ -84,19 +84,31 @@ sub calculate_extra_risk {
     my $maybe_rotted = $self->item->maybe_rotted;
     # Certain corpses are a lot more risky.
     # TODO: Work out a sensible way to quantify this risk.
-    $risk += 1000 if defined $self->item && ($maybe_rotted // 1);
-    $risk += 1000 if $corpse->{'die'};
-    $risk += 1000 if $corpse->{'lycanthropy'};
-    $risk += 1000 if $corpse->{'petrify'};
-    $risk += 1000 if $corpse->{'polymorph'};
-    $risk += 1000 if $corpse->{'slime'};
-    $risk += 1000 if $corpse->{'hallucination'};
-    $risk += 1000 if $corpse->{'poisonous'};
-    $risk += 1000 if $corpse->{'stun'};
-    $risk += 1000 if ($corpse->{'cannibal'} // 'None') eq TAEB->race;
-    $risk += 1000 if $corpse->{'aggravate'};
+    $risk += $self->cost('Impossibility',1)
+        if defined $self->item && ($maybe_rotted // 1);
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'die'};
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'lycanthropy'};
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'petrify'};
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'polymorph'};
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'slime'};
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'hallucination'};
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'poisonous'};
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'stun'};
+    $risk += $self->cost('Impossibility',1)
+        if ($corpse->{'cannibal'} // 'None') eq TAEB->race;
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'aggravate'};
     # TODO: Make this the cost of the intrinsic
-    $risk += 1000 if $corpse->{'speed_toggle'};
+    $risk += $self->cost('Impossibility',1)
+        if $corpse->{'speed_toggle'};
     # Acidic corpses just deal damage, so they cost in hitpoints.
     $risk += $self->cost('Hitpoints', 15) if $corpse->{'acidic'};
     # If we eat a corpse in a shop, we're going to have to buy it.
