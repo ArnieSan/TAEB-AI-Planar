@@ -2,7 +2,7 @@
 package TAEB::AI::Planar;
 use TAEB::OO;
 use Heap::Simple::XS;
-use TAEB::Util qw/refaddr weaken display :colors/;
+use TAEB::Util qw/refaddr weaken display :colors any/;
 use Scalar::Util qw/reftype/;
 use Time::HiRes qw/gettimeofday tv_interval/;
 use TAEB::Spoilers::Combat;
@@ -357,7 +357,9 @@ sub next_action {
     $self->aistep($self->aistep + 1);
     # Did we abandon a plan last turn?
     if (defined $self->abandoned_plan && defined $self->current_plan &&
-	$self->abandoned_plan->name ne $self->current_plan->name) {
+	$self->abandoned_plan->name ne $self->current_plan->name &&
+        !(any {$_->name eq $self->abandoned_plan->name}
+             @{$self->current_plan->dependency_path})) {
 	# Prevent oscillations; if a plan is abandoned, we don't try it
 	# again for a while. (mark_impossible will try a plan twice before
 	# suspending it for a while; and remember that dependencies and
