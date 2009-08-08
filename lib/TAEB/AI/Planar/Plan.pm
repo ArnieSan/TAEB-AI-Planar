@@ -2,6 +2,12 @@
 package TAEB::AI::Planar::Plan;
 use TAEB::OO;
 
+use overload (
+    fallback => undef,
+    q{==} => sub {shift->name eq shift->name;},
+    q{!=} => sub {shift->name ne shift->name;},
+);
+
 use constant   difficulty_fading     => 3;
 use constant d_difficulty_fading     => 1;
 use constant d_difficulty_increase   => 9;
@@ -404,11 +410,10 @@ sub planspawn { }
 
 # Plans which this plan can refer to (by spawning, depending, or
 # otherwise generating).
-has references => (
-    isa => 'ArrayRef[TAEB::AI::Planar::Plan]',
-    is  => 'rw',
-    default => sub { [] }
-);
+sub references { [] }
+
+# Plans which mustn't be used to interrupt this plan
+sub uninterruptible_by { [] }
 
 # Stuff to remove once a better way is available
 sub item_tile {

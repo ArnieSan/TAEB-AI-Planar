@@ -641,11 +641,20 @@ sub next_plan_action {
     my %planstate = ();
     my $bestplanname;
     my $majorplan = $self->overall_plan;
+    my @illegal_plans = ();
+    if (defined $self->abandoned_plan) {
+        @illegal_plans = (@illegal_plans,
+                          @{$self->abandoned_plan->uninterruptible_by});
+    }
+    if (defined $self->abandoned_tactical_plan) {
+        @illegal_plans = (@illegal_plans,
+                          @{$self->abandoned_tactical_plan->uninterruptible_by});
+    }
     $self->currently_modifiers('');
     while (1) {
 	my $desire;
 	$plan = undef;
-	{
+	PLANLOOP: {
 	    my $heapentry = $self->_planheap->extract_first;
 	    #TAEB->log->ai("<- ${$heapentry}[0]");
 	    my $withrisk;
@@ -663,6 +672,16 @@ sub next_plan_action {
 	    # into account, but we now have more accurate figures,
 	    # ignore in favour of those (lower) figures.
 	    redo if defined($plan->risk) && !$withrisk;
+            # If this plan is illegal (e.g. because it interrupts a
+            # plan that it isn't allowed to interrupt), ignore it.
+            if (!($self->abandoned_plan && $self->abandoned_plan == $plan) &&
+                !($self->abandoned_tactical_plan &&
+                  $self->abandoned_tactical_plan == $plan)) {
+              $plan->name =~ /^$_(?:\[.*)?/ and
+                  TAEB->log->ai("Ignoring " . $plan->name .
+                                " because it's an illegal interruption"),
+                  redo PLANLOOP for @illegal_plans;
+            }
 	    # If this plan was already calculated at or above the
 	    # given desirability, no point in trying again, that'll
 	    # just do a lot of NOPing for no reason, and possibly
