@@ -20,6 +20,11 @@ has taking_off => (
     is      => 'rw',
     default => undef,
 );
+has unwielding => (
+    isa     => 'Bool',
+    is      => 'rw',
+    default => 0,
+);
 
 sub aim_tile {
     my $self = shift;
@@ -43,6 +48,11 @@ sub reach_action {
         return undef if $item->can('is_worn') && $item->is_worn;
         my $slot = $item->subtype;
         my $blocker = TAEB->inventory->equipment->blockers($slot);
+        if ($blocker && $blocker->type eq 'weapon') {
+            $self->unwielding(1);
+            return TAEB::Action->new_action('wield', weapon => 'nothing');
+        }
+        $self->unwielding(0);
         $self->taking_off($blocker);
         return TAEB::Action->new_action('remove',  item => $blocker)
             if $blocker;
@@ -74,6 +84,10 @@ sub reach_action_succeeded {
     my $self = shift;
     my $item = $self->item;
     my $blocker = $self->taking_off;
+    if ($self->unwielding) {
+        return 0 if TAEB->inventory->equipment->weapon;
+        return;
+    }
     if ($blocker) {
         return 0 if $blocker->is_worn;
         return;
