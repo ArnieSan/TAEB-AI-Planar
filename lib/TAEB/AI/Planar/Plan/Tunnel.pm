@@ -52,9 +52,13 @@ sub calculate_risk {
     my $tme  = shift;
     my $tile = $self->tile;
 
-    (undef, my $time) = $self->get_pick_and_time;
+    (my $pick, my $time) = $self->get_pick_and_time;
 
-    $self->cost("Time", $time + 1); # we'll have to walk anyway
+    # It costs 1 unit of time to walk after digging, and 1 to rewield
+    # our weapon. 2 more if we have to unwield and rewield a shield too.
+    $self->cost("Time", $time + 2);
+    $self->cost("Time", 2)
+        if $pick->hands == 2 && TAEB->inventory->equipment->shield;
     $self->level_step_danger;
 }
 
