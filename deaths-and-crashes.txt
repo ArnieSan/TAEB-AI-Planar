@@ -42,8 +42,11 @@ noticed. Things marked with a + are now fixed.
              level 8 [max 12].  Petrified by a cockatrice corpse.  122 [126]
     - Still Planar's best game ever, though.
 - Being confused in Bigroom when on low health
-   - It was doing just fine before it was confused, adopting a hit-
-     and run tactic running around the edges as fast as possible,
-     sniping at the enemies every now and then. But the confusion
-     messed up its movements, so the hit-and-run broke down, and it
-     died to being hit by the things it thought it could outrun.
+  - It was doing just fine before it was confused, adopting a hit-
+    and run tactic running around the edges as fast as possible,
+    sniping at the enemies every now and then. But the confusion
+    messed up its movements, so the hit-and-run broke down, and it
+    died to being hit by the things it thought it could outrun.
+- Digging into a shop
+  - Does this require being able to detect shops at range?
+  - We should at least check for pickaxe messages
