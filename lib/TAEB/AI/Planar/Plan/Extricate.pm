@@ -66,6 +66,8 @@ sub reach_action_succeeded {
     if($self->consecutive_tries >= 3 &&
        $self->last_movement_turn == TAEB->turn) {
 	TAEB->in_beartrap(0);
+        TAEB->in_web(0);
+        TAEB->in_pit(0);
     }
     # If we're still in a trap, return undef, to continue the
     # extrication next turn.
