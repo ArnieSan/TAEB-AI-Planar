@@ -1484,7 +1484,9 @@ sub use_benefit {
         $value += $resources->{'DamagePotential'}->$cost($damage)
             unless $damage <= 0;
     }
-    $value -= $resources->{'Delta'} / refaddr($item); # tiebreak
+    $_ == $item and $value += $resources->{'Delta'}->$cost(1)
+        for TAEB->inventory->items;
+    $value -= $resources->{'Delta'}->$cost(1/refaddr($item)); # tiebreak
     return 0 if $value < 0;
     return $value;
 }
