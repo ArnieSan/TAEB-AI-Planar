@@ -40,6 +40,7 @@ sub action {
 
 sub succeeded {
     my $self = shift;
+    return 0 unless $self->tile->type =~ /^stairs/o;
     return TAEB->current_tile == $self->tile->other_side;
 }
 
