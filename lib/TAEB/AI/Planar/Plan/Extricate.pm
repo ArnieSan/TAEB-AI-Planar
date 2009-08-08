@@ -9,7 +9,9 @@ extends 'TAEB::AI::Planar::Plan::Strategic';
 # done like this so that aim_tile_turns works. (Hmm... maybe all plans
 # should be Strategic-based, in that case?)
 sub aim_tile {
-    return TAEB->current_tile;
+    my $tile = TAEB->current_tile;
+    return $tile if $tile->type eq 'trap';
+    return undef; # we can only extricate ourself from traps
 }
 sub has_reach_action { 1 }
 
