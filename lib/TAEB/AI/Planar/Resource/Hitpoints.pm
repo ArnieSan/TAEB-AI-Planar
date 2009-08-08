@@ -10,7 +10,7 @@ has _value => (
 );
 
 sub amount {
-    return TAEB->hp;
+    return TAEB->hp-1;
 }
 
 # Scarcity of hitpoints depends on how close to max hp we are; they
