@@ -4,6 +4,12 @@ use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
+has unequipping => (
+    isa => 'Bool',
+    is  => 'rw',
+    default => 0,
+);
+
 sub get_pick_and_time {
     my ($self) = @_;
 
@@ -89,12 +95,27 @@ sub action {
 	    $tile->x.", ".$tile->y." because they aren't adjacent.";
     }
 
+    if ($pick->hands == 2) {
+        # To use a mattock, we need to unequip a shield first.
+        my $shield = TAEB->inventory->equipment->shield;
+        if ($shield) {
+            $self->unequipping(1);
+            return TAEB::Action->new_action(
+                'remove', item => $shield);
+        }
+    }
+
+    $self->unequipping(0);
     return TAEB::Action->new_action(
 	'apply', direction => $dir, item => $pick);
 }
 
 sub succeeded {
     my $self = shift;
+    if ($self->unequipping) {
+        return undef unless TAEB->inventory->equipment->shield;
+        return 0;
+    }
     # Don't use tile_walkable here, it'll have a cached value from
     # the wrong aistep
     return $self->tile->is_walkable(0,1);
@@ -102,6 +123,7 @@ sub succeeded {
 
 use constant description => 'Digging through a wall';
 use constant references => ['ScareMonster'];
+use constant uninterruptible_by => ['Equip'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
