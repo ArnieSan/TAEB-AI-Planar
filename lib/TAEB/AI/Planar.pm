@@ -1496,6 +1496,7 @@ sub use_benefit {
     if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed
 	&& $item->hands == 1) { #XXX ignore two-handers for now
         my $current_weapon = TAEB->inventory->equipment->weapon;
+        $current_weapon = undef if $current_weapon->hands == 2;
         my $damage = TAEB::Spoilers::Combat->damage($item);
         $damage *= .9 unless defined $item->is_cursed; # i.e. we know it isn't
         defined $current_weapon && $current_weapon != $item and
