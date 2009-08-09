@@ -38,8 +38,10 @@ sub gain_resource_conversion_desire {
     my $ai   = TAEB->ai;
     my $item = $self->item;
     # Bump our own desirability.
-    $ai->add_capped_desire($self, $ai->resources->{'Nutrition'}->value *
-			   $item->nutrition - $ai->item_value($item));
+    $ai->add_capped_desire(
+        $self,
+        $ai->resources->{'Nutrition'}->value * $item->nutrition -
+        $ai->item_value($item) / $item->quantity);
 }
 
 sub calculate_extra_risk {
