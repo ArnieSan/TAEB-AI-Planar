@@ -52,7 +52,7 @@ sub reach_action {
 
 # The desire of BCUing an item. (Note that other plans can also /explicitly/
 # request a BCU of an item, which will generally generate considerably more
-# desire than 
+# desire than this generation will.)
 sub gain_resource_conversion_desire {
     my $self = shift;
     my $item = $self->item;
