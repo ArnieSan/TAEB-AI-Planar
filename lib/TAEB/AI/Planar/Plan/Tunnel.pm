@@ -13,7 +13,7 @@ has unequipping => (
 sub get_pick_and_time {
     my ($self) = @_;
 
-    my $c = (TAEB->ai->plan_caches->{'Tunnel'} //= [undef, undef, -1]);
+    my $c = (TAEB->ai->plan_caches->{'Tunnel'} //= [undef, undef, -1, 0]);
     return @$c if $c->[2] == TAEB->ai->aistep;
 
     my @picks = map { [ ($_->numeric_enchantment // 0) -
@@ -32,9 +32,14 @@ sub get_pick_and_time {
     # doing this right requires scary math, like, gambler's ruin theorem scary
 
     # actually possible, but I don't want to think about the time
-    return (@$c = (undef, undef, TAEB->ai->aistep)) if $eff_min < 0;
+    return (@$c = (undef, undef, TAEB->ai->aistep, undef)) if $eff_min < 0;
 
-    return (@$c = ($pick, 100 / ($eff_min + 2) + 1, TAEB->ai->aistep));
+    my $time = 100 / ($eff_min + 2) + 1;
+    # It costs 1 unit of time to walk after digging, and 1 to rewield
+    # our weapon. 2 more if we have to unwield and rewield a shield too.
+    my $timecost = $time + 2;
+    $timecost += 2 if $pick->hands == 2 && TAEB->inventory->equipment->shield;
+    return (@$c = ($pick, $time, TAEB->ai->aistep, $timecost));
 }
 
 has tile => (
@@ -52,13 +57,9 @@ sub calculate_risk {
     my $tme  = shift;
     my $tile = $self->tile;
 
-    (my $pick, my $time) = $self->get_pick_and_time;
+    (undef, undef, undef, my $timecost) = $self->get_pick_and_time;
 
-    # It costs 1 unit of time to walk after digging, and 1 to rewield
-    # our weapon. 2 more if we have to unwield and rewield a shield too.
-    $self->cost("Time", $time + 2);
-    $self->cost("Time", 2)
-        if $pick->hands == 2 && TAEB->inventory->equipment->shield;
+    $self->cost("Time", $timecost);
     $self->level_step_danger;
 }
 
@@ -69,8 +70,8 @@ sub check_possibility_inner {
     my $tile = $self->tile;
     return if !$dig{ $tile->type } && !$tile->has_boulder;
 
-    (my $pick, undef) = $self->get_pick_and_time;
-    return unless $pick;
+    (my $pick, undef, undef, undef) = $self->get_pick_and_time;
+    return unless defined $pick;
 
     return if $tile->in_shop;
     return if $tile->nondiggable;
@@ -92,7 +93,7 @@ sub action {
     my $self = shift;
     my $tile = $self->tile;
     my $dir = delta2vi($tile->x - TAEB->x, $tile->y - TAEB->y);
-    (my $pick, undef) = $self->get_pick_and_time;
+    (my $pick, undef, undef, undef) = $self->get_pick_and_time;
 
     if (!defined $dir) {
 	die "Could not move from ".TAEB->x.", ".TAEB->y." to ".
