@@ -1060,7 +1060,7 @@ sub threat_check {
 	my $plan = $self->get_plan("Mitigate",$enemy);
 	# TODO: walk/fly/swim
 	$self->add_threat($plan->name,$danger,$tile,$relspeed,'walk',
-	    $enemy->is_unicorn);
+	    $enemy->is_unicorn || $enemy->glyph eq 'I');
 	TAEB->log->ai("Adding monster threat ".$plan->name);
 	$plan->validate();
     }
