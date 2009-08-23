@@ -11,6 +11,9 @@ extends 'TAEB::AI::Planar::Plan::Strategic';
 sub aim_tile {
     my $tile = TAEB->current_tile;
     return $tile if $tile->type eq 'trap';
+    return $tile if TAEB->in_beartrap;
+    return $tile if TAEB->in_pit;
+    return $tile if TAEB->in_web;
     return undef; # we can only extricate ourself from traps
 }
 sub has_reach_action { 1 }
