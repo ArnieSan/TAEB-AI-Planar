@@ -153,7 +153,6 @@ sub spread_desirability {
             if $self->mimictile
             && $self->mimictile->glyph ne $self->mimictile->floor_glyph
             && (!$self->mimictile->has_monster || $self->mimictile->glyph eq 'I');
-        $self->depends(0.5,"ExploreHere");
         return;
     }
     # Otherwise, if we're outside Sokoban and haven't seen an unsolved
@@ -163,7 +162,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Solving Sokoban';
-use constant references => ['GotoSokoban','ExploreHere','Eliminate','WakeMimic'];
+use constant references => ['GotoSokoban','Eliminate','WakeMimic'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
