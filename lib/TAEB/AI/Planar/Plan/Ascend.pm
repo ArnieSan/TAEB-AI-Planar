@@ -11,7 +11,7 @@ has _level => (
 
 sub aim_tile {
     shift->_level(TAEB->current_level);
-    return TAEB->current_level->first_tile(sub {shift->type eq 'stairsup'});
+    return @{TAEB->current_level->tiles_of('stairsup'), undef}[0];
 }
 
 sub has_reach_action { 1 }
