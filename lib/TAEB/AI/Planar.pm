@@ -360,7 +360,8 @@ sub next_action {
     if (defined $self->abandoned_plan && defined $self->current_plan &&
 	$self->abandoned_plan->name ne $self->current_plan->name &&
         !(any {$_->name eq $self->abandoned_plan->name}
-             @{$self->current_plan->dependency_path})) {
+             @{$self->current_plan->dependency_path}) &&
+        $self->problematic_levitation_step+1 < TAEB->step) {
 	# Prevent oscillations; if a plan is abandoned, we don't try it
 	# again for a while. (mark_impossible will try a plan twice before
 	# suspending it for a while; and remember that dependencies and
@@ -424,6 +425,7 @@ sub next_action {
 				   $self->current_tactical_plan->name.
 				   " worked.", level => 'debug');
 	defined $succeeded and !$succeeded and
+            $self->problematic_levitation_step+1 < TAEB->step and
 	    $self->current_tactical_plan->mark_impossible,
 	    TAEB->log->ai("Ugh, tactic ".
 				   $self->current_tactical_plan->name.
@@ -454,6 +456,7 @@ sub next_action {
 	# something's happened that makes them possible (such as the
 	# monster that was causing oscillations having moved).
 	defined $succeeded and !$succeeded and
+            $self->problematic_levitation_step+1 < TAEB->step and
 	    TAEB->log->ai("Aargh, plan ".$self->current_plan->name.
 				   " failed!", level => 'info'),
 	    $self->current_plan->mark_impossible;
@@ -651,6 +654,14 @@ sub next_plan_action {
                           @{$self->abandoned_tactical_plan->uninterruptible_by});
     }
     $self->currently_modifiers('');
+
+    # If we had trouble doing what we wanted to do last turn due to
+    # levitation, we're almost certainly going to have the same trouble
+    # this turn. So, we want to unlevitate above all else.
+    TAEB->log->ai("Trying to unlevitate before doing anything else"),
+        $self->add_capped_desire($self->get_plan('Unlevitate'), 1.1e8)
+            if $self->problematic_levitation_step+1 >= TAEB->step;
+
     while (1) {
 	my $desire;
 	$plan = undef;
@@ -1198,6 +1209,7 @@ sub loadplans {
 	"Mitigate",          # metaplan for monsters
 	"Extricate",         # metaplan for traps we're in
         "Unengulf",          # (meta)plan for engulfing monsters
+        "Unlevitate",        # plan for removing levitation items
 	# Tactical metaplans
 	"MoveFrom",          # tactical metaplan for tiles
 	"Nop",               # stub tactical plan
@@ -1380,13 +1392,6 @@ sub initialize {
     $self->institute;
 }
 
-has try_again_step => (
-    isa => 'Int',
-    is  => 'rw',
-    default => -1,
-    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
-
 has walkability_cache => (
     isa     => 'HashRef[Maybe[Bool]]',
     is      => 'rw',
@@ -1409,6 +1414,12 @@ sub tile_walkable {
 }
 
 # Responding to messages.
+has try_again_step => (
+    isa => 'Int',
+    is  => 'rw',
+    default => -1,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 subscribe door => sub {
     my $self = shift;
     my $what = shift;
@@ -1417,6 +1428,24 @@ subscribe door => sub {
 	$self->try_again_step(TAEB->step);
     }
 };
+
+has problematic_levitation_step => (
+    isa => 'Int',
+    is  => 'rw',
+    default => -1,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+sub exception_impeded_by_levitation {
+    my $self = shift;
+    $self->problematic_levitation_step(TAEB->step);
+    return;
+}
+subscribe impeded_by_levitation => sub {
+    my $self = shift;
+    $self->problematic_levitation_step(TAEB->step);
+    return;
+};
+
 subscribe tile_type_change => sub {
     # This might have made plans with the tile in question as an
     # argument possible, when they weren't before. We look through
