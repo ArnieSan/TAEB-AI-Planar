@@ -885,9 +885,11 @@ sub add_threat {
 	next if $visitmap[$x]->[$y];
 	return if $adjonly && $t > 0;
 	$visitmap[$x]->[$y] = 1;
+        my $txy = $threatmap->[$x]->[$y];
 	my $rt = $t / $relspeed;
-	$threatmap->[$x]->[$y]->{"$rt $planname"} = $danger;
-	if ($movetype eq 'phase' || exists $threatmap->[$x]->[$y]->{$movetype}
+	$txy->{"$rt $planname"} = $danger
+            unless $adjonly && exists $txy->{'boulder'};
+	if ($movetype eq 'phase' || exists $txy->{$movetype}
                                  || $t == -1)
 	{
 	    # The monster can attack here on turn t, so it can move here on
@@ -1006,9 +1008,13 @@ sub threat_check {
 	    my $coly = $col->[$y] = {};
  	    if ($type eq 'rock' || $type eq 'closeddoor' ||
 		$type eq 'wall' || $type eq 'drawbridge' ||
-		$type eq 'unexplored' || $tile->has_boulder) {
+		$type eq 'unexplored') {
 		$coly->{'phase'} = undef;
 	    }
+            elsif ($tile->has_boulder) {
+                $coly->{'phase'} = undef;
+                $coly->{'boulder'} = undef;
+            }
  	    elsif ($type eq 'pool')       {$coly->{'fly'}  = undef;
  					   $coly->{'swim'} = undef;}
  	    elsif ($type eq 'lava')       {$coly->{'fly'}  = undef;}
