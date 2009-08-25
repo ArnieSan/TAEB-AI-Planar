@@ -87,6 +87,7 @@ sub check_possibility_inner {
         $ai->threat_map->{$tile->level}->[$tile->x]->[$tile->y]->{"-1 $planname"}
             = $timesaved;
     }
+    return if TAEB->is_blind; # cannot engrave here
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 
