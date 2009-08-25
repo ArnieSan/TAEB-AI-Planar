@@ -1007,15 +1007,15 @@ sub threat_check {
 	    next if $tile->has_monster;
 	    my $type = $tile->type;
 	    my $coly = $col->[$y] = {};
- 	    if ($type eq 'rock' || $type eq 'closeddoor' ||
+            if ($tile->has_boulder) {
+                $coly->{'phase'} = undef;
+                $coly->{'boulder'} = undef;
+            }
+ 	    elsif ($type eq 'rock' || $type eq 'closeddoor' ||
 		$type eq 'wall' || $type eq 'drawbridge' ||
 		$type eq 'unexplored') {
 		$coly->{'phase'} = undef;
 	    }
-            elsif ($tile->has_boulder) {
-                $coly->{'phase'} = undef;
-                $coly->{'boulder'} = undef;
-            }
  	    elsif ($type eq 'pool')       {$coly->{'fly'}  = undef;
  					   $coly->{'swim'} = undef;}
  	    elsif ($type eq 'lava')       {$coly->{'fly'}  = undef;}
