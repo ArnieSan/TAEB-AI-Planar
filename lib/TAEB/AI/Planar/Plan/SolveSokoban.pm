@@ -153,6 +153,13 @@ sub spread_desirability {
             if $self->mimictile
             && $self->mimictile->glyph ne $self->mimictile->floor_glyph
             && (!$self->mimictile->has_monster || $self->mimictile->glyph eq 'I');
+        # If a boulder and a trap are on the same square, kill the poor monster
+        # trapped underneath.
+        # Note: commented out until we can verify if there's a monster on
+        # the square, to avoid an infinite loop
+#        $_->has_boulder and
+#            $self->depends(1,"MeleeHidden",$_)
+#            for TAEB->current_level->tiles_of("trap");
         return;
     }
     # Otherwise, if we're outside Sokoban and haven't seen an unsolved
@@ -162,7 +169,7 @@ sub spread_desirability {
 }
 
 use constant description => 'Solving Sokoban';
-use constant references => ['GotoSokoban','Eliminate','WakeMimic'];
+use constant references => ['GotoSokoban','Eliminate','WakeMimic','MeleeHidden'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
