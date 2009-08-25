@@ -2,7 +2,7 @@
 package TAEB::AI::Planar;
 use TAEB::OO;
 use Heap::Simple::XS;
-use TAEB::Util qw/refaddr weaken display :colors any/;
+use TAEB::Util qw/refaddr weaken display_ro :colors any/;
 use Scalar::Util qw/reftype/;
 use Time::HiRes qw/gettimeofday tv_interval/;
 use TAEB::Spoilers::Combat;
@@ -1247,17 +1247,16 @@ sub drawing_modes {
             my $tile = shift;
             my $ai = TAEB->ai;
             my $status = $ai->plan_caches->{'ExploreLevel'}->{$tile};
-            my $color;
+            my $c;
             $status //= 0;
-            $status ==  0 and $color = display(COLOR_GRAY);
-            $status ==  1 and $color = display(COLOR_YELLOW);
-            $status ==  2 and $color = display(COLOR_RED);
-            $status ==  3 and $color = display(COLOR_MAGENTA);
-            $status == -1 and $color = display(COLOR_GREEN);
-            $status == -2 and $color = display(COLOR_CYAN);
-            $status == -3 and $color = display(COLOR_BLUE);
-            $color->reverse(1);
-            return $color;
+            $status ==  0 and $c = display_ro(color => COLOR_GRAY,    reverse => 1);
+            $status ==  1 and $c = display_ro(color => COLOR_YELLOW,  reverse => 1);
+            $status ==  2 and $c = display_ro(color => COLOR_RED,     reverse => 1);
+            $status ==  3 and $c = display_ro(color => COLOR_MAGENTA, reverse => 1);
+            $status == -1 and $c = display_ro(color => COLOR_GREEN,   reverse => 1);
+            $status == -2 and $c = display_ro(color => COLOR_CYAN,    reverse => 1);
+            $status == -3 and $c = display_ro(color => COLOR_BLUE,    reverse => 1);
+            return $c;
         },
     },
     tactical => {
@@ -1268,20 +1267,20 @@ sub drawing_modes {
             my $tme = $ai->tme_from_tile($tile);
             my $risk = defined $tme ? $tme->numerical_risk : undef;
             my $color = sub {
-                defined $risk    or return display(COLOR_GRAY);
-                $risk <    0.51 and return display(COLOR_BLUE);
-                $risk <    1.01 and return display(COLOR_CYAN);
-                $risk <    2.01 and return display(COLOR_GREEN);
-                $risk <  100.01 and return display(COLOR_BROWN);
-                $risk < 5000.01 and return display(COLOR_YELLOW);
-                $risk <  200000 and return display(COLOR_RED);
-                return display(COLOR_MAGENTA);
+                defined $risk    or return (COLOR_GRAY);
+                $risk <    0.51 and return (COLOR_BLUE);
+                $risk <    1.01 and return (COLOR_CYAN);
+                $risk <    2.01 and return (COLOR_GREEN);
+                $risk <  100.01 and return (COLOR_BROWN);
+                $risk < 5000.01 and return (COLOR_YELLOW);
+                $risk <  200000 and return (COLOR_RED);
+                return (COLOR_MAGENTA);
             }->();
             defined $ai->current_plan
                 and $ai->current_plan->can('aim_tile_cache')
                 and $tile == $ai->current_plan->aim_tile_cache
-                and $color->reverse(1);
-            return $color;
+                and return display_ro(color => $color, reverse => 1);
+            return display_ro($color);
         },
     },
     planar_debug => {
@@ -1307,36 +1306,36 @@ sub drawing_modes {
 
             my $color;
             # short-circuit optimisation for unexplored tiles
-            return display(COLOR_GRAY) if $tile->type eq 'unexplored';
+            return display_ro(COLOR_GRAY) if $tile->type eq 'unexplored';
+            my @reverse = ();
+            @reverse = (reverse => 1) if $tile->type eq 'rock';
             if((blessed $tile) eq 'TAEB::World::Tile') {
                 # Use a slightly different colour scheme for tiles
                 # which have no special overrides of their own
                 $color = $tile->is_interesting
-                    ? display(COLOR_RED)
+                    ? display_ro(color => COLOR_RED, @reverse)
                     : $tile->in_shop
-                    ? display(COLOR_BRIGHT_GREEN)
+                    ? display_ro(color => COLOR_BRIGHT_GREEN, @reverse)
                     : $tile->in_temple
-                    ? display(COLOR_BRIGHT_CYAN)
+                    ? display_ro(color => COLOR_BRIGHT_CYAN, @reverse)
                     : $sokoban && TAEB::Spoilers::Sokoban->
                       probably_has_genuine_boulder($tile)
-                    ? display(COLOR_WHITE)
+                    ? display_ro(color => COLOR_WHITE, @reverse)
                     : $sokoban && $tile->has_boulder
-                    ? display(COLOR_ORANGE)
+                    ? display_ro(color => COLOR_ORANGE, @reverse)
                     : $tile->searched >= 20
-                    ? display(COLOR_CYAN)
+                    ? display_ro(color => COLOR_CYAN, @reverse)
                     : $tile->stepped_on
-                    ? display(COLOR_BROWN)
+                    ? display_ro(color => COLOR_BROWN, @reverse)
                     : $tile->explored
-                    ? display(COLOR_GREEN)
-                    : display(COLOR_GRAY);
+                    ? display_ro(color => COLOR_GREEN, @reverse)
+                    : display_ro(color => COLOR_GRAY, @reverse);
             } else { $color = $tile->debug_color; }
 
-            $color = display(COLOR_MAGENTA) if $ai->tiles_on_path->{$tile};
-            $color = display(COLOR_BRIGHT_MAGENTA)
+            $color = display_ro(color => COLOR_MAGENTA, @reverse)
+                if $ai->tiles_on_path->{$tile};
+            $color = display_ro(color => COLOR_BRIGHT_MAGENTA, @reverse)
                 if ($ai->tiles_on_path->{$tile} // 0) == 2;
-
-            $color->reverse(1)
-                if $tile->type eq 'rock'; # known rock, not unexplored
 
             return $color;
         },
