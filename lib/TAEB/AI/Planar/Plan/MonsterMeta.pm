@@ -32,12 +32,16 @@ sub planspawn {
     # Unicorns and gems?  Taming monsters that aren't in the way?  Nurse
     # dancing?  Nymph curse removal?  Pudding farming?
     $ai->get_plan('Kill',$monster)->validate;
+    # We need to validate Eliminate and Mitigate too, even though they
+    # don't try to generate desire on their own.
+    $ai->get_plan('Eliminate',$monster)->validate;
+    $ai->get_plan('Mitigate',$monster)->validate;
 }
 
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Doing something with a monster';
-use constant references => ['Kill'];
+use constant references => ['Kill','Eliminate','Mitigate'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
