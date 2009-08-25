@@ -1410,6 +1410,11 @@ sub tile_walkable {
     my $self = shift;
     my $tile = shift;
     return 0 if $tile->has_boulder;
+    return $self->tile_walkable_or_boulder($tile, shift);
+}
+sub tile_walkable_or_boulder {
+    my $self = shift;
+    my $tile = shift;
     if (shift) {
         return 1 if !TAEB->senses->is_blind
                  && $tile->type eq 'unexplored';

@@ -19,12 +19,13 @@ sub check_possibility_inner {
     my $mf_cache = ($ai->plan_caches->{'MoveFrom'} //= { step => -1 });
 
     my $can_squeeze;
+    my $sokoban = (TAEB->current_level->branch // '') eq 'sokoban';
+    my $twob = $sokoban ? 'tile_walkable' : 'tile_walkable_or_boulder';
 
     if ($mf_cache->{step} == TAEB->ai->aistep) {
 	$can_squeeze = $mf_cache->{squeeze};
     } else {
-	$can_squeeze = TAEB->inventory->weight < 600 &&
-	    (TAEB->current_level->branch // '') ne 'sokoban';
+	$can_squeeze = TAEB->inventory->weight < 600 && !$sokoban;
 	$mf_cache->{step} = TAEB->ai->aistep;
 	$mf_cache->{squeeze} = $can_squeeze;
     }
@@ -41,8 +42,8 @@ sub check_possibility_inner {
 	    #D#	$tile->y);
             my $level = $tile->level;
             if (($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
-		$ai->tile_walkable($level->at($tile->x, $tmetile->y),1) ||
-		$ai->tile_walkable($level->at($tmetile->x, $tile->y),1) ||
+		$ai->$twob($level->at($tile->x, $tmetile->y),1) ||
+		$ai->$twob($level->at($tmetile->x, $tile->y),1) ||
 		$can_squeeze) {
                 $self->generate_plan($tme, "MoveTo", $tile);
             }
