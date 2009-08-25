@@ -949,6 +949,7 @@ sub calculate_tme_chain {
 sub tme_from_tile {
     my $self = shift;
     my $tile = shift;
+    return undef unless defined $tile;
     my $map  = $self->tactics_map->{refaddr $tile->level};
     return undef unless defined $map; # it might be on an unpathed level
     my $tme  = $map->[$tile->x]->[$tile->y];
