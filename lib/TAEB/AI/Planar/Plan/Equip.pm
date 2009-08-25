@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::Equip;
 use TAEB::OO;
-use TAEB::Util qw/delta2vi/;
+use TAEB::Util qw/delta2vi refaddr/;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take an item in our inventory as argument.
@@ -48,6 +48,15 @@ sub reach_action {
         return undef if $item->can('is_worn') && $item->is_worn;
         my $slot = $item->subtype;
         my $blocker = TAEB->inventory->equipment->blockers($slot);
+        if ($blocker) {
+            TAEB->log->ai("I intend to take off $blocker to put on $item");
+            if (refaddr $blocker == refaddr $item) {
+                $blocker = undef;
+                TAEB->log->ai("It seems we aren't wearing $item after all, ".
+                              "even though framework thought we were...",
+                              level => 'error');
+            }
+        }
         if ($blocker && $blocker->type eq 'weapon') {
             $self->unwielding(1);
             return TAEB::Action->new_action('wield', weapon => 'nothing');
