@@ -128,7 +128,7 @@ sub succeeded {
 
 use constant description => 'Digging through a wall';
 use constant references => ['ScareMonster'];
-use constant uninterruptible_by => ['Equip'];
+use constant uninterruptible_by => ['Equip','PickupItem'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
