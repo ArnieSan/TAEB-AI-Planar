@@ -1523,8 +1523,9 @@ sub use_benefit {
     # in addition, we subtract the AC of our current armour in the same
     # slot, unless the item is our current armour.
     if($item->can('ac') && defined $item->ac && $item->ac > 0 &&
-       $self->item_subtype($item) && !$item->is_cursed) {
+       $self->item_subtype($item) && !$item->is_cursed) {{
         my $slot = $self->item_subtype($item);
+        last unless TAEB->inventory->equipment->can($slot);
         my $currently_in_slot = TAEB->inventory->equipment->$slot;
         my $ac = $item->ac;
         $ac *= .8682 unless defined $item->is_cursed; # i.e. we know it isn't
@@ -1532,7 +1533,7 @@ sub use_benefit {
             defined $currently_in_slot->ac && $currently_in_slot != $item
             and $ac -= $currently_in_slot->ac;
         $value += $resources->{'AC'}->$cost($ac) unless $ac <= 0;
-    }
+    }}
     # Likewise for weapons; for those we count their average damage. 90%
     # chance that they aren't cursed.
     if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed
