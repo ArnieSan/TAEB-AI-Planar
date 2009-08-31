@@ -42,10 +42,11 @@ sub spread_desirability {
                $self->depends($mines ? 0.7 : 1, "Search", $tile);
         }
     });
+    $self->depends(0.8, "ExploreViaTeleport");
 }
 
 use constant description => 'Exploring a level thoroughly';
-use constant references => ['Search'];
+use constant references => ['Search','ExploreViaTeleport'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
