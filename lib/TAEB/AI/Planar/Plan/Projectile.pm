@@ -68,7 +68,7 @@ sub calculate_extra_risk {
     # Chasing unicorns is fruitless
     $risk += $self->cost("Impossibility", 1) if $self->monster->is_unicorn &&
 	$self->aim_tile_cache != $self->aim_tile;
-    $risk += $self->attack_monster_risk($self->monster);
+    $risk += $self->attack_monster_risk($self->monster) // 0;
     return $risk;
 }
 
