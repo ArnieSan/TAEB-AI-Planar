@@ -536,6 +536,7 @@ sub next_action {
 sub next_plan_action {
     my $self = shift;
     my $action = undef;
+    my $aistep = $self->aistep;
     my $plan;
     # This AI works by selecting a plan of action, then enacting it.
     # Plans range from the very general or very optimistic ("Deal with
@@ -658,6 +659,7 @@ sub next_plan_action {
     # If we had trouble doing what we wanted to do last turn due to
     # levitation, we're almost certainly going to have the same trouble
     # this turn. So, we want to unlevitate above all else.
+    # TODO: Is this check in the wrong place?
     TAEB->log->ai("Trying to unlevitate before doing anything else"),
         $self->add_capped_desire($self->get_plan('Unlevitate'), 1.1e8)
             if $self->problematic_levitation_step+1 >= TAEB->step;
@@ -733,7 +735,7 @@ sub next_plan_action {
 		    $self->tactical_success_count(
 			$self->tactical_success_count+10000);
 		}
-                $self->aistep($self->aistep+1); # will this break anything?
+                $self->aistep(++$aistep); # will this break anything?
                 $self->threat_check;
                 $self->update_tactical_map;
 		$self->_planheap->clear;
@@ -755,9 +757,9 @@ sub next_plan_action {
 	# calculate its risk (possibly spreading desire onto things
 	# that would make it less risky).
 	if ($plan->difficulty <= 0 &&
-	    $plan->risk_valid_on_step != $self->aistep) {
+	    $plan->risk_valid_on_step != $aistep) {
 #            local $Data::Dumper::Indent = 0; # for debugging
-	    $plan->risk_valid_on_step($self->aistep);
+	    $plan->risk_valid_on_step($aistep);
 	    $plan->spending_plan({});
 	    $plan->risk($plan->calculate_risk);
 	    # Some more debugging lines that I seem to use a lot

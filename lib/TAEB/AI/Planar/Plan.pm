@@ -354,9 +354,10 @@ sub depends {
     my $self = shift;
     my $ratio = shift;
     my $ai = TAEB->ai;
+    my $aistep = $ai->aistep;
     my $on = $ai->get_plan(@_);
-    $on->in_make_safer_on_step(TAEB->ai->aistep)
-	if $self->in_make_safer_on_step == TAEB->ai->aistep;
+    $on->in_make_safer_on_step($aistep)
+	if $self->in_make_safer_on_step == $aistep;
     $on->reverse_dependencies->{$self} = $self;
     $ai->add_capped_desire($on, $self->desire + 1e6 * log $ratio);
     $self->add_dependency_path($on);
