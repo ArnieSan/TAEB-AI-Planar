@@ -125,37 +125,63 @@ sub add_possible_move {
     # eliminate or reduce it.
     my %msp = %{$oldtme->{'make_safer_plans'}};
     my $msp = \%msp;
+    my $oldx = $oldtme->{'tile_x'};
+    my $oldy = $oldtme->{'tile_y'};
+    # This check assumes no loops involving interlevel pathing; safe in
+    # NetHack, but incorrect in Crawl. (TODO: check if this breaks in the
+    # entrance to Rodney's.)
     if ($newlevel == TAEB->current_level) {
 	# Note: This conditional only matters the turn after full
 	# recalculation.  Interlevel updating always ignores threats.
 	# XXX Should it?
-	my $timetohere = $risk{"Time"} || 0;
-	my $thme = $ai->threat_map->{$oldlevel}->[$newx]->[$newy];
-	for my $p (keys %$thme) {
-	    # Not all possible values of $p are threats.
-	    defined($thme->{$p}) or next;
-	    # If the threat never gets here in time, ignore it.
-	    my ($turns, $reductionplan) = split / /, $p;
-	    $turns > $timetohere and next;
-	    my $risk_multiplier = ($timetohere-$turns) > 1 ?
-		$timetohere-$turns : 1;
-	    # Add risk from the threat.
-	    my %threatrisk = %{$thme->{$p}};
-	    $threatrisk{$_} < 0 and 
-		warn "Threat risk of $_ seems to be negative in ".$self->name
-		for keys %threatrisk;
-	    $risk{$_} += $threatrisk{$_} * $risk_multiplier for keys %threatrisk;
-	    # Add the threat reduction plan.
-	    $msp->{$reductionplan} += $ai->resources->{$_}->cost($threatrisk{$_})
-		for keys %threatrisk;
+	my $timetohere = $risk{"Time"} // 0;
+        my $timethisstep = $self->spending_plan->{'Time'} // 0;
+        # iter = 1: check the destination tile
+        # iter = 0: check the source tile
+        # It's assumed that a tactic moves as the last thing it does, and
+        # stays on the source tile until it's ready; I can't think of a
+        # situation where this fails (burden should be taken care of in the
+        # threat map), but if there is one, this needs generalising.
+        for my $iter (0 .. ($timethisstep > 1 ? 1 : 0)) {
+            my $thme = $ai->threat_map->{$oldlevel}->
+                [$iter ? $oldx : $newx]->
+                [$iter ? $oldy : $newy];
+            for my $p (keys %$thme) {
+                # Not all possible values of $p are threats.
+                defined($thme->{$p}) or next;
+                # If the threat never gets here in time, ignore it.
+                my ($turns, $reductionplan) = split / /, $p;
+                # Debug code for threat calculation
+#                TAEB->log->ai("$self: Threat has $turns, reduced by $reductionplan, tth is $timetohere (iter $iter)");
+                $turns > $timetohere and next;
+                my $risk_multiplier = $timetohere - $turns;
+                if ($iter) {
+                    $risk_multiplier = $timethisstep - 1 if $risk_multiplier > $timethisstep - 1;
+                } else {
+                    $risk_multiplier -= ($timethisstep - 1) if $timethisstep > 1;
+                    $risk_multiplier = 1 if $risk_multiplier < 1;
+                }
+                # Add risk from the threat.
+                my %threatrisk = %{$thme->{$p}};
+                $threatrisk{$_} < 0 and 
+                    warn "Threat risk of $_ seems to be negative in ".$self->name
+                    for keys %threatrisk;
+                $risk{$_} += $threatrisk{$_} * $risk_multiplier for keys %threatrisk;
+                # Some debug code for threat calculation
+#                TAEB->log->ai("$self: threat risk is " . (join '|', %threatrisk) .
+#                              " multiplied by $risk_multiplier");
+                # Add the threat reduction plan.
+                $msp->{$reductionplan} += $ai->resources->{$_}->cost($threatrisk{$_})
+                    for keys %threatrisk;
+            }
 	}
     }
 
     # Create the new TME.
     my $tme = {
 	prevtile_level   => $oldlevel,
-	prevtile_x       => $oldtme->{'tile_x'},
-	prevtile_y       => $oldtme->{'tile_y'},
+	prevtile_x       => $oldx,
+	prevtile_y       => $oldy,
 	risk             => \%risk,
 	tactic           => $self,
 	tile_x           => $newx,
@@ -170,7 +196,10 @@ sub add_possible_move {
     # to a level (due to swarms of monsters surrounding the stairs).
 
     # FIXME: Actually, there are threat maps for other levels.  Why
-    # are we ignoring them again?
+    # are we ignoring them again? (Because they haven't been updated
+    # at all recently, and therefore are possibly worse than useless;
+    # e.g. if we fled upstairs at low hitpoints, a monster near the
+    # stairs may look much more threatening than it actually is.)
     if($full_recalc) {
         if ($oldlevel == $newlevel) {
             $tme->{'prevlevel_level'} = $oldtme->{'prevlevel_level'};
