@@ -518,6 +518,7 @@ sub next_action {
 	# here is to repeat the entire plan-finding process without
 	# that tactic included. (This shouldn't happen very often, if
 	# it does that plan's plan-calculation needs looking at.)
+        $self->current_tactical_plan->mark_impossible;
 	$self->current_tactical_plan(undef);
 	$self->current_plan(undef);
 	TAEB->log->ai("Tactical plan ".($action->name).
