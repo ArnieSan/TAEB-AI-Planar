@@ -1376,7 +1376,7 @@ sub STORABLE_thaw {
     return if $cloning;
     die "This doesn't seem to be a frozen TAEB::AI::Planar"
         unless $serialized eq 'TAEB::AI::Planar persistency';
-    my $newself = $self->new(%$values);
+    my $newself = (blessed $self)->new(%$values);
     my @attrs = $newself->meta->get_all_attributes;
     push @attrs, $newself->meta->get_all_class_attributes
         if $newself->meta->can('get_all_class_attributes');
