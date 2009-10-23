@@ -684,7 +684,7 @@ sub next_plan_action {
 	    # If this heap entry was calculated without taking risk
 	    # into account, but we now have more accurate figures,
 	    # ignore in favour of those (lower) figures.
-	    redo if defined($plan->risk) && !$withrisk;
+	    redo if $plan->risk_valid_on_step == $aistep && !$withrisk;
             # If this plan is illegal (e.g. because it interrupts a
             # plan that it isn't allowed to interrupt), ignore it.
             if (!($self->abandoned_plan && $self->abandoned_plan == $plan) &&
@@ -751,7 +751,8 @@ sub next_plan_action {
 	# The plan needs to know how raw-desirable it is, and how
 	# desirable if risk is accounted for, so it can spread
 	# desirability (from calculate_risk or spread_desirability).
-	$plan->desire($desire+($plan->risk||0));
+	$plan->desire($desire +
+                      ($plan->risk_valid_on_step == $aistep ? $plan->risk : 0));
 	$plan->desire_with_risk($desire);
 	# If the plan has zero difficulty and uncalculated risk,
 	# calculate its risk (possibly spreading desire onto things
