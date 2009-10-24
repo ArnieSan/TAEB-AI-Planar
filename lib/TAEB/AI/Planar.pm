@@ -1008,7 +1008,6 @@ sub threat_check {
 	my $col = $tmcl->[$x] = [];
 	for my $y (1..21) {
 	    my $tile = $current_level->at($x,$y);
-	    next if $tile->has_monster;
 	    my $type = $tile->type;
 	    my $coly = $col->[$y] = {};
             if ($tile->has_boulder) {
