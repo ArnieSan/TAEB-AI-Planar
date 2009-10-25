@@ -70,21 +70,20 @@ sub check_possibility_inner {
     my $tile = $self->tile;
     return if !$dig{ $tile->type } && !$tile->has_boulder;
 
+    # Don't dig in sight of monsters (including peacefuls, they tend to
+    # get annoyed at it)
+    return if $tile->level->monster_count;
+
     (my $pick, undef, undef, undef) = $self->get_pick_and_time;
     return unless defined $pick;
 
-    return if $tile->in_shop;
     return if $tile->nondiggable;
     return if $tile->level->is_minetown;
     return if ($tile->level->branch // '') eq 'sokoban'; #XXX other nondig
 
-    if (defined $tile->monster) {
-	# We need to generate a plan to scare the monster out of the
-	# way, if the AI doesn't want to kill it for some reason. Yes,
-	# even if there's a wall on the same square. XXX code duplication
-	$self->generate_plan($tme,"ScareMonster",$tile);
-	return;
-    }
+    # Don't dig near a shop
+    return if $tile->any_diagonal( sub { shift->in_shop; } );
+
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 
