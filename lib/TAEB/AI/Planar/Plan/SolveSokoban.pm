@@ -132,6 +132,10 @@ sub spread_desirability {
     # exploring around to see if there are mimics pretending to be
     # boulders, and killing monsters that are in the way.
     my $firstlevel = TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level;
+    my $lastlevel = TAEB::Spoilers::Sokoban->last_solved_sokoban_level;
+    if (defined $lastlevel) {
+        $self->depends(1,"OtherSide",$_) for $lastlevel->exits;
+    }
     if (defined $firstlevel) {
         $firstlevel->each_tile(sub {
             my $tile = shift;
@@ -148,7 +152,6 @@ sub spread_desirability {
     if (TAEB->current_level->known_branch
         && TAEB->current_level->branch eq 'sokoban') {
         $self->depends(1,"Eliminate",$self->monster) if $self->monster;
-        $self->depends(1,"OtherSide",$_) for TAEB->current_level->exits;
         $self->depends(1,"WakeMimic",$self->mimictile)
             if $self->mimictile
             && $self->mimictile->glyph ne $self->mimictile->floor_glyph
