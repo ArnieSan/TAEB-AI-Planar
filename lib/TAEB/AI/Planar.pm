@@ -1689,7 +1689,8 @@ sub item_drawback_cost {
 }
 
 # If we're oscillating between pickup and drop, pick items up one at a
-# time. This measures in main loop steps, not aisteps.
+# time. This measures in main loop steps, not aisteps. Additionally,
+# allow an extra step for #chat for price.
 has last_pickup_step => (
     isa     => 'Int',
     is      => 'rw',
@@ -1710,7 +1711,7 @@ sub pickup {
     # Pick up only 1 item if we dropped last turn.
     TAEB->log->ai("Not picking up a second item this step..."),
         $self->last_drop_step(TAEB->step), return 0
-        if $self->last_drop_step >= TAEB->step-1
+        if $self->last_drop_step >= TAEB->step-2
         && $self->last_pickup_step == TAEB->step;
     TAEB->log->ai("Not picking up $item (value $value, drawbacks $drawbacks)"), return 0
         if $value <= $drawbacks;
