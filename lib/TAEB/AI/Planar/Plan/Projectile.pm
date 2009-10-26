@@ -41,7 +41,7 @@ sub stop_early_blocked_by {
     my $monster = $self->monster;
     return 1 if $tile->type eq 'rock' && !$tile->has_boulder;
     return 1 if $tile->type eq 'wall';
-    return 1 if $tile->has_friendly;
+    return 1 if $tile->has_monster;
     return 1 if $tile->type eq 'sink';
     return 1 if $tile->type eq 'unexplored'
              && $monster->glyph eq 'I' || TAEB->is_blind;
