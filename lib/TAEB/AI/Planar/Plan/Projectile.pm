@@ -3,6 +3,7 @@ package TAEB::AI::Planar::Plan::Projectile;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use TAEB::AI::Planar::Resource::Ammo;
+use POSIX qw/ceil/;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a monster as argument.
@@ -64,11 +65,18 @@ sub calculate_extra_risk {
     my $self = shift;
     my $risk = $self->cost("Ammo",
 	$self->get_projectile->identity =~ /dagger/ ? 1 : 0.1);
-    $risk += $self->aim_tile_turns(1);
+    my $monster = $self->monster;
+    if (abs($monster->x - TAEB->x) <= 1 &&
+        abs($monster->y - TAEB->y) <= 1) {
+        $risk += $self->aim_tile_turns(
+            ceil($monster->average_actions_to_kill // 10));
+    } else {
+        $risk += $self->aim_tile_turns(1);
+    }
     # Chasing unicorns is fruitless
-    $risk += $self->cost("Impossibility", 1) if $self->monster->is_unicorn &&
+    $risk += $self->cost("Impossibility", 1) if $monster->is_unicorn &&
 	$self->aim_tile_cache != $self->aim_tile;
-    $risk += $self->attack_monster_risk($self->monster) // 0;
+    $risk += $self->attack_monster_risk($monster) // 0;
     return $risk;
 }
 

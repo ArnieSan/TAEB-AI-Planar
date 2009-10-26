@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::Melee;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use POSIX qw/ceil/;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a monster as argument.
@@ -37,12 +38,14 @@ sub reach_action {
 
 sub calculate_extra_risk {
     my $self = shift;
+    my $monster = $self->monster;
+    my $ttk = ceil($self->monster->average_actions_to_kill // 10);
     # It's risky to attack something that isn't meleeable.
     my $risk = 0;
     $risk = $self->cost('Impossibility', 1)
         unless $self->monster->is_meleeable;
-    $risk += $self->aim_tile_turns(1);
-    $risk += $self->attack_monster_risk($self->monster)
+    $risk += $self->aim_tile_turns($ttk);
+    $risk += $self->attack_monster_risk($monster)
         // $self->cost('Hitpoints', 5); # stock value for hallu
     return $risk;
 }
