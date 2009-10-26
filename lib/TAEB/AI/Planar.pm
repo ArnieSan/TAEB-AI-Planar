@@ -524,6 +524,7 @@ sub next_action {
 	TAEB->log->ai("Tactical plan ".($action->name).
 			       " failed to produce an action, marking it".
 			       " as impossible...", level => 'debug');
+        $self->full_tactical_recalculation(1);
 	@_ = ($self);
 	goto &next_action; # tail-recursion
     } else {
