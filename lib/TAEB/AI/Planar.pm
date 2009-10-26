@@ -1031,6 +1031,20 @@ sub threat_check {
  	    }
 	}
     }
+    # The current tile is impassible to monsters for the space of one
+    # action if it has at least 3 intact Elbereths.
+    # TODO: Other tiles with Elbereth on?
+    my $ecount = TAEB->current_tile->elbereths;
+    if ($ecount >= 3 ||
+        ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned')) {
+        my $coly = $tmcl->[TAEB->x]->[TAEB->y];
+        delete $coly->{'fly'};
+        delete $coly->{'swim'};
+        delete $coly->{'walk'};
+        delete $coly->{'phase'};
+        $coly->{'eignore'} = undef;
+    }
+
     # The most important threats in the game are monsters on the
     # current level.
     my @enemies = $current_level->has_enemies;
@@ -1049,6 +1063,7 @@ sub threat_check {
 	my $danger = {};
 	my $relspeed = 0.99; # to encourage running away from unknown monsters
         my $disposition = $enemy->disposition // 'hostile';
+        my $movetype = 'walk';
         # Tame and peaceful monsters are not threats.
         next if $disposition eq 'peaceful';
         next if $disposition eq 'tame';
@@ -1075,12 +1090,13 @@ sub threat_check {
 		$danger->{'Time'} = $1 * ($2 + 1) / 2;
 	    }
 	    $relspeed = $$spoiler{speed} / $selfspeed;
+            $movetype = 'eignore' if $spoiler->ignores_elbereth;
 	} else { # use a stock value as we don't know...
 	    $danger = {'Hitpoints' => 5};
 	}
 	my $plan = $self->get_plan("Mitigate",$enemy);
 	# TODO: walk/fly/swim
-	$self->add_threat($plan->name,$danger,$tile,$relspeed,'walk',
+	$self->add_threat($plan->name,$danger,$tile,$relspeed,$movetype,
 	    $enemy->is_unicorn || $enemy->glyph eq 'I');
 	TAEB->log->ai("Adding monster threat ".$plan->name);
 	$plan->validate();

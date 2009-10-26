@@ -13,6 +13,10 @@ sub aim_tile {
 sub has_reach_action { 1 }
 sub reach_action {
     my $self = shift;
+    my $ecount = TAEB->current_tile->elbereths;
+    return TAEB::Action->new_action('search', iterations => 1)
+        if $ecount >= 5
+        || ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned');
     return TAEB::Action->new_action('engrave', best => 1);
 }
 
