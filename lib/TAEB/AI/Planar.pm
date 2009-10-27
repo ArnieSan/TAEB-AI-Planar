@@ -1029,6 +1029,7 @@ sub threat_check {
  		$coly->{'swim'} = undef;
  		$coly->{'walk'} = undef;
                 $coly->{'phase'} = undef;
+                $coly->{'eignore'} = undef;
  	    }
 	}
     }
