@@ -996,6 +996,12 @@ sub monster_is_peaceful {
     return $rv;
 }
 
+has last_elbereth_check => (
+    isa => 'Int',
+    is => 'rw',
+    default => -1,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 sub threat_check {
     my $self = shift;
     # Clear the threat map for the current level.
@@ -1036,6 +1042,11 @@ sub threat_check {
     # The current tile is impassible to monsters for the space of one
     # action if it has at least 3 intact Elbereths.
     # TODO: Other tiles with Elbereth on?
+    if ($self->last_elbereth_check < $self->aistep) {
+        $self->last_elbereth_check($self->aistep);
+        # TODO: don't check if we just travelled
+        TAEB->send_message(check => 'floor');
+    }
     my $ecount = TAEB->current_tile->elbereths;
     if ($ecount >= 3 ||
         ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned')) {
