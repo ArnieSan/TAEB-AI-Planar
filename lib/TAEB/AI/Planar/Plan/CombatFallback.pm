@@ -7,10 +7,11 @@ sub spread_desirability {
     my $self = shift;
     $self->depends(1,"PrayForHealth");
     $self->depends(0.2,"EmergencyElbereth");
+    $self->depends(0.18,"EmergencyMelee");
 }
 
 use constant description => 'Trying a fallback combat strategy';
-use constant references => ['PrayForHealth','EmergencyElbereth'];
+use constant references => ['PrayForHealth','EmergencyElbereth','EmergencyMelee'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
