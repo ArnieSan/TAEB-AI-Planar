@@ -996,12 +996,17 @@ sub monster_is_peaceful {
     return $rv;
 }
 
-has last_elbereth_check => (
+has last_floor_check => (
     isa => 'Int',
     is => 'rw',
     default => -1,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+sub msg_check {
+    my $self = shift;
+    my $what = shift;
+    $self->last_floor_check(TAEB->step) if $what eq 'floor';
+}
 sub threat_check {
     my $self = shift;
     # Clear the threat map for the current level.
@@ -1042,14 +1047,17 @@ sub threat_check {
     # The current tile is impassible to monsters for the space of one
     # action if it has at least 3 intact Elbereths.
     # TODO: Other tiles with Elbereth on?
-    if ($self->last_elbereth_check < $self->aistep) {
-        $self->last_elbereth_check($self->aistep);
-        # TODO: don't check if we just travelled
+    my $tct = TAEB->current_tile;
+    # No point in checking if there was no Elbereth written here
+    # beforehand and we weren't alerted when we stepped on the tile,
+    # we won't have had one magically appearing. Also, no point in
+    # checking more than once in a turn.
+    if ($self->last_floor_check < TAEB->step && $tct->elbereths) {
         TAEB->send_message(check => 'floor');
     }
-    my $ecount = TAEB->current_tile->elbereths;
+    my $ecount = $tct->elbereths;
     if ($ecount >= 3 ||
-        ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned')) {
+        ($ecount >= 1 && $tct->engraving_type eq 'burned')) {
         my $coly = $tmcl->[TAEB->x]->[TAEB->y];
         delete $coly->{'fly'};
         delete $coly->{'swim'};

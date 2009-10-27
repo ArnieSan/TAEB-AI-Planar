@@ -94,6 +94,9 @@ sub check_possibility_inner {
 sub action {
     my $self = shift;
     $self->turntried(TAEB->turn);
+    if (TAEB->current_tile->elbereths >= 1) {
+        return TAEB::Action->new_action('Search', iterations => 1);
+    }
     return TAEB::Action->new_action('Engrave');
 }
 
