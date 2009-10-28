@@ -23,8 +23,16 @@ sub reach_action {
 
 sub calculate_extra_risk {
     my $self = shift;
-    # very approximate estimated time to dust three Elbereths at once
-    return $self->aim_tile_turns(5);
+    my $risk = 0;
+    # Very approximate estimated time to dust three Elbereths at once
+    $risk += $self->aim_tile_turns(5);
+    # Be less cautious when on high health; this is a penalty cost to
+    # mean that this action tends to be avoided when hardly injured.
+    if (TAEB->maxhp * 3/4 < TAEB->hp) {
+        $risk += $self->cost(
+            'Hitpoints',TAEB->hp - (TAEB->maxhp * 3/4));
+    }
+    return $risk;
 }
 
 use constant description => "Elberething to make things safer";
