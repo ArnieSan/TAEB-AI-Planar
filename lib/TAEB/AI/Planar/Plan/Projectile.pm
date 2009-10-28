@@ -72,6 +72,10 @@ sub calculate_extra_risk {
     $risk += $self->cost("Impossibility", 1) if $monster->is_unicorn &&
 	$self->aim_tile_cache != $self->aim_tile;
     $risk += $self->attack_monster_risk($monster) // 0;
+    # Try not to attack mimics at range
+    $risk += $self->cost("Ammo", 8)
+        if $monster->glyph eq 'm' &&
+        (!TAEB->level->known_branch || TAEB->level->branch ne 'sokoban');
     return $risk;
 }
 
