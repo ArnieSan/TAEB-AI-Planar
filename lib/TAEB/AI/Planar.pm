@@ -1005,7 +1005,7 @@ has last_floor_check => (
 sub msg_check {
     my $self = shift;
     my $what = shift;
-    $self->last_floor_check(TAEB->step) if $what eq 'floor';
+    $self->last_floor_check(TAEB->step) if ($what//'') eq 'floor';
 }
 sub threat_check {
     my $self = shift;
