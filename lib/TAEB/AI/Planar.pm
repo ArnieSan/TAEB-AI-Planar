@@ -893,7 +893,10 @@ sub add_threat {
         my $txy = $threatmap->[$x]->[$y];
 	my $rt = $t / $relspeed;
 	$txy->{"$rt $planname"} = $danger
-            unless $adjonly && exists $txy->{'boulder'};
+            unless ($adjonly && exists $txy->{'boulder'})
+                || ($movetype ne 'eignore' 
+                && !exists($txy->{$movetype})
+                && exists($txy->{'eignore'}));
 	if ($movetype eq 'phase' || exists $txy->{$movetype}
                                  || $t == -1)
 	{
@@ -1310,7 +1313,7 @@ sub drawing_modes {
             return $c;
         },
     },
-    tactical => {
+    tactical => { 
         description => 'Show tactical map',
         color => sub {
             my $tile = shift;
