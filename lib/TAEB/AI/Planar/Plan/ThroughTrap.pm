@@ -60,6 +60,7 @@ sub check_possibility_inner {
 	return;
     }
     return unless TAEB->ai->tile_walkable($tile); # avoid traps in Sokoban
+    return unless defined $tile->trap_type;
     return unless defined trap_costs->{$tile->trap_type};
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
