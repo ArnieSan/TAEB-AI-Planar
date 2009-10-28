@@ -14,6 +14,12 @@ sub reach_action {
     my $self = shift;
     my $tile = TAEB->current_tile;
     my @monstertiles = $tile->grep_adjacent(sub {
+        $_->has_monster && ($_->monster->disposition // '') eq 'hostile' &&
+            !$_->monster->respects_elbereth});
+    return TAEB::Action->new_action('melee', direction =>
+        delta2vi($monstertiles[0]->x-TAEB->x,$monstertiles[0]->y-TAEB->y))
+        if @monstertiles;
+    @monstertiles = $tile->grep_adjacent(sub {
         $_->has_monster && ($_->monster->disposition // '') eq 'hostile'});
     return undef unless @monstertiles;
     return TAEB::Action->new_action('melee', direction =>
