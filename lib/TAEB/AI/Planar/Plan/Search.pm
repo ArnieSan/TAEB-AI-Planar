@@ -33,12 +33,13 @@ sub calculate_extra_risk {
     my $self = shift;
     # The best possible searchability is a bit below 50; searchability
     # is measured in the same units as time (at least in Behavioral).
-    # Therefore, we add a time cost (/not/ aim_tile_turns) of 150
-    # minus three times the searchability.
+    # Therefore, we add a level_step_danger cost (/not/ aim_tile_turns)
+    # of 50 minus the searchability.
     my $searchability = $self->tile_searchability;
 #    TAEB->log->ai("Searchability of ".$self->tile." is $searchability");
     my $risk = $self->aim_tile_turns(20);
-    $risk += $self->cost('Time' => 150 - $searchability * 3);
+    $risk += $self->level_step_danger
+        for ($searchability*$searchability)*10 .. 400;
     return $risk;
 }
 
