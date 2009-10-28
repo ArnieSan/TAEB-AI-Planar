@@ -69,7 +69,7 @@ sub calculate_extra_risk {
     if (abs($monster->x - TAEB->x) <= 1 &&
         abs($monster->y - TAEB->y) <= 1) {
         $risk += $self->aim_tile_turns(
-            ceil($monster->average_actions_to_kill // 10));
+            ceil($monster->average_actions_to_kill // 10) || 1);
     } else {
         $risk += $self->aim_tile_turns(1);
     }
