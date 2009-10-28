@@ -66,13 +66,8 @@ sub calculate_extra_risk {
     my $risk = $self->cost("Ammo",
 	$self->get_projectile->identity =~ /dagger/ ? 1 : 0.1);
     my $monster = $self->monster;
-    if (abs($monster->x - TAEB->x) <= 1 &&
-        abs($monster->y - TAEB->y) <= 1) {
-        $risk += $self->aim_tile_turns(
-            ceil($monster->average_actions_to_kill // 10) || 1);
-    } else {
-        $risk += $self->aim_tile_turns(1);
-    }
+    $risk += $self->aim_tile_turns(
+        ceil($monster->average_actions_to_kill // 10) || 1);
     # Chasing unicorns is fruitless
     $risk += $self->cost("Impossibility", 1) if $monster->is_unicorn &&
 	$self->aim_tile_cache != $self->aim_tile;
