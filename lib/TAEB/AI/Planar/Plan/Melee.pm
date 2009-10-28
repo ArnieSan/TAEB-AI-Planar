@@ -50,10 +50,17 @@ sub calculate_extra_risk {
     return $risk;
 }
 
+sub spread_desirability {
+    my $self = shift;
+    # scare off enemies, make this cheaper
+    $self->depends(1,"DefensiveElbereth");
+}
+
 # Invalidate ourselves if the monster stops existing.
 sub invalidate { shift->validity(0); }
 
 use constant description => 'Meleeing a monster';
+use constant references => ['DefensiveElbereth'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

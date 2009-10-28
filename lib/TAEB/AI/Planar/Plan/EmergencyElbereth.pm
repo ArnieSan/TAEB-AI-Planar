@@ -7,7 +7,9 @@ extends 'TAEB::AI::Planar::Plan::Strategic';
 sub aim_tile {
     my $self = shift;
     return undef unless TAEB->can_engrave;
-    return undef if any {$_->respects_elbereth} TAEB->current_level->monsters;
+    return undef
+        if any {$_->glyph ne 'I' && $_->respects_elbereth}
+               TAEB->current_level->monsters;
     return TAEB->current_tile;
 }
 

@@ -28,9 +28,9 @@ sub calculate_extra_risk {
     $risk += $self->aim_tile_turns(5);
     # Be less cautious when on high health; this is a penalty cost to
     # mean that this action tends to be avoided when hardly injured.
-    if (TAEB->maxhp * 3/4 < TAEB->hp) {
+    if (TAEB->maxhp * 3.0/4 < TAEB->hp) {
         $risk += $self->cost(
-            'Hitpoints',TAEB->hp - (TAEB->maxhp * 3/4));
+            'Hitpoints',TAEB->hp - (TAEB->maxhp * 3.0/4));
     }
     return $risk;
 }
