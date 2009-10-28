@@ -1115,7 +1115,9 @@ sub threat_check {
 	} else { # use a stock value as we don't know...
 	    $danger = {'Hitpoints' => 5};
 	}
-	my $plan = $self->get_plan("Mitigate",$enemy);
+	my $plan = $self->get_plan(
+            ($movetype ne 'eignore' ? "Mitigate" : "MitigateWithoutElbereth"),
+            $enemy);
 	# TODO: walk/fly/swim
 	$self->add_threat($plan->name,$danger,$tile,$relspeed,$movetype,
 	    $enemy->is_unicorn || $enemy->glyph eq 'I');
@@ -1254,9 +1256,11 @@ sub loadplans {
         "CharacterMeta",     # metaplan for intrinsics, etc
 	# Threat metaplans
 	"Mitigate",          # metaplan for monsters
+	"MitigateWithoutElbereth",  # and for Elbereth-ignoring monsters
 	"Extricate",         # metaplan for traps we're in
         "Unengulf",          # (meta)plan for engulfing monsters
         "Unlevitate",        # plan for removing levitation items
+        "DefensiveElbereth", # a dependency of strategic plans in general
 	# Tactical metaplans
 	"MoveFrom",          # tactical metaplan for tiles
 	"Nop",               # stub tactical plan

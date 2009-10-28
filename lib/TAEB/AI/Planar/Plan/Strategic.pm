@@ -17,6 +17,10 @@ sub reach_action {
     undef;
 }
 
+# Does this plan involve writing Elbereth on a square that previously
+# didn't have one?
+sub writes_elbereth { 0 }
+
 # Some plans need us to stop and perform the action one tile early,
 # e.g. fighting a monster. This is 0 to move to the tile, 1 to move
 # next to the tile, and higher numbers for progressively higher
@@ -43,6 +47,13 @@ has used_travel_to => (
     is  => 'rw',
 );
 
+# Calculating how good Elberething is
+has elbereth_saves => (
+    isa => 'Num',
+    is  => 'rw',
+    default => 0,
+);
+
 # Risk. There is both cost and danger in pathing somewhere, but plans
 # may often want to do something even costlier and more dangerous.
 # Overriding calculate_extra_risk is the correct solution in that
@@ -55,6 +66,7 @@ sub calculate_risk {
     # risk it costs to get there.
     my $aim = $self->aim_tile;
     my $ai  = TAEB->ai;
+    my $tct = TAEB->current_tile;
     if (!defined($aim)) {
 	# We don't have anywhere to aim for, that's a plan
 	# failure. Bail out.
@@ -90,11 +102,6 @@ sub calculate_risk {
     }
     $self->aim_tile_cache($aim);
     my $risk = $self->calculate_extra_risk;
-    if($aim == TAEB->current_tile) {
-	# A special case; if we don't need to do any pathfinding,
-	# the only risk is the extra risk of being on this square.
-	return $risk;
-    }
     my $target_tme = undef;
     if ($self->mobile_target) {
 	my @chain = $ai->calculate_tme_chain($aim);
@@ -109,10 +116,21 @@ sub calculate_risk {
 	return 0;
     }
     # Before returning the risk, spread risk-reduction dependencies.
-    for my $planname (keys %{$target_tme->{'make_safer_plans'}}) {
-	my $plan = $ai->plans->{$planname};
-	my $amount = $target_tme->{'make_safer_plans'}->{$planname};
-	if(!defined $plan) {
+    for my $planname ('DefensiveElbereth',
+                      keys %{$target_tme->{'make_safer_plans'}}) {
+	my $plan;
+	my $amount;
+        if ($planname eq 'DefensiveElbereth') {
+            next if $tct != $aim;
+            next if $self->writes_elbereth; # no recursive Elberething!
+            next unless $self->elbereth_saves;
+            $plan = $ai->get_plan('DefensiveElbereth');
+            $amount = $self->elbereth_saves;
+        } else {
+            $plan = $ai->plans->{$planname};
+            $amount = $target_tme->{'make_safer_plans'}->{$planname};
+        }
+	if (!defined $plan) {
 	    die "Plan $planname has gone missing...";
 	}
 	#$self->desire < $amount and $amount = $self->desire;
@@ -147,6 +165,11 @@ sub calculate_risk {
         }
         $self->add_dependency_path($plan);
     }
+    if($aim == $tct) {
+	# A special case; if we don't need to do any pathfinding,
+	# the only risk is the extra risk of being on this square.
+	return $risk;
+    }
     # Grab the total risk from the last TME in the chain.  If we're not
     # dealing with the problem, penalize according to analysis_window.
     $risk += $self->cost_from_tme($target_tme) *
@@ -164,21 +187,40 @@ sub aim_tile_turns {
     my $turns = shift;
     my $aim = $self->aim_tile_cache;
     my $ai = TAEB->ai;
+    my $resources = $ai->resources;
     my $thme = $ai->threat_map->{$aim->level}->[$aim->x]->[$aim->y];
     my %resamounts = ('Time' => $turns);
     my $cost = 0;
+    my $elbereth = $self->writes_elbereth;
+    my $elbereth_saves = 0;
     for my $p (keys %$thme) {
 	defined($thme->{$p}) or next;
-	my ($thmeturns) = split / /, $p;
+	my ($thmeturns, $planname) = split / /, $p;
+        my $emult = 0;
 	next if $thmeturns > $turns;
+        # The chance that an iterative Elbereth-writing in the dust fails
+        # (this is more than 28% due to the chance that it fails more than
+        # once.) Note that this makes $thmeturns pretty irrelevant,
+        # precisely because the Elbereths stop us being attacked after a
+        # while. This has an effect only on Mitigate threats.
+        my $esave_multiplier = 0;
+        if ($elbereth && $planname =~ /^Mitigate(?!Without)/) {
+            $esave_multiplier = $turns - $thmeturns;
+            $thmeturns = $turns - 0.3888;
+        }
 	my %costs = %{$thme->{$p}};
 	for my $resource (keys %costs) {
 	    $resamounts{$resource} += $costs{$resource} * ($turns - $thmeturns);
+	    $elbereth_saves +=
+                $resources->{$resource}->cost(
+                    $costs{$resource} * $esave_multiplier)
+                if $elbereth;
 	}
     }
     for my $resource (keys %resamounts) {
 	$cost += $self->cost($resource, $resamounts{$resource});
     }
+    $self->elbereth_saves($elbereth_saves);
     return $cost;
 }
 
