@@ -101,9 +101,10 @@ sub calculate_risk {
 	}
     }
     $self->aim_tile_cache($aim);
+    $self->elbereth_saves(0);
     my $risk = $self->calculate_extra_risk;
     my $target_tme = undef;
-    if ($self->mobile_target) {
+    if ($self->mobile_target && $tct != $aim) {
 	my @chain = $ai->calculate_tme_chain($aim);
 	@chain and $target_tme = $chain[0];
     } else {
@@ -117,15 +118,15 @@ sub calculate_risk {
     }
     # Before returning the risk, spread risk-reduction dependencies.
     for my $planname ('DefensiveElbereth',
-                      keys %{$target_tme->{'make_safer_plans'}}) {
+                      (keys %{$target_tme->{'make_safer_plans'}})) {
 	my $plan;
 	my $amount;
         if ($planname eq 'DefensiveElbereth') {
+            $amount = $self->elbereth_saves;
             next if $tct != $aim;
             next if $self->writes_elbereth; # no recursive Elberething!
-            next unless $self->elbereth_saves;
+            next unless $amount;
             $plan = $ai->get_plan('DefensiveElbereth');
-            $amount = $self->elbereth_saves;
         } else {
             $plan = $ai->plans->{$planname};
             $amount = $target_tme->{'make_safer_plans'}->{$planname};
@@ -196,31 +197,29 @@ sub aim_tile_turns {
     for my $p (keys %$thme) {
 	defined($thme->{$p}) or next;
 	my ($thmeturns, $planname) = split / /, $p;
-        my $emult = 0;
-	next if $thmeturns > $turns;
+	next if $thmeturns >= $turns;
         # The chance that an iterative Elbereth-writing in the dust fails
         # (this is more than 28% due to the chance that it fails more than
         # once.) Note that this makes $thmeturns pretty irrelevant,
         # precisely because the Elbereths stop us being attacked after a
         # while. This has an effect only on Mitigate threats.
         my $esave_multiplier = 0;
-        if ($elbereth && $planname =~ /^Mitigate(?!Without)/) {
+        if ($planname =~ /^Mitigate(?!Without)/) {
             $esave_multiplier = $turns - $thmeturns;
-            $thmeturns = $turns - 0.3888;
+            $thmeturns = $turns - 0.3888 if $elbereth;
         }
 	my %costs = %{$thme->{$p}};
 	for my $resource (keys %costs) {
 	    $resamounts{$resource} += $costs{$resource} * ($turns - $thmeturns);
 	    $elbereth_saves +=
                 $resources->{$resource}->cost(
-                    $costs{$resource} * $esave_multiplier)
-                if $elbereth;
+                    $costs{$resource} * $esave_multiplier);
 	}
     }
     for my $resource (keys %resamounts) {
 	$cost += $self->cost($resource, $resamounts{$resource});
     }
-    $self->elbereth_saves($elbereth_saves);
+    $self->elbereth_saves($self->elbereth_saves + $elbereth_saves);
     return $cost;
 }
 
