@@ -35,7 +35,16 @@ sub calculate_extra_risk {
     return $risk;
 }
 
+sub spread_desirability {
+    my $self = shift;
+    my $ecount = TAEB->current_tile->elbereths;
+    $self->depends(0.5,"FallbackRest")
+        if $ecount >= 3
+        || ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned');
+}
+
 use constant description => "Elberething to make things safer";
+use constant references => ['FallbackRest'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

@@ -1,15 +1,16 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::EmergencyElbereth;
 use TAEB::OO;
-use TAEB::Util qw/delta2vi any/;
+use TAEB::Util qw/delta2vi/;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 sub aim_tile {
     my $self = shift;
     return undef unless TAEB->can_engrave;
     return undef
-        if any {$_->glyph ne 'I' && $_->respects_elbereth}
-               TAEB->current_level->monsters;
+        if TAEB->current_tile->any_adjacent(sub {
+            $_->has_monster && $_->glyph ne 'I'
+                && $_->monster->respects_elbereth});
     return TAEB->current_tile;
 }
 
