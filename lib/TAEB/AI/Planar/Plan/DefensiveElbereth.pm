@@ -18,7 +18,8 @@ sub writes_elbereth { 1 }
 sub has_reach_action { 1 }
 sub reach_action {
     my $self = shift;
-    return TAEB::Action->new_action('engrave');
+    return TAEB::Action->new_action('engrave',
+        'add_engraving' => TAEB->current_tile->elbereths != 0);
 }
 
 sub calculate_extra_risk {

@@ -21,7 +21,8 @@ sub reach_action {
     return TAEB::Action->new_action('search', iterations => 1)
         if $ecount >= 5
         || ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned');
-    return TAEB::Action->new_action('engrave', best => 1);
+    return TAEB::Action->new_action('engrave', best => 1,
+        'add_engraving' => TAEB->current_tile->elbereths != 0);
 }
 
 # No aim_tile_turns! This only happens in an emergency, so we want to
