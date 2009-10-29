@@ -76,7 +76,9 @@ sub calculate_risk {
     $self->cost('Time', 0.693/$chance + 1);
     $self->level_step_danger(TAEB->current_level);
     # Don't kick down shop doors.
-    $tile->is_shop and $self->cost('Impossibility', 1);
+    $tile->is_shop || $tile->in_shop ||
+        $tile->any_adjacent(sub {$_->in_shop})
+        and $self->cost('Impossibility', 1);
     # Kicking down doors in the Mines is /incredibly/ dangerous,
     # because it means we're in Minetown and the watch and the
     # shopkeepers will want to kill us.
