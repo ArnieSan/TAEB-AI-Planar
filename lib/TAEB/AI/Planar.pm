@@ -1597,7 +1597,8 @@ sub use_benefit {
     # Likewise for weapons; for those we count their average damage. 90%
     # chance that they aren't cursed.
     if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed
-	&& $item->hands == 1) { #XXX ignore two-handers for now
+	&& $item->hands == 1  #XXX ignore two-handers for now
+        && $item->appearance !~ /bolt|arrow/o) {
         my $current_weapon = TAEB->inventory->equipment->weapon;
         $current_weapon = undef if defined $current_weapon
                                 && $current_weapon->hands == 2;
