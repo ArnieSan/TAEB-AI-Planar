@@ -75,7 +75,8 @@ sub calculate_extra_risk {
     # Try not to attack mimics at range
     $risk += $self->cost("Ammo", 8)
         if $monster->glyph eq 'm' &&
-        (!TAEB->level->known_branch || TAEB->level->branch ne 'sokoban');
+        (!TAEB->current_level->known_branch ||
+         TAEB->current_level->branch ne 'sokoban');
     return $risk;
 }
 
