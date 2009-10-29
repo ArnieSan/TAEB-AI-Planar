@@ -797,6 +797,12 @@ sub next_plan_action {
     return ($plan, $action);
 }
 
+has last_tactical_recalculation => (
+    is => 'rw',
+    isa => 'Int',
+    default => 0,
+);
+
 sub update_tactical_map {
     my $self = shift;
     my $map = $self->tactics_map;
@@ -816,6 +822,11 @@ sub update_tactical_map {
                 $levelmap->[$_] = [] for 0..79;
             }
         }
+        $self->full_tactical_recalculation(1);
+    }
+    # Do a tactical recalc every 200 turns, to prevent us getting stuck
+    # if there's a monster next to the stairs.
+    if (TAEB->turn > $self->last_tactical_recalculation + 200) {
         $self->full_tactical_recalculation(1);
     }
     # Dijkstra's algorithm is used to flood the level with pathfinding
@@ -850,6 +861,8 @@ sub update_tactical_map {
             check_possibility($tme);
     }
     $self->tactical_target_tile(TAEB->current_tile);
+    $self->full_tactical_recalculation and
+        $self->last_tactical_recalculation(TAEB->turn);
     $self->full_tactical_recalculation(0);
 }
 
