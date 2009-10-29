@@ -47,8 +47,8 @@ sub spread_desirability {
     # next action. TODO: I don't get why this is necessary; when we
     # discover why it is, presumably a less hacky version can be
     # used
-    my @stairplans = $ai->plan_index_by_type->{"Stairs"};
-    for my $plan (@stairplans) {
+    my $stairplans = $ai->plan_index_by_type->{"Stairs"};
+    for my $plan (@$stairplans) {
         $plan->required_success_count(0);
     }
 }
