@@ -43,6 +43,14 @@ sub spread_desirability {
         }
     });
     $self->depends(0.8, "ExploreViaTeleport");
+    # if we're even considering this, also recheck stairs after the
+    # next action. TODO: I don't get why this is necessary; when we
+    # discover why it is, presumably a less hacky version can be
+    # used
+    my %stairplans = $ai->plan_index_by_type("Stairs");
+    for my $plan (values %stairplans) {
+        $plan->required_success_count(0);
+    }
 }
 
 use constant description => 'Exploring a level thoroughly';
