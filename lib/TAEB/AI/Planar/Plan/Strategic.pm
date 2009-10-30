@@ -189,7 +189,9 @@ sub aim_tile_turns {
     my $aim = $self->aim_tile_cache;
     my $ai = TAEB->ai;
     my $resources = $ai->resources;
-    my $thme = $ai->threat_map->{$aim->level}->[$aim->x]->[$aim->y];
+    my $alevel = $aim->level;
+    my $tlevel = TAEB->current_level;
+    my $thme = $ai->threat_map->{$alevel}->[$aim->x]->[$aim->y];
     my %resamounts = ('Time' => $turns);
     my $cost = 0;
     my $elbereth = $self->writes_elbereth;
@@ -204,8 +206,8 @@ sub aim_tile_turns {
         # precisely because the Elbereths stop us being attacked after a
         # while. This has an effect only on Mitigate threats.
         my $esave_multiplier = 0;
-        if ($planname =~ /^Mitigate(?!Without)/) {
-            my $tplan = $ai->tactical_plans->{$planname};
+        if ($planname =~ /^Mitigate(?!Without)/ && $alevel == $tlevel) {
+            my $tplan = $ai->plans->{$planname};
             TAEB->log->ai("$planname has gone missing in Strategic",
                 level => 'error'), next unless $tplan;
             my $monster = $tplan->monster;
