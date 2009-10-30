@@ -55,7 +55,7 @@ sub spread_desirability {
     # scare off enemies, make this cheaper
     $self->depends(1,"DefensiveElbereth") if
         TAEB->current_tile->any_adjacent(sub {
-            $_->has_monster && !$_->monster->spoiler->ignores_elbereth;
+            $_->has_monster && $_->monster->respects_elbereth;
         });
 }
 
