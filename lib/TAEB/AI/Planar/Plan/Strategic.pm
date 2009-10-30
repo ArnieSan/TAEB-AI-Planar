@@ -205,8 +205,11 @@ sub aim_tile_turns {
         # while. This has an effect only on Mitigate threats.
         my $esave_multiplier = 0;
         if ($planname =~ /^Mitigate(?!Without)/) {
-            $esave_multiplier = $turns - $thmeturns;
-            $thmeturns = $turns - 0.3888 if $elbereth;
+            my $monster = $ai->get_plan($planname)->monster;
+            if ($monster->glyph ne 'I') {
+                $esave_multiplier = $turns - $thmeturns;
+                $thmeturns = $turns - 0.3888 if $elbereth;
+            }
         }
 	my %costs = %{$thme->{$p}};
 	for my $resource (keys %costs) {
