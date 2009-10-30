@@ -53,7 +53,10 @@ sub calculate_extra_risk {
 sub spread_desirability {
     my $self = shift;
     # scare off enemies, make this cheaper
-    $self->depends(1,"DefensiveElbereth");
+    $self->depends(1,"DefensiveElbereth") if
+        TAEB->current_tile->any_adjacent(sub {
+            $_->has_monster && !$_->monster->spoiler->ignores_elbereth;
+        });
 }
 
 # Invalidate ourselves if the monster stops existing.
