@@ -10,7 +10,7 @@ sub aim_tile {
     return undef
         if TAEB->current_tile->any_adjacent(sub {
             $_->has_monster && $_->glyph ne 'I'
-                && $_->monster->respects_elbereth});
+                && !$_->monster->respects_elbereth});
     return TAEB->current_tile;
 }
 

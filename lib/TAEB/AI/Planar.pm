@@ -874,6 +874,7 @@ sub add_threat {
     my $tile = shift;
     my $relspeed = shift;
     my $movetype = shift;
+    my $nomark_tile = shift;
     my $adjonly = shift;
     my $threatmap = $self->threat_map->{TAEB->current_level};
     # We flood the threat map with information about this threat.
@@ -907,9 +908,8 @@ sub add_threat {
 	my $rt = $t / $relspeed;
 	$txy->{"$rt $planname"} = $danger
             unless ($adjonly && exists $txy->{'boulder'})
-                || ($movetype ne 'eignore' 
-                && !exists($txy->{$movetype})
-                && exists($txy->{'eignore'}));
+                || (defined $nomark_tile &&
+                    $x == $nomark_tile->x && $y == $nomark_tile->y);
 	if ($movetype eq 'phase' || exists $txy->{$movetype}
                                  || $t == -1)
 	{
@@ -1068,18 +1068,14 @@ sub threat_check {
     # beforehand and we weren't alerted when we stepped on the tile,
     # we won't have had one magically appearing. Also, no point in
     # checking more than once in a turn.
+    my $default_ignore = undef;
     if ($self->last_floor_check < TAEB->step && $tct->elbereths) {
         TAEB->send_message(check => 'floor');
     }
     my $ecount = $tct->elbereths;
     if ($ecount >= 3 ||
         ($ecount >= 1 && $tct->engraving_type eq 'burned')) {
-        my $coly = $tmcl->[TAEB->x]->[TAEB->y];
-        delete $coly->{'fly'};
-        delete $coly->{'swim'};
-        delete $coly->{'walk'};
-        delete $coly->{'phase'};
-        $coly->{'eignore'} = undef;
+        $default_ignore = $tct;
     }
 
     # The most important threats in the game are monsters on the
@@ -1101,6 +1097,7 @@ sub threat_check {
 	my $relspeed = 0.99; # to encourage running away from unknown monsters
         my $disposition = $enemy->disposition // 'hostile';
         my $movetype = 'walk';
+        my $nomarktile = $default_ignore;
         # Tame and peaceful monsters are not threats.
         next if $disposition eq 'peaceful';
         next if $disposition eq 'tame';
@@ -1127,7 +1124,7 @@ sub threat_check {
 		$danger->{'Time'} = $1 * ($2 + 1) / 2;
 	    }
 	    $relspeed = $$spoiler{speed} / $selfspeed;
-            $movetype = 'eignore' if $spoiler->ignores_elbereth;
+            $nomarktile = undef if $spoiler->ignores_elbereth;
 	} else { # use a stock value as we don't know...
 	    $danger = {'Hitpoints' => 5};
 	}
@@ -1136,7 +1133,8 @@ sub threat_check {
             $enemy);
 	# TODO: walk/fly/swim
 	$self->add_threat($plan->name,$danger,$tile,$relspeed,$movetype,
-	    $enemy->is_unicorn || $enemy->glyph eq 'I');
+                          $nomarktile,
+                          $enemy->is_unicorn || $enemy->glyph eq 'I');
 	TAEB->log->ai("Adding monster threat ".$plan->name);
 	$plan->validate();
     }
