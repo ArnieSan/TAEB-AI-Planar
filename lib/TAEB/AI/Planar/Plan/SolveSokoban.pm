@@ -39,7 +39,8 @@ sub aim_tile {
     # Reset monster information.
     $self->monster(undef);
     # Try to discover a Sokoban level to solve.
-    my $sokolevel = TAEB::Spoilers::Sokoban->first_solvable_sokoban_level;
+    my $sokolevel = TAEB::Spoilers::Sokoban->
+        first_solvable_sokoban_level(sub {defined $ai->tme_from_tile(shift);});
     return unless defined $sokolevel;
     # Consult the spoilers for this level to see where to go next.
     # Use our own tactical routing map for efficiency and correctness
