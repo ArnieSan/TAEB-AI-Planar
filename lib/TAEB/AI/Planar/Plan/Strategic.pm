@@ -205,8 +205,11 @@ sub aim_tile_turns {
         # while. This has an effect only on Mitigate threats.
         my $esave_multiplier = 0;
         if ($planname =~ /^Mitigate(?!Without)/) {
-            my $monster = $ai->get_plan($planname)->monster;
-            if ($monster->glyph ne 'I') {
+            my $tplan = $ai->tactical_plans->{$planname};
+            TAEB->log->ai("$planname has gone missing in Strategic",
+                level => 'error'), next unless $tplan;
+            my $monster = $tplan->monster;
+            if ($monster->glyph ne 'I' && $monster->respects_elbereth) {
                 $esave_multiplier = $turns - $thmeturns;
                 $thmeturns = $turns - 0.3888 if $elbereth;
             }
