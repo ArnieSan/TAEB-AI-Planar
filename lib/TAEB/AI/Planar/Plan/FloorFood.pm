@@ -47,9 +47,13 @@ sub reach_action {
     my $item = $self->item;
     return undef unless defined $item;
     # sanity
-    defined $self->item_tile($item) && $self->item_tile($item) == $self->tile or
+    unless (defined $self->item_tile($item) &&
+            $self->item_tile($item) == $self->tile)
+    {
         TAEB->log->ai("Floorfood item $item has gone missing",
                       level => 'error');
+        return undef;
+    }
     return TAEB::Action->new_action('eat', food => $self->item);
 }
 sub reach_action_succeeded {
