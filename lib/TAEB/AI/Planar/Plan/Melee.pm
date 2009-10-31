@@ -39,7 +39,7 @@ sub reach_action {
 sub calculate_extra_risk {
     my $self = shift;
     my $monster = $self->monster;
-    my $ttk = ceil($self->monster->average_actions_to_kill // 10) || 1;
+    my $ttk = ceil($self->monster->average_actions_to_kill // 3) || 1;
     # It's risky to attack something that isn't meleeable.
     my $risk = 0;
     $risk = $self->cost('Impossibility', 1)

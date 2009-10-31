@@ -67,7 +67,7 @@ sub calculate_extra_risk {
 	$self->get_projectile->identity =~ /dagger/ ? 1 : 0.1);
     my $monster = $self->monster;
     $risk += $self->aim_tile_turns(
-        ceil($monster->average_actions_to_kill // 10) || 1);
+        ceil($monster->average_actions_to_kill // 3) || 1);
     # Chasing unicorns is fruitless
     $risk += $self->cost("Impossibility", 1) if $monster->is_unicorn &&
 	$self->aim_tile_cache != $self->aim_tile;
