@@ -808,12 +808,18 @@ sub update_tactical_map {
     my $map = $self->tactics_map;
     my $curlevel = TAEB->current_level;
     my $curlevelra = refaddr($curlevel);
-    my $levelchanged = 1;
-    $levelchanged = $self->tactical_target_tile->level != $curlevel
+    my $ftr = 1;
+    $ftr = $self->tactical_target_tile->level != $curlevel
         if $self->tactical_target_tile;
+    # Do a tactical recalc every 200 turns, to prevent us getting stuck
+    # if there's a monster next to the stairs.
+    if (TAEB->turn > $self->last_tactical_recalculation + 200) {
+        $ftr = 1;
+    }
+    $self->full_tactical_recalculation and $ftr = 1;
     # If we've changed level, reset all the TMEs.
-    if ($levelchanged) {
-        TAEB->log->ai("Level changed, resetting all TMEs...");
+    if ($ftr) {
+        TAEB->log->ai("Resetting all TMEs...");
         for my $levelgroup (@{TAEB->dungeon->levels}) {
             for my $level (@$levelgroup) {
                 $map->{refaddr $level} = [];
@@ -822,11 +828,6 @@ sub update_tactical_map {
                 $levelmap->[$_] = [] for 0..79;
             }
         }
-        $self->full_tactical_recalculation(1);
-    }
-    # Do a tactical recalc every 200 turns, to prevent us getting stuck
-    # if there's a monster next to the stairs.
-    if (TAEB->turn > $self->last_tactical_recalculation + 200) {
         $self->full_tactical_recalculation(1);
     }
     # Dijkstra's algorithm is used to flood the level with pathfinding
@@ -846,7 +847,7 @@ sub update_tactical_map {
 	# updating the entire dungeon every step, unless we just
         # changed level.
 	# The whole dungeon /is/ updated when we change level.
-	next if refaddr($tl) != $curlevelra && !$levelchanged;
+	next if refaddr($tl) != $curlevelra && !$ftr;
 	# If we've already found an easier way to get here, ignore
 	# this method of getting here.
 	next if exists $row->[$ty] && $row->[$ty]->{'step'} == $self->aistep;
@@ -861,8 +862,7 @@ sub update_tactical_map {
             check_possibility($tme);
     }
     $self->tactical_target_tile(TAEB->current_tile);
-    $self->full_tactical_recalculation and
-        $self->last_tactical_recalculation(TAEB->turn);
+    $ftr and $self->last_tactical_recalculation(TAEB->turn);
     $self->full_tactical_recalculation(0);
 }
 
