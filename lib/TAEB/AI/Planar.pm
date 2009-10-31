@@ -811,9 +811,9 @@ sub update_tactical_map {
     my $ftr = 1;
     $ftr = $self->tactical_target_tile->level != $curlevel
         if $self->tactical_target_tile;
-    # Do a tactical recalc every 200 turns, to prevent us getting stuck
+    # Do a tactical recalc every 100 turns, to prevent us getting stuck
     # if there's a monster next to the stairs.
-    if (TAEB->turn > $self->last_tactical_recalculation + 200) {
+    if (TAEB->turn > $self->last_tactical_recalculation + 100) {
         $ftr = 1;
     }
     $self->full_tactical_recalculation and $ftr = 1;
