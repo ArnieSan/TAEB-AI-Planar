@@ -1135,7 +1135,8 @@ sub threat_check {
 	$self->add_threat($plan->name,$danger,$tile,$relspeed,$movetype,
                           $nomarktile,
                           $enemy->is_unicorn || $enemy->glyph eq 'I');
-	TAEB->log->ai("Adding monster threat ".$plan->name);
+#	TAEB->log->ai("Adding monster threat ".$plan->name." $danger ".
+#            ($nomarktile // 'undef'));
 	$plan->validate();
     }
     # As an entirely different type of threat (where 'threat' is

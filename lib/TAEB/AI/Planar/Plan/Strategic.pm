@@ -54,6 +54,13 @@ has elbereth_saves => (
     default => 0,
 );
 
+# Extra make_safer_plans for long plans. This is a ref of their names.
+has extra_msp => (
+    isa => 'ArrayRef[Str]',
+    is => 'rw',
+    default => sub { [] },
+);
+
 # Risk. There is both cost and danger in pathing somewhere, but plans
 # may often want to do something even costlier and more dangerous.
 # Overriding calculate_extra_risk is the correct solution in that
@@ -116,8 +123,9 @@ sub calculate_risk {
 	# recognised.
 	return 0;
     }
+#    TAEB->log->ai("Checking risk reductions for $self...");
     # Before returning the risk, spread risk-reduction dependencies.
-    for my $planname ('DefensiveElbereth',
+    for my $planname ('DefensiveElbereth', (@{$self->extra_msp}),
                       (keys %{$target_tme->{'make_safer_plans'}})) {
 	my $plan;
 	my $amount;
@@ -132,11 +140,15 @@ sub calculate_risk {
             $amount = $target_tme->{'make_safer_plans'}->{$planname};
         }
 	if (!defined $plan) {
-	    die "Plan $planname has gone missing...";
+            # TODO: Figure out why this happens. I /think/ it's because
+            # the plan refers to a TME on another level which refers to
+            # a monster that's no longer in memory, but I'm not sure.
+	    TAEB->log->ai("Plan $planname has gone missing...");
+            next;
 	}
 	#$self->desire < $amount and $amount = $self->desire;
 	## START DEBUG CODE
-# 	TAEB->log->ai("Spreading $amount desire to msp $planname...");
+# 	TAEB->log->ai("Spreading desire to msp $planname...");
 # 	my $thme = $ai->threat_map->{$target_tme->{tile_level}}->
 # 	    [$target_tme->{tile_x}]->[$target_tme->{tile_y}];
 # 	for my $p (keys %$thme) {
@@ -196,6 +208,7 @@ sub aim_tile_turns {
     my $cost = 0;
     my $elbereth = $self->writes_elbereth;
     my $elbereth_saves = 0;
+    my @extra_msp = ();
     for my $p (keys %$thme) {
 	defined($thme->{$p}) or next;
 	my ($thmeturns, $planname) = split / /, $p;
@@ -216,6 +229,7 @@ sub aim_tile_turns {
                 $thmeturns = $turns - 0.3888 if $elbereth;
             }
         }
+        push @extra_msp, $planname;
 	my %costs = %{$thme->{$p}};
 	for my $resource (keys %costs) {
 	    $resamounts{$resource} += $costs{$resource} * ($turns - $thmeturns);
@@ -228,6 +242,7 @@ sub aim_tile_turns {
 	$cost += $self->cost($resource, $resamounts{$resource});
     }
     $self->elbereth_saves($self->elbereth_saves + $elbereth_saves);
+    $self->extra_msp(\@extra_msp);
     return $cost;
 }
 
