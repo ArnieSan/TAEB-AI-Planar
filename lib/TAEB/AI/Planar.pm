@@ -1615,6 +1615,12 @@ sub use_benefit {
     return $value;
 }
 
+has _devnull_item_hack => (
+    isa     => 'Bool',
+    is      => 'rw',
+    default => sub { TAEB->config->get_ai_config->{'devnull_item_hack'} // 0 }
+);
+
 # Positive aspects of the item value.
 sub item_value {
     my $self = shift;
@@ -1651,6 +1657,14 @@ sub item_value {
 	if ($count == 0 || ($count == 1 && $cost eq 'cost')) {
 	    $value += $resources->{'Luck'}->$cost(3);
 	}
+    }
+    # Certain items are scored by ad-hoc patches in /dev/null
+    if ($self->_devnull_item_hack
+	    && (($item->appearance && ($item->appearance eq 'gray stone'
+			|| $item->appearance eq 'bag'))
+		|| $item->type eq 'amulet'))
+    {
+	$value += 1000;
     }
     # Things that we could use are useful as a result. However, we
     # don't want too many items that are redundant to each other. The
