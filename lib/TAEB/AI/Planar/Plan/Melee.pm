@@ -61,6 +61,10 @@ sub spread_desirability {
         });
 }
 
+# Writing Elbereth before melee tends to just scare monsters off.
+# XXX monster tracking, ekiM
+sub elbereth_helps { 0 }
+
 # Invalidate ourselves if the monster stops existing.
 sub invalidate { shift->validity(0); }
 

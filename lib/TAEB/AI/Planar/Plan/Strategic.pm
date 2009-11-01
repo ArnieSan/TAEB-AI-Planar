@@ -17,8 +17,11 @@ sub reach_action {
     undef;
 }
 
-# Does this plan involve writing Elbereth on a square that previously
-# didn't have one?
+# Could writing Elbereth first help this plan, or does it somehow
+# interfere with the functioning of Elbereth?
+sub elbereth_helps { 1 }
+# Does this plan actually write an Elbereth?  Only matters for threat
+# checks.
 sub writes_elbereth { 0 }
 
 # Some plans need us to stop and perform the action one tile early,
@@ -132,7 +135,7 @@ sub calculate_risk {
         if ($planname eq 'DefensiveElbereth') {
             $amount = $self->elbereth_saves;
             next if $tct != $aim;
-            next if $self->writes_elbereth; # no recursive Elberething!
+            next unless $self->elbereth_helps; # no recursive Elberething!
             next unless $amount;
             $plan = $ai->get_plan('DefensiveElbereth');
             $self->desire < $amount and $amount = $self->desire;

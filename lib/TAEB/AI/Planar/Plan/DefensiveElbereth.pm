@@ -14,6 +14,7 @@ sub aim_tile {
     return TAEB->current_tile;
 }
 
+sub elbereth_helps { 0 }
 sub writes_elbereth { 1 }
 sub has_reach_action { 1 }
 sub reach_action {
