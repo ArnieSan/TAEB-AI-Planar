@@ -47,6 +47,8 @@ sub calculate_extra_risk {
     $risk += $self->aim_tile_turns($ttk);
     $risk += $self->attack_monster_risk($monster)
         // $self->cost('Hitpoints', 5); # stock value for hallu
+
+    $risk += $self->cost('Pacifism', 1);
     return $risk;
 }
 

@@ -77,6 +77,7 @@ sub calculate_extra_risk {
         if $monster->glyph eq 'm' &&
         (!TAEB->current_level->known_branch ||
          TAEB->current_level->branch ne 'sokoban');
+    $risk += $self->cost("Pacifisim", 1);
     return $risk;
 }
 

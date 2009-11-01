@@ -18,7 +18,7 @@ sub reach_action {
 sub calculate_extra_risk {
     my $self = shift;
     #TODO: counterattack risk
-    return $self->aim_tile_turns(1);
+    return $self->aim_tile_turns(1) + $self->cost("Pacifism",1);
 }
 
 use constant description => 'Meleeing an engulfing monster';

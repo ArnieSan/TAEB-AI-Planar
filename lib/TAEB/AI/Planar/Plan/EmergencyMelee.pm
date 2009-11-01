@@ -30,7 +30,7 @@ sub reach_action {
 # completely ignore threats.
 sub calculate_extra_risk {
     my $self = shift;
-    return $self->cost("Time",1);
+    return $self->cost("Time",1) + $self->cost("Pacifism",1);
 }
 
 sub reach_action_succeeded {

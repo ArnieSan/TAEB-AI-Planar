@@ -34,7 +34,7 @@ sub reach_action {
 sub calculate_extra_risk {
     my $self = shift;
     # TODO: Risk from whatever monster we think is on the square
-    return $self->aim_tile_turns(1);
+    return $self->aim_tile_turns(1) + $self->cost("Pacifism",1);
 }
 
 # Invalidate ourselves if the monster stops existing.
