@@ -55,18 +55,21 @@ sub check_possibility_inner {
     my $ai      = TAEB->ai;
     my $tile    = $self->tile;
     my $monster = $tile->monster;
+    TAEB->log->ai("Considering to ask $monster off $tile");
     return unless defined $monster;
     # We can only wait for peaceful monsters to move out of the way.
     return unless $ai->monster_is_peaceful($monster);
     # We can't wait for an immobile monster.
     my $spoiler = $tile->monster->spoiler;
     return if $spoiler and !($spoiler->speed);
+    TAEB->log->ai("It might work");
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 
 sub action {
     my $self = shift;
     my $ai = TAEB->ai;
+    TAEB->log->ai("Trying to ask off a tile");
     TAEB->known_debt or TAEB->send_message(check => 'debt');
     TAEB->debt and return TAEB::Action->new_action('pay', item => 'all');
     # If it's a shopkeeper we're trying to avoid, try moving so as to
