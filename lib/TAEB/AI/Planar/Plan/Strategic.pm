@@ -146,7 +146,7 @@ sub calculate_risk {
 	    TAEB->log->ai("Plan $planname has gone missing...");
             next;
 	}
-	#$self->desire < $amount and $amount = $self->desire;
+	$self->desire < $amount and $amount = $self->desire;
 	## START DEBUG CODE
 # 	TAEB->log->ai("Spreading desire to msp $planname...");
 # 	my $thme = $ai->threat_map->{$target_tme->{tile_level}}->
@@ -161,7 +161,12 @@ sub calculate_risk {
 # 	}
 	## END DEBUG CODE
 	$plan->reverse_dependencies->{$self} = $self;
-	$ai->add_capped_desire($plan, $self->desire);
+        if($planname eq 'DefensiveElbereth')
+        {
+            $ai->add_capped_desire($plan, $amount);
+        } else {
+            $ai->add_capped_desire($plan, $self->desire);
+        }
 	# This needs to run before the plan calculates risk in order to
 	# have any effect. Therefore, if the plan's been calculated
         # already (say this is a msp for the other plan as well in a
