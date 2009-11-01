@@ -135,6 +135,7 @@ sub calculate_risk {
             next if $self->writes_elbereth; # no recursive Elberething!
             next unless $amount;
             $plan = $ai->get_plan('DefensiveElbereth');
+            $self->desire < $amount and $amount = $self->desire;
         } else {
             $plan = $ai->plans->{$planname};
             $amount = $target_tme->{'make_safer_plans'}->{$planname};
@@ -146,7 +147,6 @@ sub calculate_risk {
 	    TAEB->log->ai("Plan $planname has gone missing...");
             next;
 	}
-	$self->desire < $amount and $amount = $self->desire;
 	## START DEBUG CODE
 # 	TAEB->log->ai("Spreading desire to msp $planname...");
 # 	my $thme = $ai->threat_map->{$target_tme->{tile_level}}->
