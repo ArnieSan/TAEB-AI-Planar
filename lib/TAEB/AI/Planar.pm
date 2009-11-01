@@ -1080,7 +1080,7 @@ sub threat_check {
 
     # The most important threats in the game are monsters on the
     # current level.
-    my @enemies = $current_level->has_enemies;
+    my @enemies = $current_level->has_monsters;
     my $selfspeed = TAEB->speed || 12; # invariant code motion
     for my $enemy (@enemies) {
 	my $tile = $enemy->tile;
