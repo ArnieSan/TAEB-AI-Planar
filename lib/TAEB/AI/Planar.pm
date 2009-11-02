@@ -1618,7 +1618,13 @@ sub use_benefit {
 has _devnull_item_hack => (
     isa     => 'Bool',
     is      => 'rw',
-    default => sub { TAEB->config->get_ai_config->{'devnull_item_hack'} // 0 }
+    default => sub {
+	my $x = TAEB->config->get_ai_config->{'devnull_item_hack'} // 0;
+	TAEB->log->ai("Initializing _devnull_item_hack to $x");
+	TAEB->log->ai("%{ TAEB->config->get_ai_config }");
+	$x;
+    },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
 # Positive aspects of the item value.
