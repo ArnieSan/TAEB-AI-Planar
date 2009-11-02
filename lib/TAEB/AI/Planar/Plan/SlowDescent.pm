@@ -10,7 +10,7 @@ sub spread_desirability {
     defined $_ and $_->validity and $self->depends(1,'OtherSide',$_->tile)
         for @{TAEB->ai->plan_index_by_type->{'OtherSide'}};
     # This relies on shallowest_level short-circuiting.
-    my $urgency = 1;
+    my $urgency = 0.95;
     my $seensoko = 0;
     my $seenthislevel = 0;
     TAEB->dungeon->shallowest_level(sub {
