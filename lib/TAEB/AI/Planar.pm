@@ -1238,19 +1238,13 @@ sub create_plan {
     }
     if($planname =~ /([0-9]+)\]/) {
 	my $pibo = $self->plan_index_by_object;
-	defined $pibo->{$1}
-	    ? $pibo->{$1} = [$plan]
-	    : unshift @{$pibo->{$1}}, $plan;
-	# Garbage collector magic.
-	weaken $pibo->{$1}->[0];
+	push @{ $pibo->{$1} ||= [] }, $plan;
+	weaken $pibo->{$1}->[-1];
     }
     {
         my $pibt = $self->plan_index_by_type;
-	defined $pibt->{$name}
-	    ? $pibt->{$name} = [$plan]
-	    : unshift @{$pibt->{$name}}, $plan;
-	# Garbage collector magic.
-	weaken $pibt->{$name}->[0];
+	push @{ $pibt->{$name} ||= [] }, $plan;
+	weaken $pibt->{$name}->[-1];
     }
 }
 
