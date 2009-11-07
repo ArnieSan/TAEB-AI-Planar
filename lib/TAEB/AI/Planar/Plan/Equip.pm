@@ -116,6 +116,10 @@ sub invalidate {shift->validity(0);}
 
 use constant description => 'Equipping a new item';
 use constant references => ['BCU'];
+# We don't want Equip plans to interrupt each other, as intermediate states
+# can have their values out of line.  This is probably more correct than
+# fudging the values of the intermediate states.
+use constant uninterruptible_by => ['Equip'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
