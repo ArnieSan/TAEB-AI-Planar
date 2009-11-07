@@ -1577,12 +1577,18 @@ sub item_subtype {
 # The benefit that would be gained from wielding/wearing this; or the
 # benefit that is gained from wielding/wearing this, in the case that
 # it's already wielded/worn.
+#
+# Often, we don't know if an item will help.  Since we can always just
+# take items off, the benefit is always at least 0.  So, we just assume
+# that the item is better, and then downscale the benefit by the chance
+# of this actually being the case.
 sub use_benefit {
     my $self = shift;
     my $item = shift;
     my $cost = shift // 'anticost';
     my $resources = $self->resources;
     my $value = 0;
+    my $chance = 1;
     # Armour counts as its AC, plus any special abilities it
     # grants. Because we don't wear cursed armour, if it's unBCUed, we
     # multiply by .8682 (the chance of random armour not being cursed);
@@ -1594,10 +1600,35 @@ sub use_benefit {
         last unless TAEB->inventory->equipment->can($slot);
         my $currently_in_slot = TAEB->inventory->equipment->$slot;
         my $ac = $item->ac;
-        $ac *= .8682 unless defined $item->is_cursed; # i.e. we know it isn't
         defined $currently_in_slot && $currently_in_slot->can('ac') &&
             defined $currently_in_slot->ac && $currently_in_slot != $item
             and $ac -= $currently_in_slot->ac;
+
+        if (!defined ($item->is_cursed)) {
+            $chance *= 0.8682;
+        }
+
+        if (!$item->enchantment_known) {
+            # This item is possibly not worth using.  But it might be!
+            # Assume it has enough enchantment to make up the difference.
+            #
+            # Enchantment formula is 10% chance of rne(3); correlated with
+            # beatitude, but we don't model that XXX
+
+            if ($ac >= 0) {
+                # Definitely worth trying, the possibility of an enchantment
+                # only makes it moreso
+                $ac += 0.15;
+            } else {
+                # We're gambling on the item being enchanted at all
+                $chance *= 0.1;
+                $ac += 1;
+
+                # Further points are a bit more common
+                while ($ac <= 0) { $ac++; $chance /= 3; }
+            }
+        }
+
         $value += $resources->{'AC'}->$cost($ac) unless $ac <= 0;
     }}
     # Likewise for weapons; for those we count their average damage. 90%
@@ -1615,8 +1646,12 @@ sub use_benefit {
         $value += $resources->{'DamagePotential'}->$cost($damage)
             unless $damage <= 0;
     }
+
+    $value *= $chance;
+
     $_ == $item and $value += $resources->{'Delta'}->$cost(1)
         for TAEB->inventory->items;
+
     $value -= $resources->{'Delta'}->$cost(1/refaddr($item)); # tiebreak
     return 0 if $value < 0;
     return $value;
