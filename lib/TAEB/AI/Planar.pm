@@ -1828,6 +1828,7 @@ sub drop {
     my $value = $self->item_value($item, 'cost');
     my $drawbacks = $self->item_drawback_cost($item, 'anticost');
     $self->last_drop_step(TAEB->step);
+    return 0 if !$item->can_drop;
     # If we're dropping things on an altar, may as well BCU while we're at it
     TAEB->current_tile->type eq 'altar'
         and !$item->is_blessed && !$item->is_uncursed && !$item->is_cursed

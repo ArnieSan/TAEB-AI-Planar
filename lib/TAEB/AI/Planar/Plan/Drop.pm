@@ -18,6 +18,7 @@ sub set_arg {
 sub aim_tile {
     my $self = shift;
     return undef unless defined $self->item;
+    return undef if !$self->item->can_drop;
     return TAEB->current_tile;
 }
 
