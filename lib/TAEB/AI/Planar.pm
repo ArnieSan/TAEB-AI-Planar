@@ -1594,7 +1594,7 @@ sub use_benefit {
     # multiply by .8682 (the chance of random armour not being cursed);
     # in addition, we subtract the AC of our current armour in the same
     # slot, unless the item is our current armour.
-    if($item->can('ac') && defined $item->ac && $item->ac > 0 &&
+    if($item->can('ac') && defined $item->ac &&
        $self->item_subtype($item) && !$item->is_cursed) {{
         my $slot = $self->item_subtype($item);
         last unless TAEB->inventory->equipment->can($slot);
