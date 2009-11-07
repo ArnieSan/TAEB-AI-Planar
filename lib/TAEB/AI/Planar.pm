@@ -8,6 +8,7 @@ use Time::HiRes qw/gettimeofday tv_interval/;
 use TAEB::Spoilers::Combat;
 use TAEB::Spoilers::Sokoban;
 use Storable;
+use Set::Object 'weak_set';
 use Module::Pluggable
     'search_path' => ['TAEB::AI::Planar::Resource'],
     'sub_name' => 'resource_names',
@@ -149,14 +150,14 @@ has current_tactical_plan => (
 # Storing plans by the object they refer to speeds up certain
 # operations.
 has plan_index_by_object => (
-    isa     => 'HashRef[ArrayRef[TAEB::AI::Planar::Plan]]',
+    isa     => 'HashRef[Set::Object]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 # Likewise, by the type of plan.
 has plan_index_by_type => (
-    isa     => 'HashRef[ArrayRef[TAEB::AI::Planar::Plan]]',
+    isa     => 'HashRef[Set::Object]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
@@ -1220,6 +1221,20 @@ sub get_tactical_plan {
     return $self->tactical_plans->{$planname};
 }
 
+sub plans_by_type {
+    my $self = shift;
+    my $arg  = shift;
+
+    return @{ $self->plan_index_by_type->{$arg} ||= weak_set() };
+}
+
+sub plans_by_obj {
+    my $self = shift;
+    my $arg  = shift;
+
+    return @{ $self->plan_index_by_object->{$arg} ||= weak_set() };
+}
+
 # Create a new plan.
 sub create_plan {
     my $self = shift;
@@ -1238,13 +1253,11 @@ sub create_plan {
     }
     if($planname =~ /([0-9]+)\]/) {
 	my $pibo = $self->plan_index_by_object;
-	push @{ $pibo->{$1} ||= [] }, $plan;
-	weaken $pibo->{$1}->[-1];
+	($pibo->{$1} ||= weak_set())->insert($plan);
     }
     {
         my $pibt = $self->plan_index_by_type;
-	push @{ $pibt->{$name} ||= [] }, $plan;
-	weaken $pibt->{$name}->[-1];
+	($pibt->{$name} ||= weak_set())->insert($plan);
     }
 }
 
@@ -1519,7 +1532,7 @@ subscribe tile_type_change => sub {
     my $tile = $what->tile;
     my $addr = refaddr($tile);
     defined $_ and $_->required_success_count(0)
-	for @{$self->plan_index_by_object->{$addr}};
+	for $self->plans_by_obj($addr);
     # Also, invalidate the walkability cache for that tile.
     $self->walkability_cache->{$tile} = undef;
 };

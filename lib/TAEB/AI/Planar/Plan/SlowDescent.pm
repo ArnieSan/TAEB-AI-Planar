@@ -8,7 +8,7 @@ sub spread_desirability {
     my $self = shift;
     # More than anything else, connect the dungeon graph.
     defined $_ and $_->validity and $self->depends(1,'OtherSide',$_->tile)
-        for @{TAEB->ai->plan_index_by_type->{'OtherSide'}};
+        for TAEB->ai->plans_by_type('OtherSide');
     # This relies on shallowest_level short-circuiting.
     my $urgency = 0.95;
     my $seensoko = 0;
