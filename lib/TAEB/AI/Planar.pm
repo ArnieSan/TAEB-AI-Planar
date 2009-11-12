@@ -2,7 +2,7 @@
 package TAEB::AI::Planar;
 use TAEB::OO;
 use Heap::Simple::XS;
-use TAEB::Util qw/refaddr weaken display_ro :colors any/;
+use TAEB::Util qw/refaddr weaken display_ro :colors any max/;
 use Scalar::Util qw/reftype/;
 use Time::HiRes qw/gettimeofday tv_interval/;
 use TAEB::Spoilers::Combat;
@@ -1574,6 +1574,37 @@ sub item_subtype {
     return $subtype;
 }
 
+my $_best_valid_on_step = -1;
+my $_best_shield_ac;
+my $_best_1hw_dam;
+my $_best_2hw_dam;
+
+sub _get_bests {
+    my $self = shift;
+
+    $_best_valid_on_step = $self->aistep;
+    $_best_shield_ac = 0;
+    $_best_1hw_dam = 0;
+    $_best_2hw_dam = 0;
+
+    for my $check (TAEB->inventory->items,
+                   map {$_->items} (map {@$_} (@{TAEB->dungeon->levels}))) {
+        if ($check->can('hands')) {
+            if ($check->hands == 2) {
+                $_best_2hw_dam = max($_best_2hw_dam,
+                                     TAEB::Spoilers::Combat->damage($check));
+            } else {
+                $_best_1hw_dam = max($_best_1hw_dam,
+                                     TAEB::Spoilers::Combat->damage($check));
+            }
+        }
+
+        if ($check->can('ac') && $self->item_subtype($check) eq 'shield') {
+            $_best_shield_ac = max($_best_shield_ac, $check->ac);
+        }
+    }
+}
+
 # The benefit that would be gained from wielding/wearing this; or the
 # benefit that is gained from wielding/wearing this, in the case that
 # it's already wielded/worn.
@@ -1586,6 +1617,7 @@ sub use_benefit {
     my $self = shift;
     my $item = shift;
     my $cost = shift // 'anticost';
+    my $anticost = ($cost eq 'cost' ? 'anticost' : 'cost');
     my $resources = $self->resources;
     my $value = 0;
     my $chance = 1;
@@ -1606,6 +1638,14 @@ sub use_benefit {
 
         if (!defined ($item->is_cursed)) {
             $chance *= 0.8682;
+        }
+
+        # Putting on a shield costs us the difference between the best 2H
+        # weapon and the best 1Her.
+        if ($slot eq 'shield' && !defined($currently_in_slot)
+                && $_best_1hw_dam < $_best_2hw_dam) {
+            $value -= $resources->{'DamagePotential'}->
+                $anticost($_best_2hw_dam - $_best_1hw_dam);
         }
 
         if (!$item->enchantment_known) {
@@ -1634,15 +1674,25 @@ sub use_benefit {
     # Likewise for weapons; for those we count their average damage. 90%
     # chance that they aren't cursed.
     if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed
-	&& $item->hands == 1  #XXX ignore two-handers for now
         && $item->appearance !~ /bolt|arrow/o) {
         my $current_weapon = TAEB->inventory->equipment->weapon;
-        $current_weapon = undef if defined $current_weapon
-                                && $current_weapon->hands == 2;
         my $damage = TAEB::Spoilers::Combat->damage($item);
         $damage *= .9 unless defined $item->is_cursed; # i.e. we know it isn't
         defined $current_weapon && $current_weapon != $item and
             $damage -= TAEB::Spoilers::Combat->damage($current_weapon);
+
+        if ($item->hands == 2
+            && (!defined $current_weapon || $current_weapon->hands != 2)
+            && $_best_shield_ac > 0) {
+            $value -= $resources->{'AC'}->$anticost($_best_shield_ac);
+        }
+
+        if ($item->hands == 1
+            && (defined $current_weapon && $current_weapon->hands == 2)
+            && $_best_shield_ac > 0) {
+            $value += $resources->{'AC'}->$cost($_best_shield_ac);
+        }
+
         $value += $resources->{'DamagePotential'}->$cost($damage)
             unless $damage <= 0;
     }
@@ -1676,6 +1726,11 @@ sub item_value {
     my $resources = $self->resources;
     my $cost = shift // 'anticost';
     my $value = 0;
+
+    if ($_best_valid_on_step != $self->aistep) {
+        $self->_get_bests;
+    }
+
     # If the item is permafood, its value is its nutrition minus its
     # weight; its nutrition is measured in unscarce units (twice the
     # base value for permafood), but its weight is measured in dynamic

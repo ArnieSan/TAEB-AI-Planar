@@ -41,6 +41,18 @@ sub reach_action {
     return undef unless defined $item;
     if($item->isa('NetHack::Item::Weapon')) {
         return undef if $item->is_wielded;
+        my $blocker = TAEB->inventory->equipment->blockers('weapon');
+        if ($blocker) {
+            TAEB->log->ai("I intend to take off $blocker to put on $item");
+        }
+        if ($blocker && $blocker->type eq 'weapon') {
+            $self->unwielding(1);
+            return TAEB::Action->new_action('wield', weapon => 'nothing');
+        }
+        $self->unwielding(0);
+        $self->taking_off($blocker);
+        return TAEB::Action->new_action('remove',  item => $blocker)
+            if $blocker;
         return TAEB::Action->new_action('wield', weapon => $item);
     } else {
         # We need to take things off in order to put things on.
