@@ -2,7 +2,7 @@
 package TAEB::AI::Planar::Plan::Projectile;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
-use TAEB::AI::Planar::Resource::Ammo;
+use TAEB::AI::Planar::Resource::FightDamage;
 use POSIX qw/ceil/;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
@@ -18,7 +18,7 @@ sub set_arg {
 }
 
 sub get_projectile {
-    my $projectile = (TAEB::AI::Planar::Resource::Ammo::projectilelist 0)[0];
+    my $projectile = (TAEB::AI::Planar::Resource::FightDamage::projectilelist)[0];
     $projectile and return $projectile;
     return;
 }
@@ -63,8 +63,8 @@ sub reach_action {
 
 sub calculate_extra_risk {
     my $self = shift;
-    my $risk = $self->cost("Ammo",
-	$self->get_projectile->identity =~ /dagger/ ? 1 : 0.1);
+    my $risk = $self->cost("FightDamage",
+        TAEB::Spoilers::Combat->damage($self->get_projectile));
     my $monster = $self->monster;
     $risk += $self->aim_tile_turns(
         ceil($monster->average_actions_to_kill // 3) || 1);
@@ -73,7 +73,7 @@ sub calculate_extra_risk {
 	$self->aim_tile_cache != $self->aim_tile;
     $risk += $self->attack_monster_risk($monster) // 0;
     # Try not to attack mimics at range
-    $risk += $self->cost("Ammo", 8)
+    $risk += $self->cost("FightDamage", 40)
         if $monster->glyph eq 'm' &&
         (!TAEB->current_level->known_branch ||
          TAEB->current_level->branch ne 'sokoban');

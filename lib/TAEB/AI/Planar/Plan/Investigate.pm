@@ -54,12 +54,13 @@ sub gain_resource_conversion_desire {
 	$ai->add_capped_desire($self,
 	    $ai->resources->{'Nutrition'}->base_value * 30 +
 	    $ai->resources->{'AC'}->value * 4 +
-	    $ai->resources->{'Ammo'}->value * 5 +
+	    $ai->resources->{'FightDamage'}->value * 20 +
 	    $ai->resources->{'DamagePotential'}->value * 1);
     }
     # Interesting tiles without a glyph only happen if we throw things at them.
     if ($glyph eq ')' || $glyph eq '.' || ($glyph eq '#' && !$mines)) {
-        $ai->add_capped_desire($self, $ai->resources->{'Ammo'}->base_value);
+        $ai->add_capped_desire($self,
+                               $ai->resources->{'FightDamage'}->base_value * 5);
     }
 }
 
