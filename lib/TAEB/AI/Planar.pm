@@ -1589,7 +1589,7 @@ sub _get_bests {
 
     for my $check (TAEB->inventory->items,
                    map {$_->items} (map {@$_} (@{TAEB->dungeon->levels}))) {
-        if ($check->can('hands')) {
+        if ($check->can('hands') && defined($check->hands)) {
             if ($check->hands == 2) {
                 $_best_2hw_dam = max($_best_2hw_dam,
                                      TAEB::Spoilers::Combat->damage($check));

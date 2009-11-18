@@ -27,7 +27,6 @@ sub get_spell {
         return $spell;
     }
 
-    $projectile and return $projectile;
     return;
 }
 
