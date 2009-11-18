@@ -33,6 +33,7 @@ sub spread_desirability {
     my $self = shift;
     $self->depends(1,"Melee",$self->monster);
     $self->depends(1,"Projectile",$self->monster);
+    $self->depends(1,"AttackSpell",$self->monster);
 }
 
 # XXX this probably belongs in a spoiler file
@@ -92,7 +93,7 @@ sub gain_resource_conversion_desire {
 sub invalidate {shift->validity(0);}
 
 use constant description => "Killing something that we want to die";
-use constant references => ['Melee','Projectile'];
+use constant references => ['Melee','Projectile','AttackSpell'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
