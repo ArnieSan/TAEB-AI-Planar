@@ -9,7 +9,7 @@ extends 'TAEB::AI::Planar::Resource';
 has _value => (
     isa => 'Num',
     is  => 'rw',
-    default => 8, # Fairly large
+    default => 25, # Fairly large
 );
 
 # Split out from amount to avoid code duplication; other things care
@@ -86,16 +86,9 @@ sub amount {
     return $amt;
 }
 
-# Ammo is less useful the more we have.
+# There's no such thing as too much ammo, if we can carry it...
 sub scarcity {
-    my $self = shift;
-    my $quantity = shift;
-    return 1 if $quantity < 20;
-    return 0.5 if $quantity < 40;
-    return 0.25 if $quantity < 60;
-    return 0.125 if $quantity < 80;
-    return 0.05 if $quantity < 100;
-    return 0.025;
+    return 1;
 }
 
 __PACKAGE__->meta->make_immutable;
