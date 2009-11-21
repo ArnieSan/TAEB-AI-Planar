@@ -1591,7 +1591,9 @@ sub _get_bests {
 
     my $fdcalc = $self->resources->{'FightDamage'};
 
-    my $val_fd = $fdcalc->value;
+    # NOTE: Normally, FightDamage is treated as an ephemeral resource.
+    # But here we're putting it against AC.
+    my $val_fd = $fdcalc->value * $self->analysis_window;
     my $val_dpot = $self->resources->{'DamagePotential'}->value;
     my $val_ac = $self->resources->{'AC'}->value;
 
@@ -1665,7 +1667,8 @@ sub use_benefit {
             my $fd = $resources->{'FightDamage'};
 
             $value -= $fd->$anticost($fd->spell_damage(TAEB->power) -
-                $fd->spell_damage(TAEB->power, $slot => $item));
+                $fd->spell_damage(TAEB->power, $slot => $item)) *
+                $self->analysis_window;
         }
 
         if (!$item->enchantment_known) {
