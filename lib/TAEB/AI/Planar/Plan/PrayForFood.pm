@@ -22,7 +22,7 @@ sub gain_resource_conversion_desire {
 # This is only set if we can pray for food right now.
 sub aim_tile {
     my $self = shift;
-    return undef unless TAEB->can_pray;
+    return undef unless TAEB::Action::Pray->is_advisable;
     return undef unless TAEB->nutrition <= 49;
     return TAEB->current_tile;
 }

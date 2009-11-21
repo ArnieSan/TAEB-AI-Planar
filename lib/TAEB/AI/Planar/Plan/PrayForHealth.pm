@@ -14,7 +14,7 @@ sub calculate_extra_risk {
 # This is only set if we can pray for health right now.
 sub aim_tile {
     my $self = shift;
-    return undef unless TAEB->can_pray;
+    return undef unless TAEB::Action::Pray->is_advisable;
     return undef unless TAEB->hp*7 < TAEB->maxhp;
     return TAEB->current_tile;
 }

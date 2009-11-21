@@ -6,7 +6,7 @@ extends 'TAEB::AI::Planar::Plan::Strategic';
 sub aim_tile {
     my $self = shift;
     return unless TAEB->is_lycanthropic;
-    return unless TAEB->can_pray;
+    return unless TAEB::Action::Pray->is_advisable;
     $_->maybe('is_lycanthrope') and return for TAEB->current_level->monsters;
     return TAEB->current_tile;
 }

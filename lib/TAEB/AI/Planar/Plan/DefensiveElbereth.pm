@@ -10,7 +10,7 @@ sub aim_tile {
     return undef
         if $ecount >= 3
         || ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned');
-    return undef unless TAEB->can_engrave;
+    return undef unless TAEB::Action::Engrave->is_advisable;
     return TAEB->current_tile;
 }
 

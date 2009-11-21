@@ -6,7 +6,7 @@ extends 'TAEB::AI::Planar::Plan::Strategic';
 
 sub aim_tile {
     my $self = shift;
-    return undef unless TAEB->can_engrave;
+    return undef unless TAEB::Action::Engrave->is_advisable;
     return undef
         if TAEB->current_tile->any_adjacent(sub {
             $_->has_monster && $_->glyph ne 'I'
