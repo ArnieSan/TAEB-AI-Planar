@@ -9,7 +9,7 @@ extends 'TAEB::AI::Planar::Resource';
 has _value => (
     isa => 'Num',
     is  => 'rw',
-    default => 2, # Fairly large
+    default => 8, # Fairly large
 );
 
 # Split out from amount to avoid code duplication; other things care
@@ -54,6 +54,7 @@ sub spell_damage
 {
     my $self = shift;
     my $power = shift;
+    my @equip = @_;
     my $spell;
     my $amt = 0;
 
@@ -64,7 +65,7 @@ sub spell_damage
 
         my $damage = force_bolt_damage;
 
-        $amt += $casts * $damage * (100 - $spell->failure_rate) / 100;
+        $amt += $casts * $damage * (100 - $spell->failure_rate(@equip)) / 100;
 
         $power -= $casts * 5;
     }
@@ -89,12 +90,12 @@ sub amount {
 sub scarcity {
     my $self = shift;
     my $quantity = shift;
-    return 4 if $quantity < 20;
-    return 2 if $quantity < 40;
-    return 1 if $quantity < 60;
-    return 0.5 if $quantity < 80;
-    return 0.2 if $quantity < 100;
-    return 0.1;
+    return 1 if $quantity < 20;
+    return 0.5 if $quantity < 40;
+    return 0.25 if $quantity < 60;
+    return 0.125 if $quantity < 80;
+    return 0.05 if $quantity < 100;
+    return 0.025;
 }
 
 __PACKAGE__->meta->make_immutable;

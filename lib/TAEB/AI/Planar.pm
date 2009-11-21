@@ -1574,33 +1574,47 @@ sub item_subtype {
     return $subtype;
 }
 
+# XXX XXX XXX We really ought to be using scarce value here, but the issues
+# involved in comparing that really mess things up.
 my $_best_valid_on_step = -1;
-my $_best_shield_ac;
-my $_best_1hw_dam;
-my $_best_2hw_dam;
+my $_best_shield_val;
+my $_best_1hw_val;
+my $_best_2hw_val;
 
 sub _get_bests {
     my $self = shift;
 
     $_best_valid_on_step = $self->aistep;
-    $_best_shield_ac = 0;
-    $_best_1hw_dam = 0;
-    $_best_2hw_dam = 0;
+    $_best_shield_val = 0;
+    $_best_1hw_val = 0;
+    $_best_2hw_val = 0;
+
+    my $fdcalc = $self->resources->{'FightDamage'};
+
+    my $val_fd = $fdcalc->value;
+    my $val_dpot = $self->resources->{'DamagePotential'}->value;
+    my $val_ac = $self->resources->{'AC'}->value;
+
+    my $base_sdam = $fdcalc->spell_damage(TAEB->power, shield => undef);
 
     for my $check (TAEB->inventory->items,
                    map {$_->items} (map {@$_} (@{TAEB->dungeon->levels}))) {
         if ($check->can('hands') && defined($check->hands)) {
             if ($check->hands == 2) {
-                $_best_2hw_dam = max($_best_2hw_dam,
-                                     TAEB::Spoilers::Combat->damage($check));
+                $_best_2hw_val = max($_best_2hw_val,
+                    $val_dpot * TAEB::Spoilers::Combat->damage($check));
             } else {
-                $_best_1hw_dam = max($_best_1hw_dam,
-                                     TAEB::Spoilers::Combat->damage($check));
+                $_best_1hw_val = max($_best_1hw_val,
+                    $val_dpot * TAEB::Spoilers::Combat->damage($check));
             }
         }
 
         if ($check->can('ac') && $self->item_subtype($check) eq 'shield') {
-            $_best_shield_ac = max($_best_shield_ac, $check->ac);
+            my $val = $val_ac * $check->ac;
+            $val -= $val_fd * ($base_sdam -
+                $fdcalc->spell_damage(TAEB->power, shield => $check));
+
+            $_best_shield_val = max($_best_shield_val, $val);
         }
     }
 }
@@ -1643,9 +1657,15 @@ sub use_benefit {
         # Putting on a shield costs us the difference between the best 2H
         # weapon and the best 1Her.
         if ($slot eq 'shield' && !defined($currently_in_slot)
-                && $_best_1hw_dam < $_best_2hw_dam) {
-            $value -= $resources->{'DamagePotential'}->
-                $anticost($_best_2hw_dam - $_best_1hw_dam);
+                && $_best_1hw_val < $_best_2hw_val) {
+            $value -= ($_best_2hw_val - $_best_1hw_val);
+        }
+
+        if (TAEB->spells->has_spells) {
+            my $fd = $resources->{'FightDamage'};
+
+            $value -= $fd->$anticost($fd->spell_damage(TAEB->power) -
+                $fd->spell_damage(TAEB->power, $slot => $item));
         }
 
         if (!$item->enchantment_known) {
@@ -1683,14 +1703,14 @@ sub use_benefit {
 
         if ($item->hands == 2
             && (!defined $current_weapon || $current_weapon->hands != 2)
-            && $_best_shield_ac > 0) {
-            $value -= $resources->{'AC'}->$anticost($_best_shield_ac);
+            && $_best_shield_val > 0) {
+            $value -= $_best_shield_val;
         }
 
         if ($item->hands == 1
             && (defined $current_weapon && $current_weapon->hands == 2)
-            && $_best_shield_ac > 0) {
-            $value += $resources->{'AC'}->$cost($_best_shield_ac);
+            && $_best_shield_val > 0) {
+            $value += $_best_shield_val;
         }
 
         $value += $resources->{'DamagePotential'}->$cost($damage)
