@@ -508,13 +508,14 @@ sub next_action {
     # is, then it almost certainly isn't an action (and even if it
     # were, we have to do something in that situation, not that it
     # should ever be allowed to happen in the first place).
-    if($action->isa('TAEB::AI::Planar::Plan::Tactical')) {
+    if($action && $action->isa('TAEB::AI::Planar::Plan::Tactical')) {
 	# It's a tactical plan.
 	$self->currently($currently . '-' .
 			 $action->shortname);
 	$self->current_tactical_plan($action);
 	my $inner_action = $action->try;
-	return $inner_action if defined $inner_action;
+	return $inner_action if defined $inner_action
+                             && !$inner_action->is_impossible;
 	# OK, we have an impossible tactic on our hands. The solution
 	# here is to repeat the entire plan-finding process without
 	# that tactic included. (This shouldn't happen very often, if
@@ -523,8 +524,17 @@ sub next_action {
 	$self->current_tactical_plan(undef);
 	$self->current_plan(undef);
 	TAEB->log->ai("Tactical plan ".($action->name).
-			       " failed to produce an action, marking it".
-			       " as impossible...", level => 'debug');
+                      " failed to produce an action, marking it".
+                      " as impossible...", level => 'debug');
+        $self->full_tactical_recalculation(1);
+	@_ = ($self);
+	goto &next_action; # tail-recursion
+    } elsif (!defined $action || $action->is_impossible) {
+        $self->current_plan->mark_impossible;
+        $self->current_plan(undef);
+	TAEB->log->ai("Plan ".($action->name).
+                      " failed to produce an action, marking it".
+                      " as impossible...", level => 'debug');
         $self->full_tactical_recalculation(1);
 	@_ = ($self);
 	goto &next_action; # tail-recursion
