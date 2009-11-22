@@ -51,7 +51,7 @@ sub aim_tile {
     if (!defined $nexttile) {
         # We might have completed the level; in that case, the next move
         # is upstairs.
-        my $variant = TAEB::Spoilers::Sokoban->recognise_sokoban_variant;
+        my $variant = TAEB::Spoilers::Sokoban->recognize_sokoban_variant;
         $variant =~ /soko[234]\-./
             and TAEB::Spoilers::Sokoban->remaining_pits == 0
             and !defined TAEB::Spoilers::Sokoban->first_unsolved_sokoban_level

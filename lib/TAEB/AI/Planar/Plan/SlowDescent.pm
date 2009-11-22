@@ -27,7 +27,7 @@ sub spread_desirability {
                 TAEB::Spoilers::Sokoban->number_of_solved_sokoban_levels .
                 " Sokoban levels solved.");
             TAEB->log->ai(
-                TAEB::Spoilers::Sokoban->recognise_sokoban_variant($level).
+                TAEB::Spoilers::Sokoban->recognize_sokoban_variant($level).
                 " has " . TAEB::Spoilers::Sokoban->remaining_pits($level) .
                 " pits left.");
             $seensoko = 1;
