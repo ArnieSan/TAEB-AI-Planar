@@ -42,6 +42,10 @@ sub calculate_extra_risk {
         for ($searchability*$searchability)*10 .. 400;
     return $risk;
 }
+# TODO: This is a hack that a) doesn't work, and b) makes this hard to
+# optimise. Probably it's best to leave this constant, and instead make
+# code that /generates/ Search put a penalty in the desire multiplier.
+# (Counting in terms of level_step_dangers in the risk is just ridiculous...)
 
 sub is_search_blocked {
     my $self = shift;
