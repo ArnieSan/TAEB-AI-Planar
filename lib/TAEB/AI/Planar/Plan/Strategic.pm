@@ -116,7 +116,7 @@ sub calculate_risk {
     my $target_tme = undef;
     if ($self->mobile_target && $tct != $aim) {
 	my @chain = $ai->calculate_tme_chain($aim);
-	@chain and $target_tme = $chain[0];
+	@chain and defined $chain[0] and $target_tme = $chain[0];
     } else {
 	$target_tme = $ai->tme_from_tile($aim);
     }
@@ -306,7 +306,7 @@ sub action {
     return $self->reach_action
 	if TAEB->current_tile == $self->aim_tile_cache;
     my @chain = $ai->calculate_tme_chain($self->aim_tile_cache);
-    return undef unless @chain;
+    return undef unless @chain and $chain[0];
     # We want the first step in the chain, unless we can travel.
     my $firsttactic = $chain[0]->{'tactic'};
     return $firsttactic

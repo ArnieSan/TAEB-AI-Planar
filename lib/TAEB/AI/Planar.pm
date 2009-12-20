@@ -1015,36 +1015,47 @@ sub add_threat {
 sub calculate_tme_chain {
     my $self  = shift;
     my $tile  = shift;
+    # We also allow iteration over a TME chain. If $each returns true, then
+    # the iteration stops; otherwise it continues. This can be undef.
+    my $each  = shift;
     my $tme   = $self->tme_from_tile($tile);
     my $map   = $self->tactics_map;
     my $tct   = $self->tactical_target_tile // TAEB->current_tile;
+    my $perform_sanity_checks = 0;
     my @chain = ();
-    return unless defined $tme;
+    # I don't care what Sartak says about return undef, I need to distinguish
+    # failure from success with an empty list.
+    return undef unless defined $tme;
     while(defined $tme && defined $tme->{'prevtile_level'}) {
 	unshift @chain, $tme;
+        return if $each and $each->($tme);
 	$tme=$map->{refaddr $tme->{'prevtile_level'}}->[$tme->{'prevtile_x'}]
 	         ->[$tme->{'prevtile_y'}];
-        refaddr $tme == refaddr $chain[$_] and
-            die "TME refers to chain element $_ (" . $tme->{'tactic'}->name .
-            " @ " . $tme->{'tile_x'} . ", " . $tme->{'tile_y'} . " (previous " .
-            $tme->{'prevtile_x'} . ", " . $tme->{'prevtile_y'} . "), " .
-            "aistep " . $tme->{'step'} . " which should be " .
-            $self->aistep . ")"
-            for 0..$#chain;
+        if ($perform_sanity_checks) {
+            refaddr $tme == refaddr $chain[$_] and
+                die "TME refers to chain element $_ (" . $tme->{'tactic'}->name .
+                " @ " . $tme->{'tile_x'} . ", " . $tme->{'tile_y'} . " (previous " .
+                $tme->{'prevtile_x'} . ", " . $tme->{'prevtile_y'} . "), " .
+                "aistep " . $tme->{'step'} . " which should be " .
+                $self->aistep . ")"
+                for 0..$#chain;
+        }
     }
-    if (defined $tme && (
-            $tme->{'tile_x'} != $tct->x ||
-            $tme->{'tile_y'} != $tct->y ||
-            $tme->{'tile_level'} != $tct->level)) {
-        die "TME chain (starting at (" . $tile->x . ", " . $tile->y
-            . ") on aistep " . $chain[$#chain]->{'step'} . ") "
-            . "ends with " . $tme->{'tactic'}->name . " on aistep "
-            . $tme->{'step'} . " at (" . $tme->{'tile_x'} . ", "
-            . $tme->{'tile_y'} . ", " . $tme->{'tile_level'} . ") but "
-            . "should end at (" . $tct->x . ", " . $tct->y . ", "
-            . $tct->level . ") on aistep " . $self->aistep;
-    } elsif (!defined $tme) {
-        die "TME chain with positive length ended in undef";
+    if ($perform_sanity_checks) {
+        if (defined $tme && (
+                $tme->{'tile_x'} != $tct->x ||
+                $tme->{'tile_y'} != $tct->y ||
+                $tme->{'tile_level'} != $tct->level)) {
+            die "TME chain (starting at (" . $tile->x . ", " . $tile->y
+                . ") on aistep " . $chain[$#chain]->{'step'} . ") "
+                . "ends with " . $tme->{'tactic'}->name . " on aistep "
+                . $tme->{'step'} . " at (" . $tme->{'tile_x'} . ", "
+                . $tme->{'tile_y'} . ", " . $tme->{'tile_level'} . ") but "
+                . "should end at (" . $tct->x . ", " . $tct->y . ", "
+                . $tct->level . ") on aistep " . $self->aistep;
+        } elsif (!defined $tme) {
+            die "TME chain with positive length ended in undef";
+        }
     }
     return @chain;
 }
@@ -1462,7 +1473,8 @@ sub drawing_modes {
                 or  $ai->tiles_on_path({}), return;
             my $endpoint = $ai->current_plan->aim_tile_cache;
             my @chain = $ai->calculate_tme_chain($endpoint);
-            $path{$_->{'tile_level'}->at($_->{'tile_x'},$_->{'tile_y'})} = 1
+            defined $_ and
+                $path{$_->{'tile_level'}->at($_->{'tile_x'},$_->{'tile_y'})} = 1
                 for @chain;
             $path{$endpoint} = 2;
             $ai->tiles_on_path(\%path);
