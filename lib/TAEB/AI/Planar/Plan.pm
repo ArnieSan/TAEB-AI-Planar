@@ -253,6 +253,24 @@ has description => (
     is  => 'rw',
 );
 
+# Can we afford to carry out this plan?
+sub affordable {
+    my $self = shift;
+    my $cando = 1;
+    for my $resourcename (keys %{$self->spending_plan}) {
+        my $resource = TAEB->ai->resources->{$resourcename};
+        my $spendamount = $self->spending_plan->{$resourcename};
+        # TODO: want_to_spend is a no-op anyway atm, but if it ever gets
+        # implemented this call will need to be conditionalised.
+        $resource->want_to_spend($spendamount);
+        $resource->amount < $spendamount and
+            $cando = 0, TAEB->log->ai(
+                $self->name . " failed because $resourcename was needed (" .
+                $resource->amount . " < " . $spendamount . ")");
+    }
+    return $cando;
+}
+
 # Trying this plan. If the attempt fails, mark the plan as impossible.
 # Some plans are too generic to correspond to any action, so always
 # fail, which is the default. This does not spread desirability,
@@ -263,20 +281,8 @@ sub try {
     my $action = $self->action;
     my $cando = 1;
     # We plan-fail now if we can't afford to carry out this plan.
-    # Either way, make the resources we're spending/would spend more
-    # valuable, to encourage us to get more of them and make this plan
-    # possible. The exception's if the plan was impossible anyway, in
-    # which case no point trying to gather the resources we need for it.
     if (defined $action) {
-	for my $resourcename (keys %{$self->spending_plan}) {
-	    my $resource = TAEB->ai->resources->{$resourcename};
-            my $spendamount = $self->spending_plan->{$resourcename};
-	    $resource->want_to_spend($spendamount);
-	    $resource->amount < $spendamount and
-		$cando = 0, TAEB->log->ai(
-                    $self->name . " failed because $resourcename was needed (" .
-                    $resource->amount . " < " . $spendamount . ")");
-	}
+        $cando = $self->affordable;
     }
     $cando and defined $action and return $action;
     return undef;
@@ -373,6 +379,69 @@ sub depends_risky {
     $on->reverse_dependencies->{$self} = $self;
     $ai->add_capped_desire($on, $self->desire_with_risk + 1e6 * log $ratio);
     $self->add_dependency_path($on);
+}
+
+# Is dependency even worth it? This optimisation works like this:
+# If there is a plan such that
+# - that plan has had its risk calculated already
+# - this plan routes through or to that plan's aim_tile
+# - this plan's desire, even with zero risk, is lower than that plan's
+#   desire plus its /extra/ risk (ignoring its normal risk)
+# then we know that this plan's total desire - risk will be lower than
+# the other plan's (our desire - non-extra risk is lower even before our
+# extra risk is taken into account). Although this is moderately expensive
+# to check and it's quite possibly faster simply to evaluate this plan
+# (depending on the plan), this is a useful function to call before
+# generating a vast number of similar dependencies (e.g. FallbackExplore,
+# or ExploreLevel for a different level) simply because it only needs to
+# be called once, rather than calculating separately for every tile on the
+# level. The argument here is either the aim_tile that the plan in question
+# will have (which /must/ be non-stop-early and non-mobile-target), or the
+# level in which the plan's aim-tile will definitely be on.
+# Note that this method cannot magically guess if a plan might be useful
+# for its dependencies even if it's useless for actual routing; rely on
+# the results of this only if you know some other way that the plan's
+# dependencies will be useless if the plan itself is (e.g. if the plan's
+# only dependencies are back on this plan, or on ExploreLevel and you're
+# checking an entire level).
+sub useful_to_depend {
+    my $self = shift;
+    my $ratio = shift; # same meaning as for depends
+    my $tile_or_level = shift;
+    my $ai = TAEB->ai;
+    my $aistep = $ai->aistep;
+    my $tct = $ai->tactical_target_tile;
+    my $tcl = $tct ? $tct->level : TAEB->current_level;
+    my $comparison_desire = $self->desire + 1e6 * log $ratio;
+    my $rvalue = 1;
+
+    if ($tile_or_level->isa("TAEB::World::Level")) {
+        if ($tile_or_level == $tcl) {
+            $tile_or_level = $tct // TAEB->current_tile;
+        } else {
+            $tile_or_level = $tile_or_level->exit_towards($tcl);
+        }
+    }
+    # If $tile_or_level is undef, we must be looking for some part of a
+    # disconnected dungeon graph that we can't reach. In such a case,
+    # plans there have no chance of doing anything useful, so it isn't
+    # worth depending on them.
+    return 0 unless defined $tile_or_level;
+
+    # Check TMEs to see if we go past the point at which another plan
+    # has been checked. Returning 1 breaks out of the loop, returning
+    # 0 continues it. If the TME is invalid and can't be refreshed into
+    # a valid TME, routing is impossible so we can report failure safely.
+    my @chain = $ai->calculate_tme_chain($tile_or_level, sub {
+        my $tme = shift;
+        # The interesting field here is 'checked_at_desire', compared
+        # to comparison_desire.
+        return 0 unless ($tme->{'c_a_d_valid_on_step'} // -1) == $aistep;
+        ($rvalue = 0), return 1
+            if $tme->{'checked_at_desire'} > $comparison_desire;
+    });
+    return 0 if @chain and !defined $chain[0];
+    return $rvalue;
 }
 
 # Spread the desirability of this plan onto other plans which might

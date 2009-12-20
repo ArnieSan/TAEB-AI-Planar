@@ -94,6 +94,16 @@ has make_safer_plans => (
     default => sub { {} },
 );
 
+# The desire minus extra risk (i.e. all the risk that isn't part of
+# this TME) at which a plan aiming at this TME was verified to be
+# possible.
+has checked_at_desire => (
+    isa => 'Maybe[Num]',
+);
+has c_a_d_valid_on_step => (
+    isa => 'Maybe[Int]'
+);
+
 # The step on which this TME was last updated.
 has step => (
     isa => 'Int',

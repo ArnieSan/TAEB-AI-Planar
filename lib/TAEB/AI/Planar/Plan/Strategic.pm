@@ -69,6 +69,7 @@ has extra_msp => (
 # Overriding calculate_extra_risk is the correct solution in that
 # case.
 sub calculate_extra_risk { 0 }
+
 # Risk common to all path-based plans.
 sub calculate_risk {
     my $self = shift;
@@ -76,6 +77,7 @@ sub calculate_risk {
     # risk it costs to get there.
     my $aim = $self->aim_tile;
     my $ai  = TAEB->ai;
+    my $aistep = $ai->aistep;
     my $tct = TAEB->current_tile;
     if (!defined($aim)) {
 	# We don't have anywhere to aim for, that's a plan
@@ -150,6 +152,7 @@ sub calculate_risk {
 	    TAEB->log->ai("Plan $planname has gone missing...");
             next;
 	}
+
 	## START DEBUG CODE
 # 	TAEB->log->ai("Spreading desire to msp $planname...");
 # 	my $thme = $ai->threat_map->{$target_tme->{tile_level}}->
@@ -186,18 +189,35 @@ sub calculate_risk {
         }
         $self->add_dependency_path($plan);
     }
-    if($aim == $tct) {
-	# A special case; if we don't need to do any pathfinding,
-	# the only risk is the extra risk of being on this square.
-	return $risk;
+    my $extra_risk = $risk;
+    if($aim != $tct) {
+        # Grab the total risk from the last TME in the chain.  If we're not
+        # dealing with the problem, penalize according to analysis_window.
+        $risk += $self->cost_from_tme($target_tme) *
+            ($self->in_make_safer_on_step == $ai->aistep
+             ? 1 : $ai->analysis_window);
     }
-    # Grab the total risk from the last TME in the chain.  If we're not
-    # dealing with the problem, penalize according to analysis_window.
-    $risk += $self->cost_from_tme($target_tme) *
-	($self->in_make_safer_on_step == $ai->aistep
-		? 1 : $ai->analysis_window);
+    # Mark the fact we've considered this in the TME. Only /extra/ risk
+    # is marked in the TME; the rest of the risk is already there. Our
+    # desire counterbalances that; it'll hopefully be rather better than
+    # desires for future plans, saving a lot of needless calculation
+    # (higher desires are calculated earlier). There's a rather irksome
+    # complication here, to do with impossibility; if a plan uses too
+    # many cheap resources, it'll fail, and we may want a plan that uses
+    # fewer but more expensive resources to take its place. Therefore,
+    # this check needs to check affordability taking routing risk into
+    # account, but checked_at_desire without it.
+    if($self->affordable) {
+        my $desire_minus_extra_risk = $self->desire - $extra_risk;
+        if (($target_tme->{'c_a_d_valid_on_step'} // -1) != $aistep ||
+            $target_tme->{'checked_at_desire'} < $desire_minus_extra_risk) {
+            $target_tme->{'c_a_d_valid_on_step'} = $aistep;
+            $target_tme->{'checked_at_desire'} = $desire_minus_extra_risk;
+        }
+    }
     return $risk;
 }
+
 # Used in calculate_extra_risk; this represents the cost of spending
 # the given number of turns on the aim_tile. This returns a low value
 # normally, because monsters will have more time to catch up to the
