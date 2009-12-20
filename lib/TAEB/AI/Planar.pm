@@ -9,6 +9,7 @@ use TAEB::Spoilers::Combat;
 use TAEB::Spoilers::Sokoban;
 use Storable;
 use Set::Object 'weak_set';
+use Tie::RefHash;
 use Module::Pluggable
     'search_path' => ['TAEB::AI::Planar::Resource'],
     'sub_name' => 'resource_names',
@@ -841,6 +842,7 @@ sub update_tactical_map {
         }
         $self->full_tactical_recalculation(1);
     }
+    $self->locate_chokepoints;
     # Dijkstra's algorithm is used to flood the level with pathfinding
     # data. The heap contains TacticsMapEntry elements.
     my $heap = $self->_tacticsheap;
@@ -875,6 +877,74 @@ sub update_tactical_map {
     $self->tactical_target_tile(TAEB->current_tile);
     $ftr and $self->last_tactical_recalculation(TAEB->turn);
     $self->full_tactical_recalculation(0);
+}
+
+# A map of chokepoints. The values are set as follows (using inherent
+# walkability, i.e. ignoring monsters and boulders):
+#  0 for an unroutable tile, or tile with no routable orthogonal neighbours
+#  1 for a routable tile with 1 routable orthogonal neighbour
+#  2 for a routable tile with 2 opposite routable orthogonal neighbours
+#       or where 2 adjacent are routable, with the tile between unroutable
+#  3 for a routable tile with 3 or more routable neighbours
+#       or where 2 adjacent are routable, with the tile between also routable
+# -2 for a tile that would be marked 2, but has a 3 as an orthogonal neighbour
+has chokepoint_map => (
+    is => 'rw',
+    isa => 'HashRef[Int]',
+    default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+
+# Find the locations of the chokepoints on the current level.
+sub locate_chokepoints {
+    my $self = shift;
+    my $iterator = $self->full_tactical_recalculation
+        ? "each_tile" : "each_changed_tile_and_neighbors";
+    my $tcl = TAEB->current_level;
+    my $curmap = $self->chokepoint_map;
+    $tcl->$iterator(sub {
+        my $tile = shift;
+        $curmap->{$tile} = 0, return
+            unless $self->tile_walkable_or_boulder($tile,0);
+        my $routable_neighbours = 0;
+        my $last_routable_neighbour = undef;
+        $tile->each_orthogonal(sub {
+            my $adj = shift;
+            if($self->tile_walkable_or_boulder($adj,0)) {
+                $routable_neighbours++;
+                if ($routable_neighbours == 2) {
+                    if ($adj->x != $last_routable_neighbour->x &&
+                        $adj->y != $last_routable_neighbour->y) {
+                        my $between = $tcl->at(
+                            $last_routable_neighbour->x+$adj->x-$tile->x,
+                            $last_routable_neighbour->y+$adj->y-$tile->y);
+                        if($self->tile_walkable_or_boulder($between,0)) {
+                            $routable_neighbours++;
+                        }
+                    }
+                }
+                $last_routable_neighbour = $adj;
+            }
+        });
+        $routable_neighbours = 3 if $routable_neighbours > 3;
+        $curmap->{$tile} = $routable_neighbours;
+#D#        TAEB->log->ai("Placing $routable_neighbours at " . ($tile->x) . ", " .
+#D#                      ($tile->y));
+    });
+    # Not quite perfect, but close enough, especially given that chokepoint
+    # locations are heuristic anyway. (We'd expand the iteration one more
+    # square to ensure that we caught all cases, but an adjacent 2 becoming
+    # a 3 is kind-of unlikely, and anyway we'll notice if we ever walk past
+    # the square or change level, or in 100 turns.)
+    $tcl->$iterator(sub {
+        my $tile = shift;
+        return unless $curmap->{$tile} == 2;
+        $tile->each_orthogonal(sub {
+            my $adj = shift;
+            my $val = $curmap->{$adj} // 0;
+            $val == 3 and $curmap->{$tile} = -2;
+        });
+    });
 }
 
 # Add a threat to the threat map.
@@ -1339,6 +1409,22 @@ sub drawing_modes {
             $status == -1 and $c = display_ro(color => COLOR_GREEN,   reverse => 1);
             $status == -2 and $c = display_ro(color => COLOR_CYAN,    reverse => 1);
             $status == -3 and $c = display_ro(color => COLOR_BLUE,    reverse => 1);
+            return $c;
+        },
+    },
+    chokepoint => {
+        description => 'Show chokepoint map',
+        color => sub {
+            my $tile = shift;
+            my $ai = TAEB->ai;
+            my $tcl = $tile->level;
+            my $cpvalue = $ai->chokepoint_map->{$tile} // 0;
+            my $c;
+            $cpvalue ==  0 and $c = display_ro(color => COLOR_GRAY);
+            $cpvalue ==  1 and $c = display_ro(color => COLOR_BLUE);
+            $cpvalue ==  2 and $c = display_ro(color => COLOR_CYAN);
+            $cpvalue ==  3 and $c = display_ro(color => COLOR_RED);
+            $cpvalue == -2 and $c = display_ro(color => COLOR_YELLOW);
             return $c;
         },
     },
