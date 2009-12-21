@@ -1325,9 +1325,9 @@ sub tme_from_tile {
     return $tme if defined $tme && $tme->{'step'} == $self->aistep;
     # If the TME's out of date but on our level, it means we had a
     # routing failure ('world' or 'level' algorithms), or that we need
-    # to look at the chokepoint maps ('chokepoint'
-    # algorithm). Likewise, if the TME is undef.
-    my $tct   = $self->tactical_target_tile // TAEB->current_tile;
+    # to look at the chokepoint maps ('chokepoint' algorithm).
+    # Likewise, if the TME is undef.
+    my $tct = $self->tactical_target_tile // TAEB->current_tile;
     if ($tile->level == $tct->level) {
         return undef unless $self->tactical_algorithm_this_turn eq 'chokepoint';
         # Get an updated interchokepoint TME. This works pretty much
@@ -1380,27 +1380,26 @@ sub tme_from_tile {
         my %newtme = %$besttme;
         $newtme{'risk'} = $bestrisksp;
         $newtme{'source'} = 'interchokepoint';
+        $newtme{'step'} = $self->aistep;
         bless \%newtme, "TAEB::AI::Planar::TacticsMapEntry";
         $map->[$tile->x]->[$tile->y] = \%newtme;
         return \%newtme;
     }
     return undef unless defined $tme; # we might not be able to route there
     # Get an updated interlevel TME. We recalculate the risk fields of
-    # the TME in question by looking at the single-level values, then
-    # set its step to mark the fact that it's been recalculated.
-    my %risk = ();
-    my $t = $tme;
-    while(defined $t && $t->{'tile_level'} != $tct->level) {
-        $risk{$_} += $t->{'level_risk'}->{$_}
-            for keys %{$t->{'level_risk'}};
-        $t = $self->tactics_map->{refaddr $t->{'prevlevel_level'}}->
-            [$t->{'prevlevel_x'}]->[$t->{'prevlevel_y'}];
-    }
-    return undef if $t->{'step'} != $self->aistep; # can't route to stairs
-    $risk{$_} += $t->{'risk'}->{$_} for keys %{$t->{'risk'}};
+    # the TME in question by getting the TME from the previous level, then
+    # adding the level-risk of this one. This is done recursively, so it
+    # will work over all levels, even if the tactics map is being calculated
+    # lazily.
+    my %risk = %{$tme->{'level_risk'}};
+    my $prevtme = $self->tme_from_tile(
+        $tme->{'prevlevel_level'}->at(
+            $tme->{'prevlevel_x'}, $tme->{'prevlevel_y'}));
+    return undef unless $prevtme && $prevtme->{'step'} == $self->aistep;
+    $risk{$_} += $prevtme->{'risk'}->{$_} for keys %{$prevtme->{'level_risk'}};
     $tme->{'risk'} = \%risk;
     $tme->{'step'} = $self->aistep;
-    $tme->{'make_safer_plans'} = $t->{'make_safer_plans'};
+    $tme->{'make_safer_plans'} = $prevtme->{'make_safer_plans'};
     $tme->{'source'} = 'interlevel';
     return $tme;
 }
