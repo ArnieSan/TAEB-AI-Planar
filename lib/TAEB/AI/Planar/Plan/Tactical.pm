@@ -189,6 +189,7 @@ sub add_possible_move {
 	tile_level       => $newlevel,
 	step             => $ai->aistep,
         make_safer_plans => $msp,
+        source           => $full_recalc ? 'world' : 'level',
     };
     # If doing a full recalculation, also update one-level information
     # in the TME. This ignores threats, as there are no threat maps

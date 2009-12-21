@@ -62,12 +62,12 @@ sub check_possibility_inner {
     my $tile = $self->tile;
     my $monster = $tile->monster;
     return unless defined $monster;
-    TAEB->log->ai("Considering to scare $monster off $tile");
+#    TAEB->log->ai("Considering to scare $monster off $tile");
     # It might be peaceful (shk, watchman...)
     $self->generate_plan($tme,"PardonMe",$tile);
     # We can't scare a monster that doesn't respect Elbereth.
     return unless $monster->respects_elbereth;
-    TAEB->log->ai("Monster $monster " . $monster->spoiler->name . " is scarable") if defined $monster->spoiler;
+#    TAEB->log->ai("Monster $monster " . $monster->spoiler->name . " is scarable") if defined $monster->spoiler;
     # We can't scare an immobile monster.
     my $spoiler = $monster->spoiler;
     my $timesaved = undef;
@@ -90,7 +90,7 @@ sub check_possibility_inner {
             = $timesaved;
     }
     return if TAEB->is_blind; # cannot engrave here
-    TAEB->log->ai("Scaring might work");
+#    TAEB->log->ai("Scaring might work");
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 

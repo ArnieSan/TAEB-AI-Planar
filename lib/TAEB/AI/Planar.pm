@@ -41,6 +41,7 @@ has analysis_window => (
 );
 
 # The overall plan, what we're aiming towards.
+
 has overall_plan => (
     isa     => 'Str',
     is      => 'rw',
@@ -265,13 +266,37 @@ has tactical_target_tile => (
     default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# Whether to taint TMEs as they're added. This is used by the
+# 'chokepoint' routing algorithm to know when it can stop routing.
+# (This is different from Perl taint, but works a similar way: tainted
+# TMEs can only create other tainted TMEs, and create a sort of
+# "barrier" of don't-bother-to-routability that can't be routed past
+# from this point. I suppose theoretically you could use Perl's actual
+# taint mechanism to implement this, but it would be more trouble than
+# it was worth, and anyway semantically wrong.)
+has taint_new_tmes => (
+    isa     => 'Bool',
+    is      => 'rw',
+    default => 0,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+has untainted_tme_count => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => 0,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 # Add a possible move to the tactics heap.
 sub add_possible_move {
     my $self = shift;
     my $tme = shift;
+    my $taint = $self->taint_new_tmes;
+    $tme->{'taint'} = $taint;
+    $self->untainted_tme_count($self->untainted_tme_count+1)
+        unless $taint;
     $self->_tacticsheap->insert($tme);
     # Debug line; comment this out when not in use.
-#    TAEB->log->ai("Adding potential tactic " .
+#    TAEB->log->ai("Adding potential tactic (taint = $taint) " .
 #			   $tme->{'tactic'}->name .
 #			   " with risk " . $tme->numerical_risk);
 }
@@ -294,20 +319,57 @@ has resources => (
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
-# The tactics map.
+# The main tactics map.
 # This contains all the pathfinding details for each level. Levels
 # other than the one we're on are cached (because nothing on them can
 # change); this can lead to inaccurate results sometimes when our
 # resource levels change (maybe we should invalidate the cache every
 # now and then?), but is necessary for decent performance. The current
-# level is recalculated every step.
-has tactics_map => (
+# level is recalculated every step when the tactical algorithm is
+# 'level'; when it's 'chokepoint', only the chokepoint areas that are
+# actually affected are updated.
+has main_tactics_map => (
     isa     =>
         'HashRef[ArrayRef[ArrayRef[TAEB::AI::Planar::TacticsMapEntry]]]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# Tactics maps relative to each chokepoint. This is a non-recursive
+# refhash; the keys are the chokepoint tiles.
+has chokepoint_tactics_map => (
+    isa     =>
+        'HashRef[HashRef[ArrayRef[ArrayRef[TAEB::AI::Planar::TacticsMapEntry]]]]',
+    is      => 'rw',
+    default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+# undef if looking at the main tactics map; defined if looking at a chokepoint.
+has current_chokepoint => (
+    isa     => 'Maybe[TAEB::World::Tile]',
+    is      => 'rw',
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+    trigger => sub {
+        my ($self, $newcp) = @_;
+        return unless defined $newcp;
+        # Unfortunately, these can't quite be autovivified.
+        if(!defined ($self->chokepoint_tactics_map->{$newcp})) {
+            TAEB->log->ai("Creating a new tactics map for " .
+                          $newcp->x . ", " . $newcp->y);
+            $self->chokepoint_tactics_map->{$newcp} = {};
+        }
+    },
+);
+sub fetch_tactics_map {
+    my $self = shift;
+    my $chokepoint = shift;
+    return $self->main_tactics_map unless $chokepoint;
+    return $self->chokepoint_tactics_map->{$chokepoint};
+}
+sub tactics_map {
+    my $self = shift;
+    return $self->fetch_tactics_map($self->current_chokepoint);
+}
 
 # The threat map.
 # This contains information about which squares on the current level
@@ -501,7 +563,8 @@ sub next_action {
 			   tv_interval($t1,$t0)."s.", level => 'debug');
     $self->lasttimeofday($t0);
     # Work out the currently string.
-    my $currently = $self->currently_modifiers .
+    my $currently = "{" . $self->tactical_algorithm_this_turn . "} " .
+        $self->currently_modifiers .
         join '|', map {$_->shortname} (@{$plan->dependency_path}, $plan);
 
     # We need to tell if the return value was an action or a tactical
@@ -814,23 +877,39 @@ has last_tactical_recalculation => (
     isa => 'Int',
     default => 0,
 );
+has tactical_algorithm_this_turn => (
+    is => 'rw',
+    isa => 'Str', # TODO: enum
+    default => 'level',
+);
 
 sub update_tactical_map {
     my $self = shift;
-    my $map = $self->tactics_map;
     my $curlevel = TAEB->current_level;
     my $curlevelra = refaddr($curlevel);
+    my $algorithm = $self->tactical_algorithm;
     my $ftr = 1;
+    my $tct = TAEB->current_tile;
+    my $aistep = $self->aistep;
     $ftr = $self->tactical_target_tile->level != $curlevel
         if $self->tactical_target_tile;
     # Do a tactical recalc every 100 turns, to prevent us getting stuck
     # if there's a monster next to the stairs.
-    if (TAEB->turn > $self->last_tactical_recalculation + 100) {
+    if (TAEB->turn > $self->last_tactical_recalculation + 100 ||
+        $algorithm eq 'world') {
         $ftr = 1;
+    }
+    if ($algorithm eq 'chokepoint' && $self->threat_count) {
+        # Threats cause far too much updating of the tactical map;
+        # we'd need to throw out the submaps pretty much every turn,
+        # which would defeat the entire point of using chokepoint in
+        # the first place. So use level instead when that happens.
+        $algorithm = 'level';
     }
     $self->full_tactical_recalculation and $ftr = 1;
     # If we've changed level, reset all the TMEs.
     if ($ftr) {
+        my $map = $self->tactics_map;
         TAEB->log->ai("Resetting all TMEs...");
         for my $levelgroup (@{TAEB->dungeon->levels}) {
             for my $level (@$levelgroup) {
@@ -842,41 +921,152 @@ sub update_tactical_map {
         }
         $self->full_tactical_recalculation(1);
     }
-    $self->locate_chokepoints;
-    # Dijkstra's algorithm is used to flood the level with pathfinding
-    # data. The heap contains TacticsMapEntry elements.
-    my $heap = $self->_tacticsheap;
-    $heap->clear;
-    # Initialise. We can path to the square we're on without issue and
-    # without risk (as it's a NOP).
-    $self->get_tactical_plan("Nop")->check_possibility;
-    while ($heap->count) {
-	my $tme = $heap->extract_top;
-        my $tx  = $tme->{'tile_x'};
-        my $ty  = $tme->{'tile_y'};
-        my $tl  = $tme->{'tile_level'};
-        my $row = $map->{refaddr $tl}->[$tx];
-	# If we're off the level, just ignore this TME, to avoid
-	# updating the entire dungeon every step, unless we just
-        # changed level.
-	# The whole dungeon /is/ updated when we change level.
-	next if refaddr($tl) != $curlevelra && !$ftr;
-	# If we've already found an easier way to get here, ignore
-	# this method of getting here.
-	next if exists $row->[$ty] && $row->[$ty]->{'step'} == $self->aistep;
-	# This is the best way to get here; add it to the tactical
-	# map, then spread possibility from it via the MoveFrom
-	# metaplan.
-	$row->[$ty] = $tme;
-	# The next line is debug code only, but I seem to use it far too
-	# often. Just comment it out, don't remove it.
-#	TAEB->log->ai("Locking in TME " . $tme->{'tactic'}->name . " at $tx, $ty");
-	$self->get_tactical_plan("MoveFrom", [$tl,$tx,$ty])->
-            check_possibility($tme);
-    }
     $self->tactical_target_tile(TAEB->current_tile);
+    $self->locate_chokepoints;
+    # We iterate from several different routing points.
+    # For 'level' and 'world' algorithms, we just use the current tile.
+    # For 'chokepoint', we iterate from every chokepoint that needs a
+    # route recalculation (or simply from every chokepoint during an ftr);
+    # but we taint at each other chokepoint. The effect is that the map is
+    # divided into regions based on which chokepoints could possibly be the
+    # best ones to route there from (i.e. we know all others are suboptimal);
+    # then we can update it just a bit at a time.
+    my @seed_locations = ();
+    if ($algorithm eq 'chokepoint') {
+        # TODO: Seed only at $tct and at chokepoints that might need
+        # recalculation, except during ftr. That's sort-of the whole
+        # point.
+        @seed_locations = $self->chokepoint_set->elements;
+    }
+    for my $seed ($tct, @seed_locations) {
+        # Dijkstra's algorithm is used to flood the level with pathfinding
+        # data. The heap contains TacticsMapEntry elements.
+        my $heap = $self->_tacticsheap;
+        $heap->clear;
+        # Initialise. We can path to the square we're on without issue and
+        # without risk (as it's a NOP).
+        $self->tactical_target_tile($seed);
+        $self->current_chokepoint($seed == $tct ? undef : $seed);
+        my $map = $self->tactics_map;
+        my $seedx = $seed->x;
+        my $seedy = $seed->y;
+        TAEB->log->ai("Doing routing from $seedx, $seedy on map $map");
+        $self->taint_new_tmes(0); # nops are never tainted
+        $self->get_tactical_plan("Nop")->check_possibility;
+        while ($self->untainted_tme_count) {
+            my $tme = $heap->extract_top;
+            my $tx  = $tme->{'tile_x'};
+            my $ty  = $tme->{'tile_y'};
+            my $tl  = $tme->{'tile_level'};
+            my $row = $map->{refaddr $tl}->[$tx];
+            my $taint = $tme->{'taint'};
+#            TAEB->log->ai("Current untainted count is ".
+#                          $self->untainted_tme_count);
+            $self->untainted_tme_count($self->untainted_tme_count-1)
+                unless $taint;
+            # If we're off the level, just ignore this TME, to avoid
+            # updating the entire dungeon every step, unless we just
+            # changed level.
+            # The whole dungeon /is/ updated when we change level.
+            next if refaddr($tl) != $curlevelra && !$ftr;
+            # If we've already found an easier way to get here, ignore
+            # this method of getting here.
+            next if exists $row->[$ty] && $row->[$ty]->{'step'} == $aistep;
+            # This is the best way to get here; add it to the tactical
+            # map, then spread possibility from it via the MoveFrom
+            # metaplan.
+            $row->[$ty] = $tme;
+            # The next line is debug code only, but I seem to use it far too
+            # often. Just comment it out, don't remove it.
+#	TAEB->log->ai("Locking in TME " . $tme->{'tactic'}->name . " at $tx, $ty");
+            # Maybe start tainting?
+            if ($algorithm eq 'chokepoint' && !$taint &&
+                ($seedx != $tx || $seedy != $ty) &&
+                (!$ftr || $seed != $tct) &&
+                (($self->chokepoint_map->{$tl->at($tx,$ty)} // 0) == -2 ||
+                 ($tx == $tct->x && $ty == $tct->y))) {
+                $taint = 1;
+                TAEB->log->ai("Starting to taint at ($tx, $ty) " .
+                              "[seed = ($seedx, $seedy)]");
+            }
+            $self->taint_new_tmes($taint);
+            $self->get_tactical_plan("MoveFrom", [$tl,$tx,$ty])->
+                check_possibility($tme);
+        }
+    }
+    $self->current_chokepoint(undef); # back to the main map
+    if ($algorithm eq 'chokepoint' && !$ftr) {
+        # Now we've done local routing, we need to route globally.
+        # We route just over the set of chokepoints, using Dijkstra;
+        # we need to calculate an up-to-date TME for each of them,
+        # relative to the current tile. (Note that this is pointless
+        # during ftr, as we already have a TME for each chokepoint as
+        # a side-effect of doing that.) We again use the tacticsheap,
+        # against adding TMEs; these are all current-tile-relative
+        # TMEs, calculated from the chokepoint TMEs.
+        TAEB->log->ai("Starting global chokepoint routing...");
+        my $heap = $self->_tacticsheap;
+        my $map = $self->tactics_map;
+        $heap->clear;
+        # This TME is definitely up to date; it's the Nop tile from
+        # the main routing.
+        $heap->insert($self->tme_from_tile($tct));
+        while ($heap->count) {
+            my $tme = $heap->extract_top;
+            my $tx  = $tme->{'tile_x'};
+            my $ty  = $tme->{'tile_y'};
+            my $tl  = $tme->{'tile_level'};
+            my $row = $map->{refaddr $tl}->[$tx];
+            my $is_tct = $tx == $tct->x && $ty == $tct->y;
+            # If this chokepoint's already been routed to faster, no
+            # point in recalculating. However, ignore tainted routes
+            # in this (i.e. routes to one chokepoint via another);
+            # this is because those extra links will just slow down
+            # routing given that an exactly equal link exists anyway.
+            next if exists $row->[$ty] && $row->[$ty]->{'step'} == $aistep
+                 && $row->[$ty]->{'source'} eq 'globalchokepoint';
+            # Place this TME on the main tactical map.
+            $row->[$ty] = $tme;
+            TAEB->log->ai("Adding a global routing TME at $tx, $ty");
+            # Find all chokepoints that this one routes to in an
+            # untainted fashion.
+            my $cpmap = $self->fetch_tactics_map(
+                $is_tct ? undef : $tl->at($tx,$ty))->{refaddr $tl};
+            for my $seed (@seed_locations) {
+                my $stme = $cpmap->[$seed->x]->[$seed->y];
+                next unless defined $stme;
+                if ($stme->{'step'} == $aistep && !$stme->{'taint'}) {
+                    # Calculate an updated main map TME for $stme
+                    # via $tme. The resulting TME is a cross between
+                    # the two originals.
+                    my %risk = %{$tme->{'risk'}};
+                    my $stmerisk = $stme->{'risk'};
+                    $risk{$_} += $stmerisk->{$_} for keys %$stmerisk;
+                    my $newtme = {
+                        prevtile_level   => $tl,
+                        prevtile_x       => $stme->{'prevtile_x'},
+                        prevtile_y       => $stme->{'prevtile_y'},
+                        risk             => \%risk, # total of the two
+                        tactic           => $stme->{'tactic'},
+                        tile_x           => $stme->{'tile_x'},
+                        tile_y           => $stme->{'tile_y'},
+                        tile_level       => $tl,
+                        step             => $aistep,
+                        source           => 'globalchokepoint',
+                        make_safer_plans => {}, # no threats allowed!
+                    };
+                    bless $newtme, "TAEB::AI::Planar::TacticsMapEntry";
+                    $heap->insert($newtme);
+                    TAEB->log->ai("Heaping a global routing TME at " .
+                        $stme->{'tile_x'} . ", " . $stme->{'tile_y'});
+                }
+            }
+        }
+    }
     $ftr and $self->last_tactical_recalculation(TAEB->turn);
     $self->full_tactical_recalculation(0);
+    $self->tactical_target_tile($tct);
+    $self->tactical_algorithm_this_turn($ftr ? 'world' : $algorithm);
 }
 
 # A map of chokepoints. The values are set as follows (using inherent
@@ -894,6 +1084,14 @@ has chokepoint_map => (
     default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# A set of chokepoints. This is indexing the map, and contains the same
+# information.
+has chokepoint_set => (
+    is => 'rw',
+    isa => 'Set::Object',
+    default => sub { weak_set(); },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 
 # Find the locations of the chokepoints on the current level.
 sub locate_chokepoints {
@@ -902,8 +1100,12 @@ sub locate_chokepoints {
         ? "each_tile" : "each_changed_tile_and_neighbors";
     my $tcl = TAEB->current_level;
     my $curmap = $self->chokepoint_map;
+    $iterator eq 'each_tile' and $self->chokepoint_set->clear;
     $tcl->$iterator(sub {
         my $tile = shift;
+        if (($curmap->{$tile} // 0) == -2) {
+            $self->chokepoint_set->delete($tile);
+        }
         $curmap->{$tile} = 0, return
             unless $self->tile_walkable_or_boulder($tile,0);
         my $routable_neighbours = 0;
@@ -942,7 +1144,8 @@ sub locate_chokepoints {
         $tile->each_orthogonal(sub {
             my $adj = shift;
             my $val = $curmap->{$adj} // 0;
-            $val == 3 and $curmap->{$tile} = -2;
+            $val == 3 and $curmap->{$tile} = -2
+                      and $self->chokepoint_set->insert($tile);
         });
     });
 }
@@ -1066,12 +1269,60 @@ sub tme_from_tile {
     my $map  = $self->tactics_map->{refaddr $tile->level};
     return undef unless defined $map; # it might be on an unpathed level
     my $tme  = $map->[$tile->x]->[$tile->y];
-    return undef unless defined $tme; # we might not be able to route there
-    return $tme if $tme->{'step'} == $self->aistep;
-    # If the TME's out of date but on our level, it means we had a routing
-    # failure.
+    # It doesn't matter whether this TME is tainted; it'll be accurate anyway.
+    return $tme if defined $tme && $tme->{'step'} == $self->aistep;
+    # If the TME's out of date but on our level, it means we had a
+    # routing failure ('world' or 'level' algorithms), or that we need
+    # to look at the chokepoint maps ('chokepoint'
+    # algorithm). Likewise, if the TME is undef.
     my $tct   = $self->tactical_target_tile // TAEB->current_tile;
-    return undef if $tile->level == $tct->level;
+    if ($tile->level == $tct->level) {
+        return undef unless $self->tactical_algorithm_this_turn eq 'chokepoint';
+        # Get an updated interchokepoint TME. This works pretty much
+        # the same way as an updated interlevel TME, except that we
+        # need to find the chokepoints that we can possibly use to
+        # reach this TME from. (If it's on the main map, even tainted,
+        # it'll have been returned already; so we know we have to go
+        # via a chokepoint.)
+        my $tpr = $self->resources;
+        my $aistep = $self->aistep;
+        my $bestcp = undef;
+        my $bestrisk = '+inf';
+        my $bestrisksp = undef;
+        my $besttme = undef;
+        for my $chokepoint ($self->chokepoint_set->elements) {
+            my $cpmap = $self->fetch_tactics_map($chokepoint);
+            next unless $cpmap; # is it a new chokepoint?
+            my $cptme = $cpmap->{refaddr $tile->level}->[$tile->x]->[$tile->y];
+            next unless defined $cptme;
+            next if $cptme->{'taint'};
+            next if $cptme->{'step'} != $aistep;
+            my $maintmeforcp = $map->[$chokepoint->x]->[$chokepoint->y];
+            next unless defined $maintmeforcp;
+            next if $maintmeforcp->{'step'} != $aistep;
+            my %calc_risk = %{$cptme->{'risk'}};
+            my $tmerisk = $maintmeforcp->{'risk'};
+            $calc_risk{$_} += $tmerisk->{$_} for keys %$tmerisk;
+            my $nrisk = 0;
+            $nrisk += $tpr->{$_}->cost($calc_risk{$_}) for keys %calc_risk;
+            if ($nrisk < $bestrisk) {
+                $bestrisk = $nrisk;
+                $bestrisksp = \%calc_risk;
+                $bestcp = $chokepoint;
+                $besttme = $cptme;
+            }
+        }
+        # The square might be unroutable.
+        return undef unless defined $bestcp;
+        # Looks like it is routable; generate a TME for it.
+        my %newtme = %$besttme;
+        $newtme{'risk'} = $bestrisksp;
+        $newtme{'source'} = 'interchokepoint';
+        bless \%newtme, "TAEB::AI::Planar::TacticsMapEntry";
+        $map->[$tile->x]->[$tile->y] = \%newtme;
+        return \%newtme;
+    }
+    return undef unless defined $tme; # we might not be able to route there
     # Get an updated interlevel TME. We recalculate the risk fields of
     # the TME in question by looking at the single-level values, then
     # set its step to mark the fact that it's been recalculated.
@@ -1088,6 +1339,7 @@ sub tme_from_tile {
     $tme->{'risk'} = \%risk;
     $tme->{'step'} = $self->aistep;
     $tme->{'make_safer_plans'} = $t->{'make_safer_plans'};
+    $tme->{'source'} = 'interlevel';
     return $tme;
 }
 
@@ -1115,12 +1367,20 @@ sub msg_check {
     my $what = shift;
     $self->last_floor_check(TAEB->step) if ($what//'') eq 'floor';
 }
+
+has threat_count => (
+    isa => 'Int',
+    is => 'rw',
+    default => 0,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 sub threat_check {
     my $self = shift;
     # Clear the threat map for the current level.
     my $current_level = TAEB->current_level;
     my $threat_map = $self->threat_map;
     my $tmcl = $threat_map->{$current_level} = [];
+    my $count = 0;
     # Mark squares on the threat map as impassable to monsters, if
     # necessary. Monster routing is much more primitive than player
     # routing, for efficiency reasons.
@@ -1227,6 +1487,7 @@ sub threat_check {
 	$self->add_threat($plan->name,$danger,$tile,$relspeed,$movetype,
                           $nomarktile,
                           $enemy->is_unicorn || $enemy->glyph eq 'I');
+        $count++;
 #	TAEB->log->ai("Adding monster threat ".$plan->name." $danger ".
 #            ($nomarktile // 'undef'));
 	$plan->validate();
@@ -1254,6 +1515,7 @@ sub threat_check {
             # first.)
 	    $threatmap->[$tile->x]->[$tile->y]->{"-1 Extricate"}
 	        = {Impossibility => 1};
+            $count++;
 	});
 	$self->get_plan("Extricate")->validate();
     }
@@ -1264,9 +1526,11 @@ sub threat_check {
 	    my $tile = shift;
 	    $threatmap->[$tile->x]->[$tile->y]->{"-1 Unengulf"}
 	        = {Impossibility => 1};
+            $count++;
 	});
 	$self->get_plan("Unengulf")->validate();
     }    
+    $self->threat_count($count);
 }
 
 # Naming a plan.
@@ -1844,7 +2108,22 @@ has _devnull_item_hack => (
     default => sub {
 	my $x = TAEB->config->get_ai_config->{'devnull_item_hack'} // 0;
 	TAEB->log->ai("Initializing _devnull_item_hack to $x");
-	TAEB->log->ai("%{ TAEB->config->get_ai_config }");
+	$x;
+    },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+
+# Currently existing algorithms:
+# 'level' : Update the current level every step;
+# 'world' : Update the entire dungeon every step;
+# 'chokepoint' : Update only between chokepoints when possible
+has tactical_algorithm => (
+    isa     => 'Str', # TODO: A proper type constraint
+    is      => 'rw',
+    default => sub {
+	my $x = TAEB->config->get_ai_config->{'tactical_algorithm'}
+            // 'chokepoint';
+	TAEB->log->ai("Initializing tactical_algorithm to $x");
 	$x;
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],

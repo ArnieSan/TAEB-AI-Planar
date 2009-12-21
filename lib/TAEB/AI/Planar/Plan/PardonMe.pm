@@ -55,14 +55,14 @@ sub check_possibility_inner {
     my $ai      = TAEB->ai;
     my $tile    = $self->tile;
     my $monster = $tile->monster;
-    TAEB->log->ai("Considering to ask $monster off $tile");
+#    TAEB->log->ai("Considering to ask $monster off $tile");
     return unless defined $monster;
     # We can only wait for peaceful monsters to move out of the way.
     return unless $ai->monster_is_peaceful($monster);
     # We can't wait for an immobile monster.
     my $spoiler = $tile->monster->spoiler;
     return if $spoiler and !($spoiler->speed);
-    TAEB->log->ai("It might work");
+#    TAEB->log->ai("It might work");
     $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
 }
 

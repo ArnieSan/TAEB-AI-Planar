@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::MoveTo;
 use TAEB::OO;
 use TAEB::Util 'refaddr';
+use Tie::RefHash;
 use TAEB::AI::Planar::TacticsMapEntry;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
@@ -132,14 +133,16 @@ sub check_possibility_inner {
     # procedure is still being used.
     my $cache = $ai->plan_caches->{'MoveTo'};
     if(!defined $cache) {
-	$cache = {};
+        my %newcache = ();
+        tie %newcache, 'Tie::RefHash';
+	$cache = \%newcache;
 	$ai->plan_caches->{'MoveTo'} = $cache;
     }
-    my $levelcache = $cache->{$l};
+    my $levelcache = $cache->{$ai->current_chokepoint // 'main'}->{$l};
     if(!defined $levelcache) {
 	$levelcache = [];
 	$levelcache->[$_] = [] for 0..79;
-	$cache->{$l} = $levelcache;
+	$cache->{$ai->current_chokepoint // 'main'}->{$l} = $levelcache;
     }
     if (($levelcache->[$x]->[$y] // -1) == $aistep) {
 	#D#TAEB->log->ai("We've already considered moving here");

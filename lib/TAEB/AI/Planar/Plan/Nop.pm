@@ -25,11 +25,12 @@ sub check_possibility {
 	risk            => {},
 	level_risk      => {},
 	tactic          => $self,
-	tile_x          => TAEB->x,
-	tile_y          => TAEB->y,
-	tile_level      => TAEB->current_level,
+	tile_x          => $ai->tactical_target_tile->x,
+	tile_y          => $ai->tactical_target_tile->y,
+	tile_level      => $ai->tactical_target_tile->level,
 	make_safer_plans=> {},
 	step            => $ai->aistep,
+        source          => 'nop',
     };
     bless $tme, "TAEB::AI::Planar::TacticsMapEntry";
     $ai->add_possible_move($tme);

@@ -109,6 +109,19 @@ has step => (
     isa => 'Int',
 );
 
+# Whether this TME is tainted. Taintedness is only used by certain
+# routing algorithms; its generic meaning is that tainted TMEs can
+# only generate other tainted TMEs, and when all TMEs are tainted
+# it stops routing.
+has taint =>
+    isa => 'Bool',
+);
+
+# Where this TME came from.
+has source =>
+    isa => 'Str',
+);
+
 =end comment
 
 =cut
