@@ -344,6 +344,23 @@ has chokepoint_tactics_map => (
     default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# Which chokepoints might be worth looking at for a particular tile. This
+# is an overestimate; that is, if a chokepoint might be worth looking at,
+# it must definitely be in the set; but it could be in the set even if it
+# isn't worth looking at.
+has nearby_chokepoints => (
+    isa     => 'HashRef[Set::Object]',
+    is      => 'rw',
+    default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+# When (i.e. which aistep) was the chokepoint in question last updated?
+has chokepoint_last_updated => (
+    isa     => 'HashRef[Int]',
+    is      => 'rw',
+    default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 # undef if looking at the main tactics map; defined if looking at a chokepoint.
 has current_chokepoint => (
     isa     => 'Maybe[TAEB::World::Tile]',
@@ -933,12 +950,27 @@ sub update_tactical_map {
     # then we can update it just a bit at a time.
     my @seed_locations = ();
     if ($algorithm eq 'chokepoint') {
-        # TODO: Seed only at $tct and at chokepoints that might need
-        # recalculation, except during ftr. That's sort-of the whole
-        # point.
-        @seed_locations = $self->chokepoint_set->elements;
+        # TODO: Remember a list of what needs updating on the chokepoint
+        # maps when using 'level' due to the existence of threats.
+        if ($ftr || $self->tactical_algorithm_this_turn ne 'chokepoint') {
+            @seed_locations = $self->chokepoint_set->elements;
+        } else {
+            # Look for new chokepoints, and chokepoints nearby updated
+            # squares and their neighbours. 
+            my $locset = weak_set();
+            $curlevel->each_changed_tile_and_neighbors(sub {
+                my $tile = shift;
+                my $cpset = $self->nearby_chokepoints->{$tile};
+                $cpset and $locset->insert($cpset->elements);
+                ($self->chokepoint_map->{$tile} // 0) == -2
+                    and $locset->insert($tile);
+            });
+            @seed_locations = $locset->elements;
+        }
     }
+    my $clu = $self->chokepoint_last_updated;
     for my $seed ($tct, @seed_locations) {
+        my $is_tct = $tct == $seed;
         # Dijkstra's algorithm is used to flood the level with pathfinding
         # data. The heap contains TacticsMapEntry elements.
         my $heap = $self->_tacticsheap;
@@ -946,10 +978,12 @@ sub update_tactical_map {
         # Initialise. We can path to the square we're on without issue and
         # without risk (as it's a NOP).
         $self->tactical_target_tile($seed);
-        $self->current_chokepoint($seed == $tct ? undef : $seed);
+        $self->current_chokepoint($is_tct ? undef : $seed);
+        $is_tct or $clu->{$seed} = $aistep;
         my $map = $self->tactics_map;
         my $seedx = $seed->x;
         my $seedy = $seed->y;
+        my $nearby = $self->nearby_chokepoints;
         TAEB->log->ai("Doing routing from $seedx, $seedy on map $map");
         $self->taint_new_tmes(0); # nops are never tainted
         $self->get_tactical_plan("Nop")->check_possibility;
@@ -980,14 +1014,24 @@ sub update_tactical_map {
             # often. Just comment it out, don't remove it.
 #	TAEB->log->ai("Locking in TME " . $tme->{'tactic'}->name . " at $tx, $ty");
             # Maybe start tainting?
-            if ($algorithm eq 'chokepoint' && !$taint &&
-                ($seedx != $tx || $seedy != $ty) &&
-                (!$ftr || $seed != $tct) &&
-                (($self->chokepoint_map->{$tl->at($tx,$ty)} // 0) == -2 ||
-                 ($tx == $tct->x && $ty == $tct->y))) {
-                $taint = 1;
-                TAEB->log->ai("Starting to taint at ($tx, $ty) " .
-                              "[seed = ($seedx, $seedy)]");
+            if ($algorithm eq 'chokepoint') {
+                my $tmetile = $tl->at($tx, $ty);
+                if (!$taint && ($seedx != $tx || $seedy != $ty) &&
+                    (!$ftr || $seed != $tct) &&
+                    (($self->chokepoint_map->{$tmetile} // 0) == -2 ||
+                     ($tx == $tct->x && $ty == $tct->y))) {
+                    $taint = 1;
+                    TAEB->log->ai("Starting to taint at ($tx, $ty) " .
+                                  "[seed = ($seedx, $seedy)]");
+                }
+                if (!$is_tct) {
+                    $nearby->{$tmetile} //= weak_set();
+                    if ($taint) {
+                        $nearby->{$tmetile}->delete($seed);
+                    } else {
+                        $nearby->{$tmetile}->insert($seed);
+                    }
+                }
             }
             $self->taint_new_tmes($taint);
             $self->get_tactical_plan("MoveFrom", [$tl,$tx,$ty])->
@@ -1007,6 +1051,7 @@ sub update_tactical_map {
         TAEB->log->ai("Starting global chokepoint routing...");
         my $heap = $self->_tacticsheap;
         my $map = $self->tactics_map;
+        @seed_locations = $self->chokepoint_set->elements;
         $heap->clear;
         # This TME is definitely up to date; it's the Nop tile from
         # the main routing.
@@ -1025,17 +1070,23 @@ sub update_tactical_map {
             # routing given that an exactly equal link exists anyway.
             next if exists $row->[$ty] && $row->[$ty]->{'step'} == $aistep
                  && $row->[$ty]->{'source'} eq 'globalchokepoint';
+            # The Nop on the starting position mustn't be overwritten. This
+            # setting of the source is a no-op for all other locations, but
+            # very important for $tct if it happens to be on a chokepoint.
+            $tme->{'source'} = 'globalchokepoint';
             # Place this TME on the main tactical map.
             $row->[$ty] = $tme;
             TAEB->log->ai("Adding a global routing TME at $tx, $ty");
             # Find all chokepoints that this one routes to in an
             # untainted fashion.
+            my $cptile = $tl->at($tx,$ty);
             my $cpmap = $self->fetch_tactics_map(
-                $is_tct ? undef : $tl->at($tx,$ty))->{refaddr $tl};
+                $is_tct ? undef : $cptile)->{refaddr $tl};
+            my $cpclu = $is_tct ? $aistep : $clu->{$cptile};
             for my $seed (@seed_locations) {
                 my $stme = $cpmap->[$seed->x]->[$seed->y];
                 next unless defined $stme;
-                if ($stme->{'step'} == $aistep && !$stme->{'taint'}) {
+                if ($stme->{'step'} >= $cpclu && !$stme->{'taint'}) {
                     # Calculate an updated main map TME for $stme
                     # via $tme. The resulting TME is a cross between
                     # the two originals.
@@ -1284,19 +1335,29 @@ sub tme_from_tile {
         # reach this TME from. (If it's on the main map, even tainted,
         # it'll have been returned already; so we know we have to go
         # via a chokepoint.)
+        my $cpset = $self->nearby_chokepoints->{$tile};
+        # If we've never managed to route to the tile from anywhere, it's
+        # obviously unroutable now.
+        return undef unless $cpset;
         my $tpr = $self->resources;
         my $aistep = $self->aistep;
         my $bestcp = undef;
         my $bestrisk = '+inf';
         my $bestrisksp = undef;
         my $besttme = undef;
-        for my $chokepoint ($self->chokepoint_set->elements) {
+        my $clu = $self->chokepoint_last_updated;
+        for my $chokepoint ($cpset->elements) {
+            # Use only chokepoint maps which have been updated at some point.
+            next unless $clu->{$chokepoint};
             my $cpmap = $self->fetch_tactics_map($chokepoint);
-            next unless $cpmap; # is it a new chokepoint?
             my $cptme = $cpmap->{refaddr $tile->level}->[$tile->x]->[$tile->y];
             next unless defined $cptme;
             next if $cptme->{'taint'};
-            next if $cptme->{'step'} != $aistep;
+            # This is the only case in which nearby_chokepoints won't have been
+            # updated already. We may as well do that now to speed up access on
+            # future turns.
+            $cpset->delete($chokepoint), next if $cptme->{'step'} <
+                $clu->{$chokepoint};
             my $maintmeforcp = $map->[$chokepoint->x]->[$chokepoint->y];
             next unless defined $maintmeforcp;
             next if $maintmeforcp->{'step'} != $aistep;
