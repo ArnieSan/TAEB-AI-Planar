@@ -1188,12 +1188,12 @@ sub locate_chokepoints {
             $self->chokepoint_set->delete($tile);
         }
         $curmap->{$tile} = 0, return
-            unless $self->tile_walkable_or_boulder($tile,0);
+            unless $self->tile_eventually_walkable($tile,0);
         my $routable_neighbours = 0;
         my $last_routable_neighbour = undef;
         $tile->each_orthogonal(sub {
             my $adj = shift;
-            if($self->tile_walkable_or_boulder($adj,0)) {
+            if($self->tile_eventually_walkable($adj,0)) {
                 $routable_neighbours++;
                 if ($routable_neighbours == 2) {
                     if ($adj->x != $last_routable_neighbour->x &&
@@ -1201,7 +1201,7 @@ sub locate_chokepoints {
                         my $between = $tcl->at(
                             $last_routable_neighbour->x+$adj->x-$tile->x,
                             $last_routable_neighbour->y+$adj->y-$tile->y);
-                        if($self->tile_walkable_or_boulder($between,0)) {
+                        if($self->tile_eventually_walkable($between,0)) {
                             $routable_neighbours++;
                         }
                     }
@@ -1943,6 +1943,12 @@ sub tile_walkable {
     my $self = shift;
     my $tile = shift;
     return 0 if $tile->has_boulder;
+    return $self->tile_walkable_or_boulder($tile, shift);
+}
+sub tile_eventually_walkable {
+    my $self = shift;
+    my $tile = shift;
+    return 1 if $tile->type eq 'closeddoor';
     return $self->tile_walkable_or_boulder($tile, shift);
 }
 sub tile_walkable_or_boulder {
