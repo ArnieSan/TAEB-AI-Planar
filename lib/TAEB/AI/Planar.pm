@@ -1822,6 +1822,28 @@ sub drawing_modes {
             return display_ro($color);
         },
     },
+    tactical_algorithms => {
+        description => 'Show tactical algorithms',
+        color => sub {
+            my $tile = shift;
+            my $ai = TAEB->ai;
+            my $tme = $ai->tme_from_tile($tile);
+            my $algo = $tme->{'source'} // '';
+            $algo eq 'globalchokepoint'
+                and return display_ro(color => COLOR_MAGENTA, reverse => 1);
+            $algo eq 'interchokepoint'
+                and return display_ro(color => COLOR_RED, reverse => 1);
+            $algo eq 'interlevel'
+                and return display_ro(color => COLOR_CYAN, reverse => 1);
+            $algo eq 'world'
+                and return display_ro(color => COLOR_BLUE, reverse => 1);
+            $algo eq 'level' || $algo eq 'nop' and return display_ro(
+                color => ($tme->{'taint'} ? COLOR_BROWN : COLOR_GREEN),
+                reverse => 1);
+            # unroutable
+            return display_ro(color => COLOR_GRAY, reverse => 1);
+        },
+    },
     planar_debug => {
         description => 'Planar-enhanced debug colors',
         onframe => sub {
