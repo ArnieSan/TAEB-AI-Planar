@@ -558,26 +558,27 @@ sub next_action {
 
     $t1 = [gettimeofday];
     TAEB->log->ai("Time taken for success measurement: ".
-			   tv_interval($t0,$t1)."s.", level => 'debug');
+                  tv_interval($t0,$t1)."s.", level => 'debug');
 
     # Place threats on the threat map.
     $self->threat_check;
     $t0 = [gettimeofday];
     TAEB->log->ai("Time taken for threat check: ".
-			   tv_interval($t1,$t0)."s.", level => 'debug');
+                  tv_interval($t1,$t0)."s.", level => 'debug');
 
     # Create the tactical map.
     $self->update_tactical_map;
     $t1 = [gettimeofday];
-    TAEB->log->ai("Time taken for tactical map: ".
-			   tv_interval($t0,$t1)."s.", level => 'debug');
+    TAEB->log->ai("Time taken for tactical map (algorithm = " .
+                  $self->tactical_algorithm_this_turn . "): " .
+                  tv_interval($t0,$t1)."s.", level => 'debug');
 
     # Find our plan for this step.
     my ($plan, $action) = $self->next_plan_action;
     $self->current_plan($plan);
     $t0 = [gettimeofday];
     TAEB->log->ai("Time taken for strategic planning: ".
-			   tv_interval($t1,$t0)."s.", level => 'debug');
+                  tv_interval($t1,$t0)."s.", level => 'debug');
     $self->lasttimeofday($t0);
     # Work out the currently string.
     my $currently = "{" . $self->tactical_algorithm_this_turn . "} " .
@@ -984,7 +985,7 @@ sub update_tactical_map {
         my $seedx = $seed->x;
         my $seedy = $seed->y;
         my $nearby = $self->nearby_chokepoints;
-        TAEB->log->ai("Doing routing from $seedx, $seedy on map $map");
+#        TAEB->log->ai("Doing routing from $seedx, $seedy on map $map");
         $self->taint_new_tmes(0); # nops are never tainted
         $self->get_tactical_plan("Nop")->check_possibility;
         while ($self->untainted_tme_count) {
@@ -1021,8 +1022,8 @@ sub update_tactical_map {
                     (($self->chokepoint_map->{$tmetile} // 0) == -2 ||
                      ($tx == $tct->x && $ty == $tct->y))) {
                     $taint = 1;
-                    TAEB->log->ai("Starting to taint at ($tx, $ty) " .
-                                  "[seed = ($seedx, $seedy)]");
+#                    TAEB->log->ai("Starting to taint at ($tx, $ty) " .
+#                                  "[seed = ($seedx, $seedy)]");
                 }
                 if (!$is_tct) {
                     $nearby->{$tmetile} //= Set::Object->new();
@@ -1076,7 +1077,7 @@ sub update_tactical_map {
             $tme->{'source'} = 'globalchokepoint';
             # Place this TME on the main tactical map.
             $row->[$ty] = $tme;
-            TAEB->log->ai("Adding a global routing TME at $tx, $ty");
+#            TAEB->log->ai("Adding a global routing TME at $tx, $ty");
             # Find all chokepoints that this one routes to in an
             # untainted fashion.
             my $cptile = $tl->at($tx,$ty);
@@ -1108,8 +1109,8 @@ sub update_tactical_map {
                     };
                     bless $newtme, "TAEB::AI::Planar::TacticsMapEntry";
                     $heap->insert($newtme);
-                    TAEB->log->ai("Heaping a global routing TME at " .
-                        $stme->{'tile_x'} . ", " . $stme->{'tile_y'});
+#                    TAEB->log->ai("Heaping a global routing TME at " .
+#                        $stme->{'tile_x'} . ", " . $stme->{'tile_y'});
                 }
             }
         }
