@@ -901,6 +901,21 @@ has tactical_algorithm_this_turn => (
     default => 'level',
 );
 
+# Tiles that have had their type changed since last time we did a
+# chokepoint routing.
+has chokepoint_examine_tiles => (
+    is => 'rw',
+    isa => 'Set::Object',
+    default => sub { return Set::Object->new(); },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+has need_full_chokepoint_recalc => (
+    is => 'rw',
+    isa => 'Bool',
+    default => 1,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+
 sub update_tactical_map {
     my $self = shift;
     my $curlevel = TAEB->current_level;
@@ -938,6 +953,7 @@ sub update_tactical_map {
             }
         }
         $self->full_tactical_recalculation(1);
+        $self->need_full_chokepoint_recalc(1);
     }
     $self->tactical_target_tile(TAEB->current_tile);
     $self->locate_chokepoints;
@@ -951,27 +967,38 @@ sub update_tactical_map {
     # then we can update it just a bit at a time.
     my @seed_locations = ();
     if ($algorithm eq 'chokepoint' && !$ftr) {
-        # TODO: Remember a list of what needs updating on the chokepoint
-        # maps when using 'level' due to the existence of threats.
-        if ($ftr || $self->tactical_algorithm_this_turn ne 'chokepoint') {
+        if ($self->need_full_chokepoint_recalc) {
             @seed_locations = $self->chokepoint_set->elements;
+            $self->need_full_chokepoint_recalc(0);
         } else {
             # Look for new chokepoints, and chokepoints nearby updated
-            # squares and their neighbours. 
+            # squares and their neighbours. This is likely to be
+            # degenerate half the time, which is exactly what we want;
+            # but even a drastic change in the level should be handled
+            # correctly. TODO: Remove chokepoints from nearby_chokepoints
+            # if they somehow cease to be chokepoints.
             my $locset = Set::Object->new();
-            $curlevel->each_changed_tile_and_neighbors(sub {
-                my $tile = shift;
-                my $cpset = $self->nearby_chokepoints->{$tile};
-                $cpset and $cpset->size and $locset->insert($cpset->elements);
-                ($self->chokepoint_map->{$tile} // 0) == -2
-                    and $locset->insert($tile);
-            });
+            my $cetset = $self->chokepoint_examine_tiles;
+            for my $ctile ($cetset->elements) {
+                next unless $cetset->includes($ctile);
+                $ctile->each_adjacent_inclusive(sub {
+                    my $tile = shift;
+                    my $cpset = $self->nearby_chokepoints->{$tile};
+                    $cpset and $cpset->size and $locset->insert($cpset->elements);
+                    ($self->chokepoint_map->{$tile} // 0) == -2
+                        and $locset->insert($tile);
+                    $cetset->delete($tile);
+                });
+            }
+
             @seed_locations = $locset->elements;
         }
+        $self->chokepoint_examine_tiles->clear;
     }
     my $clu = $self->chokepoint_last_updated;
-    for my $seed ($tct, @seed_locations) {
-        my $is_tct = $tct == $seed;
+    for my $iter ('tct', @seed_locations) {
+        my $is_tct = !blessed $iter;
+        my $seed = $is_tct ? $tct : $iter;
         # Dijkstra's algorithm is used to flood the level with pathfinding
         # data. The heap contains TacticsMapEntry elements.
         my $heap = $self->_tacticsheap;
@@ -1015,10 +1042,9 @@ sub update_tactical_map {
             # often. Just comment it out, don't remove it.
 #	TAEB->log->ai("Locking in TME " . $tme->{'tactic'}->name . " at $tx, $ty");
             # Maybe start tainting?
-            if ($algorithm eq 'chokepoint') {
+            if ($algorithm eq 'chokepoint' && !$ftr) {
                 my $tmetile = $tl->at($tx, $ty);
                 if (!$taint && ($seedx != $tx || $seedy != $ty) && 
-                    $seed != $tct &&
                     (($self->chokepoint_map->{$tmetile} // 0) == -2 ||
                      ($tx == $tct->x && $ty == $tct->y))) {
                     $taint = 1;
@@ -1082,7 +1108,10 @@ sub update_tactical_map {
             # untainted fashion.
             my $cptile = $tl->at($tx,$ty);
             my $cpmap = $self->fetch_tactics_map(
-                $is_tct ? undef : $cptile)->{refaddr $tl};
+                $is_tct ? undef : $cptile);
+            die "Chokepoint $cptile should have been mapped and wasn't"
+                unless $cpmap;
+            $cpmap = $cpmap->{refaddr $tl};
             my $cpclu = $is_tct ? $aistep : $clu->{$cptile};
             for my $seed (@seed_locations) {
                 my $stme = $cpmap->[$seed->x]->[$seed->y];
@@ -1196,8 +1225,13 @@ sub locate_chokepoints {
         $tile->each_orthogonal(sub {
             my $adj = shift;
             my $val = $curmap->{$adj} // 0;
-            $val == 3 and $curmap->{$tile} = -2
-                      and $self->chokepoint_set->insert($tile);
+            if ($val == 3) {
+                $curmap->{$tile} = -2;
+                $self->chokepoint_set->insert($tile);
+                # Is this a new chokepoint?
+                defined $self->fetch_tactics_map($tile)
+                    or $self->chokepoint_examine_tiles->insert($tile);
+            }
         });
     });
 }
@@ -1968,7 +2002,9 @@ subscribe tile_type_change => sub {
 	for $self->plans_by_obj($addr);
     # Also, invalidate the walkability cache for that tile.
     $self->walkability_cache->{$tile} = undef;
+    $self->chokepoint_examine_tiles->insert($tile);
 };
+
 
 sub safe_to_travel {
     my $self = shift;
