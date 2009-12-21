@@ -1283,8 +1283,8 @@ sub calculate_tme_chain {
     while(defined $tme && defined $tme->{'prevtile_level'}) {
 	unshift @chain, $tme;
         return if $each and $each->($tme);
-	$tme=$map->{refaddr $tme->{'prevtile_level'}}->[$tme->{'prevtile_x'}]
-	         ->[$tme->{'prevtile_y'}];
+	$tme=$self->tme_from_tile($tme->{'prevtile_level'}->
+                                  at($tme->{'prevtile_x'},$tme->{'prevtile_y'}));
         if ($perform_sanity_checks) {
             refaddr $tme == refaddr $chain[$_] and
                 die "TME refers to chain element $_ (" . $tme->{'tactic'}->name .
