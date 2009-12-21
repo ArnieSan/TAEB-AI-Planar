@@ -950,7 +950,7 @@ sub update_tactical_map {
     # best ones to route there from (i.e. we know all others are suboptimal);
     # then we can update it just a bit at a time.
     my @seed_locations = ();
-    if ($algorithm eq 'chokepoint') {
+    if ($algorithm eq 'chokepoint' && !$ftr) {
         # TODO: Remember a list of what needs updating on the chokepoint
         # maps when using 'level' due to the existence of threats.
         if ($ftr || $self->tactical_algorithm_this_turn ne 'chokepoint') {
@@ -1017,8 +1017,8 @@ sub update_tactical_map {
             # Maybe start tainting?
             if ($algorithm eq 'chokepoint') {
                 my $tmetile = $tl->at($tx, $ty);
-                if (!$taint && ($seedx != $tx || $seedy != $ty) &&
-                    (!$ftr || $seed != $tct) &&
+                if (!$taint && ($seedx != $tx || $seedy != $ty) && 
+                    $seed != $tct &&
                     (($self->chokepoint_map->{$tmetile} // 0) == -2 ||
                      ($tx == $tct->x && $ty == $tct->y))) {
                     $taint = 1;
