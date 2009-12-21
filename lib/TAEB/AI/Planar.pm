@@ -961,7 +961,7 @@ sub update_tactical_map {
             $curlevel->each_changed_tile_and_neighbors(sub {
                 my $tile = shift;
                 my $cpset = $self->nearby_chokepoints->{$tile};
-                $cpset and $locset->insert($cpset->elements);
+                $cpset and $cpset->size and $locset->insert($cpset->elements);
                 ($self->chokepoint_map->{$tile} // 0) == -2
                     and $locset->insert($tile);
             });
