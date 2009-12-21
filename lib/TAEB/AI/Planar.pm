@@ -8,7 +8,7 @@ use Time::HiRes qw/gettimeofday tv_interval/;
 use TAEB::Spoilers::Combat;
 use TAEB::Spoilers::Sokoban;
 use Storable;
-use Set::Object 'weak_set';
+use Set::Object qw/weak_set/;
 use Tie::RefHash;
 use Module::Pluggable
     'search_path' => ['TAEB::AI::Planar::Resource'],
@@ -957,7 +957,7 @@ sub update_tactical_map {
         } else {
             # Look for new chokepoints, and chokepoints nearby updated
             # squares and their neighbours. 
-            my $locset = weak_set();
+            my $locset = Set::Object->new();
             $curlevel->each_changed_tile_and_neighbors(sub {
                 my $tile = shift;
                 my $cpset = $self->nearby_chokepoints->{$tile};
@@ -1025,7 +1025,7 @@ sub update_tactical_map {
                                   "[seed = ($seedx, $seedy)]");
                 }
                 if (!$is_tct) {
-                    $nearby->{$tmetile} //= weak_set();
+                    $nearby->{$tmetile} //= Set::Object->new();
                     if ($taint) {
                         $nearby->{$tmetile}->delete($seed);
                     } else {
@@ -1140,7 +1140,7 @@ has chokepoint_map => (
 has chokepoint_set => (
     is => 'rw',
     isa => 'Set::Object',
-    default => sub { weak_set(); },
+    default => sub { Set::Object->new(); },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
 
