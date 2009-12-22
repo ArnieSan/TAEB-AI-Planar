@@ -693,7 +693,8 @@ sub next_plan_action {
         # Spawn only from valid plans; repeat until there's no change
         # in validity.
         $self->validitychanged(0);
-        $_->validity and $_->planspawn for values %{$self->plans};
+        $_->validity and $_->maybe_planspawn($aistep)
+            for values %{$self->plans};
     }
     # Delete any plans which are still invalid.
     for my $planname (keys %{$self->plans}) {

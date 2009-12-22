@@ -478,6 +478,20 @@ sub invalidate { }
 # Even non-metaplans may want to spawn sometimes.
 sub planspawn { }
 
+has last_planspawn => (
+    isa => 'Int',
+    is  => 'rw',
+    default => -1
+);
+sub maybe_planspawn {
+    my $self = shift;
+    my $aistep = shift;
+    if ($self->last_planspawn != $aistep) {
+        $self->planspawn;
+        $self->last_planspawn($aistep);
+    }
+}
+
 # Plans which this plan can refer to (by spawning, depending, or
 # otherwise generating).
 sub references { [] }
