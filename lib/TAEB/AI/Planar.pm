@@ -1011,19 +1011,17 @@ sub update_tactical_map {
                     $cetset->delete($tile);
                 });
             }
-            # Chokepoints we're standing on are routed a bit
-            # differently. So if we stepped off a chokepoint last
-            # turn, regenerate its personal tactical map.
-            # Note the assumption that last_ttt is on this level; we
-            # wouldn't get here if it wasn't.
-            ($self->chokepoint_map->{$last_ttt} // 0) == -2
-                and $locset->insert($last_ttt);
-
             @seed_locations = $locset->elements;
         }
         $self->chokepoint_examine_tiles->clear;
         $self->old_chokepoint_set->clear;
         $self->old_chokepoint_set->insert($self->chokepoint_set->elements);
+        # Chokepoints we're standing on are routed a bit differently.
+        # So if we're standing on a chokepoint, mark it for regeneration
+        # next chokepoint routing.
+        ($self->chokepoint_map->{TAEB->current_tile} // 0) == -2
+            and $self->chokepoint_examine_tiles->insert(
+                TAEB->current_tile);
     }
     my $clu = $self->chokepoint_last_updated;
     for my $iter ('tct', @seed_locations) {
