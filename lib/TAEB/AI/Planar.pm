@@ -2055,7 +2055,7 @@ subscribe impeded_by_levitation => sub {
     return;
 };
 
-subscribe tile_type_change => sub {
+sub handle_tile_changes {
     # This might have made plans with the tile in question as an
     # argument possible, when they weren't before. We look through
     # the plan index by object to find them.
@@ -2068,7 +2068,10 @@ subscribe tile_type_change => sub {
     # Also, invalidate the walkability cache for that tile.
     $self->walkability_cache->{$tile} = undef;
     $self->chokepoint_examine_tiles->insert($tile);
-};
+}
+
+subscribe tile_type_change => \&handle_tile_changes;
+subscribe boulder_change   => \&handle_tile_changes;
 
 
 sub safe_to_travel {
