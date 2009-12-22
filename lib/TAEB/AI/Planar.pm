@@ -680,12 +680,13 @@ sub next_plan_action {
 	# tiles on which we know there are items, but not what.
 	$tile->is_interesting and
             $self->get_plan("Investigate",$tile)->validate;
-        # Various interesting sorts of terrain get TerrainMeta.
-        $tile->type eq 'fountain'
-            || $tile->type eq 'stairsdown'
-            || $tile->type eq 'stairsup'
-            and $self->get_plan("TerrainMeta",$tile)->validate;
     });
+    # Various interesting sorts of terrain get TerrainMeta.
+    my $tbt = TAEB->current_level->tiles_by_type;
+    for my $tile (@{$tbt->{'fountain'}},
+                  @{$tbt->{'stairsup'}}, @{$tbt->{'stairsdown'}}) {
+        $self->get_plan("TerrainMeta",$tile)->validate;
+    }
     $self->get_plan("CharacterMeta")->validate;
     $self->validitychanged(1);
     while ($self->validitychanged) {
