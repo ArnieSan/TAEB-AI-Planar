@@ -925,9 +925,9 @@ sub update_tactical_map {
     my $algorithm = $self->tactical_algorithm;
     my $ftr = 1;
     my $tct = TAEB->current_tile;
+    my $last_ttt = $self->tactical_target_tile;
     my $aistep = $self->aistep;
-    $ftr = $self->tactical_target_tile->level != $curlevel
-        if $self->tactical_target_tile;
+    $ftr = $last_ttt->level != $curlevel if $last_ttt;
     # Do a tactical recalc every 100 turns, to prevent us getting stuck
     # if there's a monster next to the stairs.
     if (TAEB->turn > $self->last_tactical_recalculation + 100 ||
@@ -998,6 +998,13 @@ sub update_tactical_map {
                     $cetset->delete($tile);
                 });
             }
+            # Chokepoints we're standing on are routed a bit
+            # differently. So if we stepped off a chokepoint last
+            # turn, regenerate its personal tactical map.
+            # Note the assumption that last_ttt is on this level; we
+            # wouldn't get here if it wasn't.
+            ($self->chokepoint_map->{$last_ttt} // 0) == -2
+                and $locset->insert($last_ttt);
 
             @seed_locations = $locset->elements;
         }
