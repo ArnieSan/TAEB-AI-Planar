@@ -911,6 +911,14 @@ has chokepoint_examine_tiles => (
     default => sub { return Set::Object->new(); },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# Which chokepoints existed last time we did a chokepoint routing.
+has old_chokepoint_set => (
+    is => 'rw',
+    isa => 'Set::Object',
+    default => sub { return Set::Object->new(); },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+# Do we need/want to recalculate the whole chokepoint map?
 has need_full_chokepoint_recalc => (
     is => 'rw',
     isa => 'Bool',
@@ -983,11 +991,16 @@ sub update_tactical_map {
             # squares and their neighbours. This is likely to be
             # degenerate half the time, which is exactly what we want;
             # but even a drastic change in the level should be handled
-            # correctly. TODO: Remove chokepoints from nearby_chokepoints
-            # if they somehow cease to be chokepoints.
+            # correctly.
             my $locset = Set::Object->new();
             my $cetset = $self->chokepoint_examine_tiles;
-            for my $ctile ($cetset->elements) {
+            # Look for chokepoints that have recently been removed.
+            for my $oldcp ($self->old_chokepoint_set->elements) {
+                 ($self->chokepoint_map->{$oldcp} // 0) == -2
+                     and $self->old_chokepoint_set->delete($oldcp);
+            }
+            for my $ctile ($cetset->elements,
+                           $self->old_chokepoint_set->elements) {
                 next unless $cetset->includes($ctile);
                 $ctile->each_adjacent_inclusive(sub {
                     my $tile = shift;
@@ -1009,6 +1022,8 @@ sub update_tactical_map {
             @seed_locations = $locset->elements;
         }
         $self->chokepoint_examine_tiles->clear;
+        $self->old_chokepoint_set->clear;
+        $self->old_chokepoint_set->insert($self->chokepoint_set->elements);
     }
     my $clu = $self->chokepoint_last_updated;
     for my $iter ('tct', @seed_locations) {
