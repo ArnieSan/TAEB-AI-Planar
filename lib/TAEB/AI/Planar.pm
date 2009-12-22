@@ -941,6 +941,12 @@ sub update_tactical_map {
         # the first place. So use level instead when that happens.
         $algorithm = 'level';
     }
+    if ($algorithm eq 'chokepoint' && $curlevel->monster_count) {
+        # Even non-threatening monsters violate the assumptions that
+        # chokepoint makes (that is, that tiles won't change routing
+        # properties unless they change type).
+        $algorithm = 'level';
+    }
     $self->full_tactical_recalculation and $ftr = 1;
     # If we've changed level, reset all the TMEs.
     if ($ftr) {
