@@ -59,6 +59,25 @@ sub appropriate_success_count {
     return TAEB->ai->tactical_success_count;
 }
 
+# Marking tactical plans impossible as a method of abandoning is a Bad
+# Idea; there are several issues with it (it encourages suboptimal
+# methods of doing whatever was a bad idea in the first place, it
+# breaks routing assumptions, you need to invalidate caches everywhere
+# when it times out). Instead, tactical plans are marked as 'toxic';
+# routing's still done using them, but strategic plans that would
+# involve routing through them are rejected. Typically, toxicity lasts
+# for 5 tactical successes.
+has toxic_until => (
+    isa => 'Int',
+    is  => 'rw',
+    default => -1,
+);
+# Override abandon in Plan.
+sub abandon {
+    my $self = shift;
+    $self->toxic_until(TAEB->ai->tactical_success_count + 5);
+}
+
 # Some tactical plans can be replaced by travelling instead, to save
 # time. This should be set to 1 if a travel to the destination of the
 # TME would have much the same effect as doing it via actions.

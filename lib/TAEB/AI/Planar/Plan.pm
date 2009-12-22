@@ -60,8 +60,8 @@ sub difficulty {
     return $difficulty;
 }
 
-# Most plans are abandoned by marking them impossible, without increasing
-# d_difficulty above 5.
+# Most plans are abandoned by marking them impossible, without
+# increasing d_difficulty above 5.
 sub abandon {
     my $self = shift;
     $self->mark_impossible(5);
@@ -280,11 +280,12 @@ sub try {
     my $self = shift;
     my $action = $self->action;
     my $cando = 1;
+    return undef unless defined $action;
     # We plan-fail now if we can't afford to carry out this plan.
     if (defined $action) {
         $cando = $self->affordable;
     }
-    $cando and defined $action and return $action;
+    $cando and return $action;
     return undef;
 }
 

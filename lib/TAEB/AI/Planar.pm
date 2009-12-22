@@ -1325,6 +1325,7 @@ sub calculate_tme_chain {
     my $tme   = $self->tme_from_tile($tile);
     my $map   = $self->tactics_map;
     my $tct   = $self->tactical_target_tile // TAEB->current_tile;
+    my $tsc   = $self->tactical_success_count;
     my $perform_sanity_checks = 1;
     my @chain = ();
     # I don't care what Sartak says about return undef, I need to distinguish
@@ -1332,7 +1333,10 @@ sub calculate_tme_chain {
     return undef unless defined $tme;
     while(defined $tme && defined $tme->{'prevtile_level'}) {
 	unshift @chain, $tme;
-        return if $each and $each->($tme);
+        return @chain if $each and $each->($tme);
+        # If a tactic along the line is marked toxic, fail to generate a
+        # chain (and do something else instead).
+        return undef if $tme->{'tactic'}->toxic_until > $tsc;
 	$tme=$self->tme_from_tile($tme->{'prevtile_level'}->
                                   at($tme->{'prevtile_x'},$tme->{'prevtile_y'}));
         if ($perform_sanity_checks) {

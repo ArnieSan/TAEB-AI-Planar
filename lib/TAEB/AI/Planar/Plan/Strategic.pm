@@ -326,6 +326,7 @@ sub action {
     return $self->reach_action
 	if TAEB->current_tile == $self->aim_tile_cache;
     my @chain = $ai->calculate_tme_chain($self->aim_tile_cache);
+    # Fail here if the plan involves toxic tactics.
     return undef unless @chain and $chain[0];
     # We want the first step in the chain, unless we can travel.
     my $firsttactic = $chain[0]->{'tactic'};
