@@ -1073,8 +1073,7 @@ sub update_tactical_map {
             if ($algorithm eq 'chokepoint' && !$ftr) {
                 my $tmetile = $tl->at($tx, $ty);
                 if (!$taint && ($seedx != $tx || $seedy != $ty) && 
-                    (($self->chokepoint_map->{$tmetile} // 0) == -2 ||
-                     ($tx == $tct->x && $ty == $tct->y))) {
+                    ($self->chokepoint_map->{$tmetile} // 0) == -2) {
                     $taint = 1;
 #                    TAEB->log->ai("Starting to taint at ($tx, $ty) " .
 #                                  "[seed = ($seedx, $seedy)]");
