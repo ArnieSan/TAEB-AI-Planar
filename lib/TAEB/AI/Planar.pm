@@ -1776,6 +1776,8 @@ sub drawing_modes {
             $status ==  1 and $c = display_ro(color => COLOR_YELLOW,  reverse => 1);
             $status ==  2 and $c = display_ro(color => COLOR_RED,     reverse => 1);
             $status ==  3 and $c = display_ro(color => COLOR_MAGENTA, reverse => 1);
+            $status ==  4 and $c = display_ro(color => COLOR_YELLOW,  reverse => 1);
+            $status ==  5 and $c = display_ro(color => COLOR_RED,     reverse => 1);
             $status == -1 and $c = display_ro(color => COLOR_GREEN,   reverse => 1);
             $status == -2 and $c = display_ro(color => COLOR_CYAN,    reverse => 1);
             $status == -3 and $c = display_ro(color => COLOR_BLUE,    reverse => 1);
