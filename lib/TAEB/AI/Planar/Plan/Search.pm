@@ -38,8 +38,9 @@ sub calculate_extra_risk {
     my $searchability = $self->tile_searchability;
 #    TAEB->log->ai("Searchability of ".$self->tile." is $searchability");
     my $risk = $self->aim_tile_turns(20);
-    $risk += $self->level_step_danger
-        for ($searchability*$searchability)*10 .. 400;
+    # The actual value of level_step_danger, for efficiency. This is,
+    # of course, still a hack.
+    $risk += $self->cost("Hitpoints", 4 - ($searchability*$searchability)/10);
     return $risk;
 }
 # TODO: This is a hack that a) doesn't work, and b) makes this hard to
