@@ -1310,7 +1310,7 @@ sub calculate_tme_chain {
     my $tme   = $self->tme_from_tile($tile);
     my $map   = $self->tactics_map;
     my $tct   = $self->tactical_target_tile // TAEB->current_tile;
-    my $perform_sanity_checks = 0;
+    my $perform_sanity_checks = 1;
     my @chain = ();
     # I don't care what Sartak says about return undef, I need to distinguish
     # failure from success with an empty list.
@@ -1322,7 +1322,8 @@ sub calculate_tme_chain {
                                   at($tme->{'prevtile_x'},$tme->{'prevtile_y'}));
         if ($perform_sanity_checks) {
             refaddr $tme == refaddr $chain[$_] and
-                die "TME refers to chain element $_ (" . $tme->{'tactic'}->name .
+                die "TME (generated via " . $tme->{'source'} .
+                ") refers to chain element $_ (" . $tme->{'tactic'}->name .
                 " @ " . $tme->{'tile_x'} . ", " . $tme->{'tile_y'} . " (previous " .
                 $tme->{'prevtile_x'} . ", " . $tme->{'prevtile_y'} . "), " .
                 "aistep " . $tme->{'step'} . " which should be " .
