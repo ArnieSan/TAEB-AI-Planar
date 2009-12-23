@@ -41,7 +41,6 @@ has analysis_window => (
 );
 
 # The overall plan, what we're aiming towards.
-
 has overall_plan => (
     isa     => 'Str',
     is      => 'rw',
@@ -51,9 +50,39 @@ has overall_plan => (
     trigger => sub { shift->loadplans },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 );
+# Turn on expensive sanity checks?
+has sanity_checks => (
+    isa     => 'Bool',
+    is      => 'rw',
+    default => sub {
+	TAEB->config->get_ai_config->{'sanity_checks'} // 1;
+    },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+# Never use travel?
+has veto_travel => (
+    isa     => 'Bool',
+    is      => 'rw',
+    default => sub {
+	TAEB->config->get_ai_config->{'veto_travel'} // 0;
+    },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
+# Which tactical algorithm to use.
+# Currently existing algorithms:
+# 'level' : Update the current level every step;
+# 'world' : Update the entire dungeon every step;
+# 'chokepoint' : Update only between chokepoints when possible
+has tactical_algorithm => (
+    isa     => 'Str', # TODO: A proper type constraint
+    is      => 'rw',
+    default => sub {
+	TAEB->config->get_ai_config->{'tactical_algorithm'}
+            // 'chokepoint';
+    },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+);
 
-# Should we ever use travel?
-use constant veto_travel => 0;
 
 # A trick to avoid having to loop over things invalidating them;
 # instead, store an aistep value, and they're invalidated if it
@@ -1338,7 +1367,7 @@ sub calculate_tme_chain {
     my $map   = $self->tactics_map;
     my $tct   = $self->tactical_target_tile // TAEB->current_tile;
     my $tsc   = $self->tactical_success_count;
-    my $perform_sanity_checks = 1;
+    my $perform_sanity_checks = $self->sanity_checks;
     my @chain = ();
     # I don't care what Sartak says about return undef, I need to distinguish
     # failure from success with an empty list.
@@ -2270,22 +2299,6 @@ has _devnull_item_hack => (
     default => sub {
 	my $x = TAEB->config->get_ai_config->{'devnull_item_hack'} // 0;
 	TAEB->log->ai("Initializing _devnull_item_hack to $x");
-	$x;
-    },
-    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
-
-# Currently existing algorithms:
-# 'level' : Update the current level every step;
-# 'world' : Update the entire dungeon every step;
-# 'chokepoint' : Update only between chokepoints when possible
-has tactical_algorithm => (
-    isa     => 'Str', # TODO: A proper type constraint
-    is      => 'rw',
-    default => sub {
-	my $x = TAEB->config->get_ai_config->{'tactical_algorithm'}
-            // 'chokepoint';
-	TAEB->log->ai("Initializing tactical_algorithm to $x");
 	$x;
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
