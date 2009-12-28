@@ -984,6 +984,14 @@ sub update_tactical_map {
         # properties unless they change type).
         $algorithm = 'level';
     }
+    if ($algorithm eq 'chokepoint' &&
+        TAEB->inventory->find(['pick-axe', 'dwarvish mattock'])) {
+        # No mathematical reason not to use chokepoint here; it's just
+        # that with that amount of routing involved, level is just faster.
+        # TODO: I'm pretty sure there's an algo faster than either if
+        # tunneling is allowed...
+        $algorithm = 'level';
+    }
     $self->full_tactical_recalculation and $ftr = 1;
     # If we've changed level, reset all the TMEs.
     if ($ftr) {
