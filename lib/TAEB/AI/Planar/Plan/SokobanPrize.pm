@@ -26,6 +26,7 @@ sub spread_desirability {
                     || ($item->isa("NetHack::Item::Tool")
                      && $item->appearance eq 'bag');
             my $tile = $self->item_tile($item);
+            next unless $tile; # we might not be looking at that level
             next unless TAEB::Spoilers::Sokoban->
                             is_sokoban_reward_tile($tile);
             $self->depends(1,'PickupItem',$item);
