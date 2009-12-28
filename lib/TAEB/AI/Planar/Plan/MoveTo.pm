@@ -4,6 +4,7 @@ use TAEB::OO;
 use TAEB::Util 'refaddr';
 use Tie::RefHash;
 use TAEB::AI::Planar::TacticsMapEntry;
+use TAEB::Spoilers::Sokoban;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # A metaplan. This one encompasses all methods of moving from a
@@ -61,6 +62,7 @@ sub check_possibility_inner {
     my $tmey = $tme->{'tile_y'};
     my $tmel = $tme->{'tile_level'};
     my $type = $tile->type;
+    my $sokoban = defined $l->branch && $l->branch eq 'sokoban';
 
     # Things which might care about which direction we approach the tile from.
 
@@ -80,18 +82,17 @@ sub check_possibility_inner {
     # on a safe square atm. We also may want to push a boulder which is
     # in a safe location, but only if specifically aiming there; so we use
     # PushBoulderRisky instead.
-    if($tile->has_boulder
-       && (!defined $l->branch || $l->branch ne 'sokoban')) {{
+    if($tile->has_boulder && !$sokoban) {{
         #D# TAEB->log->ai("Considering to push boulder");
         my $dx = $x - $tmex;
         my $dy = $y - $tmey;
         last if $dx && $dy; # don't push boulders diagonally
-	my $beyond = $l->at_safe($x+$dx,$y+$dy);
-        my $plantype = (safe_boulder_square($tile, $ai) ?
-                        "PushBoulderRisky" : "PushBoulder");
-	if(defined $beyond and $beyond->type eq 'unexplored') {
-	    $self->generate_plan($tme,$plantype,$tile);
-	}
+   	    my $beyond = $l->at_safe($x+$dx,$y+$dy);
+            my $plantype = (safe_boulder_square($tile, $ai) ?
+                            "PushBoulderRisky" : "PushBoulder");
+        if(defined $beyond and $beyond->type eq 'unexplored') {
+            $self->generate_plan($tme,$plantype,$tile);
+        }
         # If we can push the boulder to a square with two adjacent
         # neighbours, we can route round it from there. (Except in
         # Sokoban, but we shouldn't blindly push boulders there
@@ -108,10 +109,10 @@ sub check_possibility_inner {
                !safe_boulder_square($beyond, $ai, $tile)) {
             $beyond = $l->at_safe($beyond->x+$dx,$beyond->y+$dy);
         }
-	if(defined $beyond && !$beyond->has_boulder &&
-            !$beyond->is_inherently_unwalkable(1,1)) {
-	    $self->generate_plan($tme,$plantype,$tile);
-	}        
+        if(defined $beyond && !$beyond->has_boulder &&
+          !$beyond->is_inherently_unwalkable(1,1)) {
+        $self->generate_plan($tme,$plantype,$tile);
+        }        
     }}
 
     # For things that don't care about which direction we approach the tile
@@ -175,6 +176,11 @@ sub check_possibility_inner {
     if($type eq 'trap') {
 	$self->generate_plan($tme,"ThroughTrap",$tile);
     }
+    # In Sokoban, mimics are pathable by waking and killing them.
+    if($sokoban && $tile->has_boulder &&
+       !TAEB::Spoilers::Sokoban->probably_has_genuine_boulder($tile)) {
+        $self->generate_plan($tme,"ViaMimic",$tile);
+    }
     # we want to path through unexplored because much of it will be rock
     # but if we're blind, we have no way of knowing when to stop digging (yet?)
     if($type eq 'rock' || ($type eq 'unexplored' && !$into_blindness) ||
@@ -186,7 +192,7 @@ sub check_possibility_inner {
 
 use constant references => ['OpenDoor','KickDownDoor','Walk','PushBoulder',
                             'PushBoulderRisky','LightTheWay','ThroughTrap',
-			    'Tunnel'];
+                            'Tunnel','ViaMimic'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
