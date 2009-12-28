@@ -19,6 +19,10 @@ sub aim_tile {
     my $self = shift;
     return undef unless defined $self->item;
     return undef if !$self->item->can_drop;
+    # Don't drop items on the Sokoban prize tile.
+    my $plan = TAEB->ai->get_plan("SokobanPrize");
+    return undef if $plan->prizetile
+                 && $plan->prizetile == TAEB->current_tile;
     return TAEB->current_tile;
 }
 

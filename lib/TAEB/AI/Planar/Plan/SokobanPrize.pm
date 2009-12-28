@@ -15,7 +15,6 @@ has prizetile => (
 sub spread_desirability {
     my $self = shift;
     my $level = TAEB->current_level;
-    $self->prizetile(undef);
     if(TAEB::Spoilers::Sokoban->number_of_solved_sokoban_levels == 4) {
         my $sokotop = TAEB->dungeon->deepest_level(sub {
             my $level = shift;
