@@ -21,6 +21,7 @@ sub spread_desirability {
             my $level = shift;
             return $level->known_branch && $level->branch eq 'sokoban';
         });
+        # Pick up the item, if we can see it.
         for my $item ($sokotop->items) {
             next unless $item->isa("NetHack::Item::Amulet")
                     || ($item->isa("NetHack::Item::Tool")
@@ -31,11 +32,19 @@ sub spread_desirability {
             $self->depends(1,'PickupItem',$item);
             $self->prizetile($tile) if $tile == TAEB->current_tile;
         }
+        # Look for the item, if we can't.
+        for my $door ($sokotop->tiles_of(qw/opendoor closeddoor/)) {
+            my $tile = $door->at_direction('h');
+            next if $tile->stepped_on;
+            next unless TAEB::Spoilers::Sokoban->
+                            is_sokoban_reward_tile($tile);
+            $self->depends(1,'LookAt',$tile);
+        }
     }
 }
 
 use constant description => 'Getting the prize at the top of Sokoban';
-use constant references => ['PickupItem'];
+use constant references => ['PickupItem','LookAt'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
