@@ -136,6 +136,54 @@ has (in_make_safer_on_step => (
     default => -1,
 ));
 
+# As a major optimisation, we can skip tactical rerouting if nothing
+# relevant has changed in the tactical routing since the turn before.
+# The way that this is done is to use a deliberately safe
+# underestimate and and then to add a bit of extra risk onto the plan
+# to allow for the actual danger of the TME.
+has (tentative_tme_tile => (
+    isa     => 'Maybe[TAEB::World:Tile]',
+    is      => 'rw',
+    default => undef,
+));
+has (tentative_tme_tile_valid_on_step => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => -1,
+));
+
+# Marks a plan as having been involved in a tentative TME calculation,
+# and returns the appropriate TME. This should only be called if the
+# TME's risk factors directly into the plan, or if it's the current
+# tile.
+sub get_tentative_tme {
+    my $self = shift;
+    my $tile = shift;
+    my $ai = TAEB->ai;
+    my $aistep = $ai->aistep;
+    my $tme = $ai->maybe_old_tme_from_tile($tile);
+
+    # An absent TME can only happen in the case of an unreachable
+    # square, in which case there's no need to do tentative
+    # calculations.
+    return undef unless $tme;
+
+    # If the TME in question is current, it isn't tentative.  So
+    # there's no need to record it. One likely cause (but far from the
+    # only one) is that the tile in question is the current tile.
+    return $tme if $tme->{'step'} == $aistep;
+
+    # Otherwise, we have correct routability here, but possibly
+    # incorrect cost.
+    $self->tentative_tme_tile($tile);
+    $self->tentative_tme_tile_valid_on_step($aistep);
+    $tme->{'tentative_plans_valid_on_step'} != $aistep and
+        $tme->{'tentative_plans'} = [];
+    $tme->{'tentative_plans_valid_on_step'} = $aistep;
+    push @{$tme->{'tentative_plans'}}, $self->name;
+    return $tme;
+}
+
 # Calculate the risk of carrying out this plan, and spread
 # desirability to other plans which reduce its risk. (Typically, such
 # spreading would increase the desirability of the risk-reducing plans

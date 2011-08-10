@@ -286,6 +286,13 @@ has (full_tactical_recalculation => (
     default => 1,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
+# When did we last do tactical calculations? (An aistep value.)
+has (last_tactical_calculation => (
+    isa     => 'Int',
+    is      => 'rw',
+    default => 1,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+));
 # The tile we were on when we last did tactical mapping. This is
 # generally TAEB->current_tile, but not when we're drawing the debug
 # view. It's also used to figure out what changed since the last time
@@ -1210,6 +1217,7 @@ sub update_tactical_map {
         }
     }
     $ftr and $self->last_tactical_recalculation(TAEB->turn);
+    $self->last_tactical_calculation($self->aistep);
     $self->full_tactical_recalculation(0);
     $self->tactical_target_tile($tct);
     $self->tactical_algorithm_this_turn($ftr ? 'world' : $algorithm);
@@ -1418,12 +1426,36 @@ sub calculate_tme_chain {
     }
     return @chain;
 }
+# A tme_from_tile variant that gets a TME for routability purposes;
+# that is, it returns a potentially old TME if the map and threats are
+# the same as last turn (which may have the wrong cost, but will have
+# the correct routability info), and an up-to-date TME otherwise.
+sub maybe_old_tme_from_tile {
+    my $self = shift;
+    my $tile = shift;
+    return $self->aistep == $self->last_tactical_calculation
+        ? $self->tme_from_tile($tile)
+        : $self->old_tme_from_tile($tile);
+}
+# Like tme_from_tile, but returns an out-of-date TME, or undef,
+# rather than updating an interlevel/interchokepoint TME.
+sub old_tme_from_tile {
+    my $self = shift;
+    my $tile = shift;
+    return unless defined $tile;
+    my $map  = $self->tactics_map->{refaddr $tile->level};
+    return unless defined $map; # it might be on an unpathed level
+    my $tme  = $map->[$tile->x]->[$tile->y];
+    return $tme;
+}
 sub tme_from_tile {
     my $self = shift;
     my $tile = shift;
-    return undef unless defined $tile;
+    return unless defined $tile;
     my $map  = $self->tactics_map->{refaddr $tile->level};
-    return undef unless defined $map; # it might be on an unpathed level
+    return unless defined $map; # it might be on an unpathed level
+    # We could call old_tme_from_tile here, but we have to duplicate
+    # most of its implementation anyway, may as well go the whole way...
     my $tme  = $map->[$tile->x]->[$tile->y];
     # It doesn't matter whether this TME is tainted; it'll be accurate anyway.
     return $tme if defined $tme && $tme->{'step'} == $self->aistep;
@@ -1433,7 +1465,7 @@ sub tme_from_tile {
     # Likewise, if the TME is undef.
     my $tct = $self->tactical_target_tile // TAEB->current_tile;
     if ($tile->level == $tct->level) {
-        return undef unless $self->tactical_algorithm_this_turn eq 'chokepoint';
+        return unless $self->tactical_algorithm_this_turn eq 'chokepoint';
         # Get an updated interchokepoint TME. This works pretty much
         # the same way as an updated interlevel TME, except that we
         # need to find the chokepoints that we can possibly use to
@@ -1443,7 +1475,7 @@ sub tme_from_tile {
         my $cpset = $self->nearby_chokepoints->{$tile};
         # If we've never managed to route to the tile from anywhere, it's
         # obviously unroutable now.
-        return undef unless $cpset;
+        return unless $cpset;
         my $tpr = $self->resources;
         my $aistep = $self->aistep;
         my $bestcp = undef;
@@ -1489,7 +1521,7 @@ sub tme_from_tile {
         $map->[$tile->x]->[$tile->y] = \%newtme;
         return \%newtme;
     }
-    return undef unless defined $tme; # we might not be able to route there
+    return unless defined $tme; # we might not be able to route there
     # Get an updated interlevel TME. We recalculate the risk fields of
     # the TME in question by getting the TME from the previous level, then
     # adding the level-risk of this one. This is done recursively, so it
@@ -1499,7 +1531,7 @@ sub tme_from_tile {
     my $prevtme = $self->tme_from_tile(
         $tme->{'prevlevel_level'}->at(
             $tme->{'prevlevel_x'}, $tme->{'prevlevel_y'}));
-    return undef unless $prevtme && $prevtme->{'step'} == $self->aistep;
+    return unless $prevtme && $prevtme->{'step'} == $self->aistep;
     $risk{$_} += $prevtme->{'risk'}->{$_} for keys %{$prevtme->{'level_risk'}};
     $tme->{'risk'} = \%risk;
     $tme->{'step'} = $self->aistep;

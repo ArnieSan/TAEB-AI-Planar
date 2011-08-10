@@ -89,6 +89,10 @@ sub calculate_risk {
     if ($self->stop_early) {
 	# Look for a tile next to the aim_tile that's cheap (or failing
 	# that, possible) to path to.
+        # We really need the full tme_from_tile, and all its potential
+        # baggage, here; we can't approximate this without actually
+        # doing tactical routing. (The alternative would be to split
+        # into 8 different plans, which is probably even slower.)
 	my $best_tile = undef;
 	my $best_risk = 1e12;
         DIRECTION: for my $delta (qw/y u h j k l b n/) {
@@ -118,10 +122,14 @@ sub calculate_risk {
     my $risk = $self->calculate_extra_risk;
     my $target_tme = undef;
     if ($self->mobile_target && $tct != $aim) {
+        # Another case where a tentative TME can't be tolerated;
+        # we need to know the route, not just the cost, and to do
+        # so before we know which plan we'll use for the turn.
 	my @chain = $ai->calculate_tme_chain($aim);
 	@chain and defined $chain[0] and $target_tme = $chain[0];
     } else {
-	$target_tme = $ai->tme_from_tile($aim);
+        # A tentative TME is OK here, though.
+	$target_tme = $self->get_tentative_tme($aim);
     }
     if (!defined $target_tme) {
 	# We couldn't path there, this is a plan failure. Record the
@@ -168,8 +176,7 @@ sub calculate_risk {
 # 	}
 	## END DEBUG CODE
 	$plan->reverse_dependencies->{$self} = $self;
-        if($planname eq 'DefensiveElbereth')
-        {
+        if($planname eq 'DefensiveElbereth') {
             $ai->add_capped_desire($plan, $amount);
         } else {
             $ai->add_capped_desire($plan, $self->desire);

@@ -30,6 +30,8 @@ sub check_possibility {
 	tile_y          => $ai->tactical_target_tile->y,
 	tile_level      => $ai->tactical_target_tile->level,
 	make_safer_plans=> {},
+        tentative_plans => [],
+        tentative_plans_valid_on_step => -1,
 	step            => $ai->aistep,
         source          => 'nop',
     };
