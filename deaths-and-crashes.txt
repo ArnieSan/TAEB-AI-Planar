@@ -50,3 +50,4 @@ noticed. Things marked with a + are now fixed.
 - Digging into a shop
   - Does this require being able to detect shops at range?
   - We should at least check for pickaxe messages
+- Killed by a thrown dagger while trying to regain HP (Rest|DefensiveElbereth)

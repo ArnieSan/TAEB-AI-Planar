@@ -2048,13 +2048,14 @@ sub tile_eventually_walkable {
 sub tile_walkable_or_boulder {
     my $self = shift;
     my $tile = shift;
+    my $addr = refaddr $tile;
     if (shift) {
         return 1 if !TAEB->senses->is_blind
                  && $tile->type eq 'unexplored';
     }
     my $cache = $self->walkability_cache;
-    return $cache->{$tile} if defined $cache->{$tile};
-    return ($cache->{$tile} = (!$tile->is_inherently_unwalkable(0, 1)));
+    return $cache->{$addr} if defined $cache->{$addr};
+    return ($cache->{$addr} = (!$tile->is_inherently_unwalkable(0, 1)));
 }
 
 # Responding to messages.
@@ -2101,7 +2102,7 @@ sub handle_tile_changes {
     defined $_ and $_->required_success_count(0)
 	for $self->plans_by_obj($addr);
     # Also, invalidate the walkability cache for that tile.
-    $self->walkability_cache->{$tile} = undef;
+    $self->walkability_cache->{$addr} = undef;
     $self->chokepoint_examine_tiles->insert($tile);
 }
 
