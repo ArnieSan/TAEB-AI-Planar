@@ -365,13 +365,14 @@ has (main_tactics_map => (
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
-# Tactics maps relative to each chokepoint. This is a non-recursive
-# refhash; the keys are the chokepoint tiles.
+# Tactics maps relative to each chokepoint. The keys are the refaddrs
+# to the chokepoint tiles, because Tie::RefHash doesn't seem to be
+# working properly in this case.
 has (chokepoint_tactics_map => (
     isa     =>
         'HashRef[HashRef[ArrayRef[ArrayRef[TAEB::AI::Planar::TacticsMapEntry]]]]',
     is      => 'rw',
-    default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
+    default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
 # Which chokepoints might be worth looking at for a particular tile. This
@@ -400,10 +401,10 @@ has (current_chokepoint => (
         my ($self, $newcp) = @_;
         return unless defined $newcp;
         # Unfortunately, these can't quite be autovivified.
-        if(!defined ($self->chokepoint_tactics_map->{$newcp})) {
+        if(!defined ($self->chokepoint_tactics_map->{refaddr $newcp})) {
             TAEB->log->ai("Creating a new tactics map for " .
                           $newcp->x . ", " . $newcp->y);
-            $self->chokepoint_tactics_map->{$newcp} = {};
+            $self->chokepoint_tactics_map->{refaddr $newcp} = {};
         }
     },
 ));
@@ -411,7 +412,7 @@ sub fetch_tactics_map {
     my $self = shift;
     my $chokepoint = shift;
     return $self->main_tactics_map unless $chokepoint;
-    return $self->chokepoint_tactics_map->{$chokepoint};
+    return $self->chokepoint_tactics_map->{refaddr $chokepoint};
 }
 sub tactics_map {
     my $self = shift;

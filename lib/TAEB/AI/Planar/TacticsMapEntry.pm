@@ -6,12 +6,12 @@ package TAEB::AI::Planar::TacticsMapEntry;
 This is an unencapsulated object for performance reasons. (It's about
 a 33% speedup in the tactical mapping, 20% in the bot as a whole, so
 it's pretty much necessary. Objects here are created by blessing
-hashes in the caller; a TME isn't designed to be modified once
-created, although that could be possible to. Therefore, there is
-nothing in the package apart from one method. As an unencapsulated
-class can be very hard to use, though, without at least some guide as
-to what it's meant to look like, a Moosish version is provided in this
-massive comment as a guide.
+hashes in the caller; most of the fields of the TME aren't designed to
+be modified once created, although that could be possible
+too. Therefore, there is nothing in the package apart from one
+method. As an unencapsulated class can be very hard to use, though,
+without at least some guide as to what it's meant to look like, a
+Moosish version is provided in this massive comment as a guide.
 
 # Details of the tile we have to path to before we can path to this
 # one. Calculating a path is done by tracing the prevtile chain back

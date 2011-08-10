@@ -135,17 +135,35 @@ sub check_possibility_inner {
     # procedure is still being used.
     my $cache = $ai->plan_caches->{'MoveTo'};
     if(!defined $cache) {
-        my %newcache = ();
-        tie %newcache, 'Tie::RefHash';
-	$cache = \%newcache;
+	$cache = {};
 	$ai->plan_caches->{'MoveTo'} = $cache;
     }
-    my $levelcache = $cache->{$ai->current_chokepoint // 'main'}->{$l};
+    my ($levelcache, $worldcache);
+    # Write the cache referencing out in full, to avoid issues with
+    # stringisation of chokepoints, rather than using Tie::RefHash
+    # which seems not to work correctly in this context.
+    $worldcache = $ai->current_chokepoint ?
+        $cache->{refaddr $ai->current_chokepoint} :
+        $cache->{'main'};
+    if(!defined $worldcache) {
+        $worldcache = {};
+        ($ai->current_chokepoint ?
+         $cache->{refaddr $ai->current_chokepoint} :
+         $cache->{'main'}) = $worldcache;
+    }
+    $levelcache = $worldcache->{refaddr $l};
     if(!defined $levelcache) {
 	$levelcache = [];
 	$levelcache->[$_] = [] for 0..79;
-	$cache->{$ai->current_chokepoint // 'main'}->{$l} = $levelcache;
+	$worldcache->{refaddr $l} = $levelcache;
     }
+#D#    TAEB->log->ai("refaddr worldcache is ".(refaddr $worldcache));
+#D#    TAEB->log->ai("refaddr level is ".(refaddr $l));
+#D#    TAEB->log->ai("refaddr levelcache is ".(refaddr $levelcache));
+#D#    TAEB->log->ai("refaddr chokepoint is ".(
+#D#                      $ai->current_chokepoint ?
+#D#                      refaddr $ai->current_chokepoint :
+#D#                      'main'));
     if (($levelcache->[$x]->[$y] // -1) == $aistep) {
 	#D#TAEB->log->ai("We've already considered moving here");
 	return;
