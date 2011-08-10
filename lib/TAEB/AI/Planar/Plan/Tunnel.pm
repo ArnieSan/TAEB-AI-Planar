@@ -2,13 +2,14 @@
 package TAEB::AI::Planar::Plan::Tunnel;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
-has unequipping => (
+has (unequipping => (
     isa => 'Bool',
     is  => 'rw',
     default => 0,
-);
+));
 
 sub get_pick_and_time {
     my ($self) = @_;
@@ -42,11 +43,11 @@ sub get_pick_and_time {
     return (@$c = ($pick, $time, TAEB->ai->aistep, $timecost));
 }
 
-has tile => (
+has (tile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_additional_args {
     my $self = shift;
     $self->tile(shift);

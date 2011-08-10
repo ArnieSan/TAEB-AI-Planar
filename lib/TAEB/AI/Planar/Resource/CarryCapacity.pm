@@ -1,13 +1,14 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::CarryCapacity;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
-has _value => (
+has (_value => (
     isa => 'Num',
     is  => 'rw',
     default => 0.01, # at the start of the game, encumberance hardly matters
-);
+));
 
 sub amount {
     return TAEB->unburdened_limit - TAEB->inventory->weight;

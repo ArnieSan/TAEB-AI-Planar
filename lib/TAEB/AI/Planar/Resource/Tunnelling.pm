@@ -1,15 +1,16 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::Tunnelling;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
 # It's nice if we can dig.  Very nice.  Also very plentiful since digging
 # tools are indefinitely reusable.
-has _value => (
+has (_value => (
     isa     => 'Num',
     is      => 'rw',
     default => 500,
-);
+));
 
 sub is_lasting { 1 }
 

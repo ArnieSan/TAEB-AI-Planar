@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::PrayForFood;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # As long as prayer is safe, this isn't risky at all. Not even tile risk,

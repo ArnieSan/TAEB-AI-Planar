@@ -2,19 +2,20 @@
 package TAEB::AI::Planar::Plan::PickupItem;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take an item on the floor as argument.
-has item => (
+has (item => (
     isa     => 'Maybe[NetHack::Item]',
     is      => 'rw',
     default => undef,
-);
-has tile => (
+));
+has (tile => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is      => 'rw',
     default => undef,
-);
+));
 
 sub set_arg {
     my $self = shift;

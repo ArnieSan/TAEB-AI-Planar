@@ -4,14 +4,15 @@ use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use TAEB::AI::Planar::Resource::FightDamage;
 use POSIX qw/ceil/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a monster as argument.
-has monster => (
+has (monster => (
     isa     => 'Maybe[TAEB::World::Monster]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->monster(shift);

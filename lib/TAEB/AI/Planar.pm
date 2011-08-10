@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar;
 use TAEB::OO;
+use Moose;
 use Heap::Simple::XS;
 use TAEB::Util qw/refaddr weaken display_ro :colors any max/;
 use Scalar::Util qw/reftype/;
@@ -34,14 +35,14 @@ extends 'TAEB::AI';
 # while lower values give it more options.  So we make it depend on the
 # difficulty of finding actions; it increases when ideas are easy, and
 # decreases when they aren't.
-has analysis_window => (
+has (analysis_window => (
     isa     => 'Num',
     is      => 'rw',
     default => 1,
-);
+));
 
 # The overall plan, what we're aiming towards.
-has overall_plan => (
+has (overall_plan => (
     isa     => 'Str',
     is      => 'rw',
     default => sub {
@@ -49,31 +50,31 @@ has overall_plan => (
     },
     trigger => sub { shift->loadplans },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Turn on expensive sanity checks?
-has sanity_checks => (
+has (sanity_checks => (
     isa     => 'Bool',
     is      => 'rw',
     default => sub {
 	TAEB->config->get_ai_config->{'sanity_checks'} // 1;
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Never use travel?
-has veto_travel => (
+has (veto_travel => (
     isa     => 'Bool',
     is      => 'rw',
     default => sub {
 	TAEB->config->get_ai_config->{'veto_travel'} // 0;
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Which tactical algorithm to use.
 # Currently existing algorithms:
 # 'level' : Update the current level every step;
 # 'world' : Update the entire dungeon every step;
 # 'chokepoint' : Update only between chokepoints when possible
-has tactical_algorithm => (
+has (tactical_algorithm => (
     isa     => 'Str', # TODO: A proper type constraint
     is      => 'rw',
     default => sub {
@@ -81,128 +82,128 @@ has tactical_algorithm => (
             // 'chokepoint';
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 
 # A trick to avoid having to loop over things invalidating them;
 # instead, store an aistep value, and they're invalidated if it
 # doesn't equal the current value.
-has aistep => (
+has (aistep => (
     isa     => 'Int',
     is      => 'rw',
     default => 1,
-);
+));
 # Likewise, tactical and strategic success counts remove the need to
 # loop through plans changing their difficulties.
-has tactical_success_count => (
+has (tactical_success_count => (
     isa     => 'Int',
     is      => 'rw',
     default => 0,
-);
-has strategic_success_count => (
+));
+has (strategic_success_count => (
     isa     => 'Int',
     is      => 'rw',
     default => 0,
-);
+));
 
 # What we're doing at the moment.
-has '+currently' => (
+has ('+currently' => (
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
-has currently_modifiers => (
+));
+has (currently_modifiers => (
     isa     => 'Str',
     is      => 'rw',
     default => '',
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Plans.
-has plans => (
+has (plans => (
     isa     => 'HashRef[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
-has current_plan => (
+));
+has (current_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Keeping track of adding and removing plans.
-has validitychanged => (
+has (validitychanged => (
     isa     => 'Bool',
     default => 1,
     is      => 'rw',
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Past plans, to detect flapping oscillations.
-has old_plans => (
+has (old_plans => (
     isa     => 'ArrayRef[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => sub { [] },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
-has old_tactical_plans => (
+));
+has (old_tactical_plans => (
     isa     => 'ArrayRef[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => sub { [] },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # A plan counts as potentially abandoned if it doesn't strategy-fail
 # or tactics-fail or succeed. It is actually marked as abandoned if
 # a different plan is selected at the next step and it is potentially
 # abandoned. This variable holds the current potentially abandoned
 # plan, if there is one.
-has abandoned_plan => (
+has (abandoned_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
-has abandoned_tactical_plan => (
+));
+has (abandoned_tactical_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # This list is separate merely for efficiency reasons.
-has tactical_plans => (
+has (tactical_plans => (
     isa     => 'HashRef[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
-has current_tactical_plan => (
+));
+has (current_tactical_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Storing plans by the object they refer to speeds up certain
 # operations.
-has plan_index_by_object => (
+has (plan_index_by_object => (
     isa     => 'HashRef[Set::Object]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Likewise, by the type of plan.
-has plan_index_by_type => (
+has (plan_index_by_type => (
     isa     => 'HashRef[Set::Object]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Plans sometimes need to store per-AI persistent data, mostly for
 # performance reasons. Give them somewhere they can store it without
 # having to hack the core AI and without having different plans clash
 # with each other.
-has plan_caches => (
+has (plan_caches => (
     isa     => 'HashRef', # with unknown contents
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 # A heap of desire values. This only exists for one calculation, but
 # the plans have to be able to get at it somehow, and they do that by
@@ -219,7 +220,7 @@ has plan_caches => (
 # ignored by next_plan_action. The third element of each tuple is a
 # boolean which specifies whether the desire value in the heap in this
 # element took risk into account or not.
-has _planheap => (
+has (_planheap => (
     isa    => 'Heap::Simple::XS',
     is      => 'rw',
     default => sub {
@@ -237,7 +238,7 @@ has _planheap => (
 	);
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Set the desire of a plan to a given value, unless that would make it
 # smaller. This is implemented by adding a new heap element. (The
 # value passed into this procedure should not take risk into account,
@@ -266,7 +267,7 @@ sub add_capped_desire {
 # The tactics heap is out here for much the same reason that the
 # strategy plan heap is; the plans themselves need to be able to
 # modify it.
-has _tacticsheap => (
+has (_tacticsheap => (
     isa     => 'Heap::Simple::XS',
     is      => 'rw',
     default => sub {
@@ -277,24 +278,24 @@ has _tacticsheap => (
 	);
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Are we currently doing a full tactical recalculation?
-has full_tactical_recalculation => (
+has (full_tactical_recalculation => (
     isa     => 'Bool',
     is      => 'rw',
     default => 1,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # The tile we were on when we last did tactical mapping. This is
 # generally TAEB->current_tile, but not when we're drawing the debug
 # view. It's also used to figure out what changed since the last time
 # we did tactical routing.
-has tactical_target_tile => (
+has (tactical_target_tile => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is      => 'rw',
     default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Whether to taint TMEs as they're added. This is used by the
 # 'chokepoint' routing algorithm to know when it can stop routing.
 # (This is different from Perl taint, but works a similar way: tainted
@@ -303,18 +304,18 @@ has tactical_target_tile => (
 # from this point. I suppose theoretically you could use Perl's actual
 # taint mechanism to implement this, but it would be more trouble than
 # it was worth, and anyway semantically wrong.)
-has taint_new_tmes => (
+has (taint_new_tmes => (
     isa     => 'Bool',
     is      => 'rw',
     default => 0,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
-has untainted_tme_count => (
+));
+has (untainted_tme_count => (
     isa     => 'Int',
     is      => 'rw',
     default => 0,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Add a possible move to the tactics heap.
 sub add_possible_move {
     my $self = shift;
@@ -331,7 +332,7 @@ sub add_possible_move {
 }
 
 # Resources.
-has resources => (
+has (resources => (
     isa     => 'HashRef[TAEB::AI::Planar::Resource]',
     is      => 'rw',
     default => sub {
@@ -346,7 +347,7 @@ has resources => (
 	return \%resources;
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 # The main tactics map.
 # This contains all the pathfinding details for each level. Levels
@@ -357,41 +358,41 @@ has resources => (
 # level is recalculated every step when the tactical algorithm is
 # 'level'; when it's 'chokepoint', only the chokepoint areas that are
 # actually affected are updated.
-has main_tactics_map => (
+has (main_tactics_map => (
     isa     =>
         'HashRef[ArrayRef[ArrayRef[TAEB::AI::Planar::TacticsMapEntry]]]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Tactics maps relative to each chokepoint. This is a non-recursive
 # refhash; the keys are the chokepoint tiles.
-has chokepoint_tactics_map => (
+has (chokepoint_tactics_map => (
     isa     =>
         'HashRef[HashRef[ArrayRef[ArrayRef[TAEB::AI::Planar::TacticsMapEntry]]]]',
     is      => 'rw',
     default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Which chokepoints might be worth looking at for a particular tile. This
 # is an overestimate; that is, if a chokepoint might be worth looking at,
 # it must definitely be in the set; but it could be in the set even if it
 # isn't worth looking at.
-has nearby_chokepoints => (
+has (nearby_chokepoints => (
     isa     => 'HashRef[Set::Object]',
     is      => 'rw',
     default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # When (i.e. which aistep) was the chokepoint in question last updated?
-has chokepoint_last_updated => (
+has (chokepoint_last_updated => (
     isa     => 'HashRef[Int]',
     is      => 'rw',
     default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # undef if looking at the main tactics map; defined if looking at a chokepoint.
-has current_chokepoint => (
+has (current_chokepoint => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is      => 'rw',
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
@@ -405,7 +406,7 @@ has current_chokepoint => (
             $self->chokepoint_tactics_map->{$newcp} = {};
         }
     },
-);
+));
 sub fetch_tactics_map {
     my $self = shift;
     my $chokepoint = shift;
@@ -433,27 +434,27 @@ sub tactics_map {
 # types that are included in the hash, with undef used as the value if
 # that movement type can walk there, and the key omitted if that
 # movement type can't. Phasers can walk anywhere.
-has threat_map => (
+has (threat_map => (
     isa     => 'HashRef[ArrayRef[ArrayRef[HashRef[Maybe[HashRef[Num]]]]]]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 # When did we last see a monster?
-has last_monster_seen_step => (
+has (last_monster_seen_step => (
     isa     => 'Int',
     is      => 'rw',
     default => 0,
-);
+));
 
 # For profiling
-has lasttimeofday => (
+has (lasttimeofday => (
     isa     => 'Maybe[ArrayRef]',
     is      => 'rw',
     default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 sub next_action {
     my $self = shift;
@@ -921,39 +922,39 @@ sub next_plan_action {
     return ($plan, $action);
 }
 
-has last_tactical_recalculation => (
+has (last_tactical_recalculation => (
     is => 'rw',
     isa => 'Int',
     default => 0,
-);
-has tactical_algorithm_this_turn => (
+));
+has (tactical_algorithm_this_turn => (
     is => 'rw',
     isa => 'Str', # TODO: enum
     default => 'level',
-);
+));
 
 # Tiles that have had their type changed since last time we did a
 # chokepoint routing.
-has chokepoint_examine_tiles => (
+has (chokepoint_examine_tiles => (
     is => 'rw',
     isa => 'Set::Object',
     default => sub { return Set::Object->new(); },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Which chokepoints existed last time we did a chokepoint routing.
-has old_chokepoint_set => (
+has (old_chokepoint_set => (
     is => 'rw',
     isa => 'Set::Object',
     default => sub { return Set::Object->new(); },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # Do we need/want to recalculate the whole chokepoint map?
-has need_full_chokepoint_recalc => (
+has (need_full_chokepoint_recalc => (
     is => 'rw',
     isa => 'Bool',
     default => 1,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 sub update_tactical_map {
     my $self = shift;
@@ -1223,20 +1224,20 @@ sub update_tactical_map {
 #  3 for a routable tile with 3 or more routable neighbours
 #       or where 2 adjacent are routable, with the tile between also routable
 # -2 for a tile that would be marked 2, but has a 3 as an orthogonal neighbour
-has chokepoint_map => (
+has (chokepoint_map => (
     is => 'rw',
     isa => 'HashRef[Int]',
     default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # A set of chokepoints. This is indexing the map, and contains the same
 # information.
-has chokepoint_set => (
+has (chokepoint_set => (
     is => 'rw',
     isa => 'Set::Object',
     default => sub { Set::Object->new(); },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 # Find the locations of the chokepoints on the current level.
 sub locate_chokepoints {
@@ -1520,24 +1521,24 @@ sub monster_is_peaceful {
     return $rv;
 }
 
-has last_floor_check => (
+has (last_floor_check => (
     isa => 'Int',
     is => 'rw',
     default => -1,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 sub msg_check {
     my $self = shift;
     my $what = shift;
     $self->last_floor_check(TAEB->step) if ($what//'') eq 'floor';
 }
 
-has threat_count => (
+has (threat_count => (
     isa => 'Int',
     is => 'rw',
     default => 0,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 sub threat_check {
     my $self = shift;
     # Clear the threat map for the current level.
@@ -1825,12 +1826,12 @@ sub loadplans {
 #####################################################################
 # Things below this line should be elsewhere or handled differently
 
-has tiles_on_path => (
+has (tiles_on_path => (
     isa => 'HashRef[Int]', # !exists for not on path, 1 for on path, 2 for endpoint
     is  => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 sub drawing_modes {
     exploration_cache => {
@@ -2024,12 +2025,12 @@ sub initialize {
     $self->institute;
 }
 
-has walkability_cache => (
+has (walkability_cache => (
     isa     => 'HashRef[Maybe[Bool]]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # A cached version of is_walkable (actually !is_inherently_unwalkable,
 # but marking boulders as unwalkable).
 sub tile_walkable {
@@ -2057,12 +2058,12 @@ sub tile_walkable_or_boulder {
 }
 
 # Responding to messages.
-has try_again_step => (
+has (try_again_step => (
     isa => 'Int',
     is  => 'rw',
     default => -1,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 subscribe door => sub {
     my $self = shift;
     my $what = shift;
@@ -2072,12 +2073,12 @@ subscribe door => sub {
     }
 };
 
-has problematic_levitation_step => (
+has (problematic_levitation_step => (
     isa => 'Int',
     is  => 'rw',
     default => -1,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 sub exception_impeded_by_levitation {
     my $self = shift;
     $self->problematic_levitation_step(TAEB->step);
@@ -2120,12 +2121,12 @@ sub safe_to_travel {
     return 1;
 }
 
-has item_subtype_cache => (
+has (item_subtype_cache => (
     isa     => 'HashRef[Str]',
     is      => 'rw',
     default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 # NetHack::Item is just far too slow at this...
 # Luckily, subtypes don't change, so they can be cached.
 # Before doing this, about 16% of Planar's time was spent in
@@ -2301,7 +2302,7 @@ sub use_benefit {
     return $value;
 }
 
-has _devnull_item_hack => (
+has (_devnull_item_hack => (
     isa     => 'Bool',
     is      => 'rw',
     default => sub {
@@ -2310,7 +2311,7 @@ has _devnull_item_hack => (
 	$x;
     },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-);
+));
 
 # Positive aspects of the item value.
 sub item_value {
@@ -2441,16 +2442,16 @@ sub item_drawback_cost {
 # If we're oscillating between pickup and drop, pick items up one at a
 # time. This measures in main loop steps, not aisteps. Additionally,
 # allow an extra step for #chat for price.
-has last_pickup_step => (
+has (last_pickup_step => (
     isa     => 'Int',
     is      => 'rw',
     default => -1,
-);
-has last_drop_step => (
+));
+has (last_drop_step => (
     isa     => 'Int',
     is      => 'rw',
     default => -1,
-);
+));
 sub pickup {
     my $self = shift;
     my $item = shift;

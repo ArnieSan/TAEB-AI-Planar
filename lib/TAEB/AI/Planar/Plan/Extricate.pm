@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::Extricate;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # A slightly unusual use of Strategic; here, we're always on the
@@ -18,16 +19,16 @@ sub aim_tile {
 }
 sub has_reach_action { 1 }
 
-has last_movement_turn => (
+has (last_movement_turn => (
     isa => 'Int',
     is  => 'rw',
     default => -1,
-);
-has consecutive_tries => (
+));
+has (consecutive_tries => (
     isa => 'Int',
     is  => 'rw',
     default => 0,
-);
+));
 
 # Move diagonally into a wall, if we can.
 # Otherwise, move adjacently to an arbitrary passable square.

@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::Time;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
 # Generally speaking, we don't run short of time, it's not a resource

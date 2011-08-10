@@ -2,13 +2,14 @@
 package TAEB::AI::Planar::Plan::GotoMines;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 use List::MoreUtils 'all';
 
-has _level => (
+has (_level => (
     isa => 'Maybe[TAEB::World::Level]',
     is  => 'rw',
-);
+));
 
 sub aim_tile {
     # If we're already in the Mines, bail.

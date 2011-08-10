@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::FallbackRest;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 sub aim_tile {

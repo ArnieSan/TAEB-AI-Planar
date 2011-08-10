@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::ExploreHere;
 use TAEB::OO;
+use Moose;
 use TAEB::Util qw/vi2delta/;
 extends 'TAEB::AI::Planar::Plan';
 

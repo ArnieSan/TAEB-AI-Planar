@@ -1,5 +1,6 @@
 package TAEB::AI::Planar::Plan::Shallower;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 # Note that this plan works on branch-recognition, not the dungeon

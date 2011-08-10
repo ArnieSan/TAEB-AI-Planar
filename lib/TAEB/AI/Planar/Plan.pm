@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan;
 use TAEB::OO;
+use Moose;
 
 use overload (
     fallback => undef,
@@ -34,21 +35,21 @@ use constant d_difficulty_multiplier => 3;
 # The difficulty is calculated dynamically from the AI success count
 # and this value, which is the success count required before it
 # considers trying again.
-has required_success_count => (
+has (required_success_count => (
     isa => 'Int',
     is  => 'rw',
     default => 0,
-);
-has d_difficulty => (
+));
+has (d_difficulty => (
     isa => 'Int',
     is  => 'rw',
     default => 0,
-);
-has last_marked_impossible => (
+));
+has (last_marked_impossible => (
     isa => 'Int',
     is  => 'rw',
     default => 0,
-);
+));
 sub appropriate_success_count {
     return TAEB->ai->strategic_success_count;
 }
@@ -114,26 +115,26 @@ sub mark_impossible {
 # things which would reduce the risk incurred by calculating
 # them. Risk reduces desirability, but is not a plan failure; instead,
 # it defers the plan and it is considered again later.
-has risk => (
+has (risk => (
     isa => 'Maybe[Num]',
     is  => 'rw',
     default => undef,
-);
+));
 # To avoid having to loop over plans invalidating risk. This also
 # controls spending plan validity.
-has risk_valid_on_step => (
+has (risk_valid_on_step => (
     isa => 'Int',
     is  => 'rw',
     default => -1,
-);
+));
 
 # This plan was called by the make_safer mechanism, and as such does
 # not suffer the "letting threat stand" longsightedness penalties.
-has in_make_safer_on_step => (
+has (in_make_safer_on_step => (
     isa     => 'Int',
     is      => 'rw',
     default => -1,
-);
+));
 
 # Calculate the risk of carrying out this plan, and spread
 # desirability to other plans which reduce its risk. (Typically, such
@@ -150,11 +151,11 @@ sub calculate_risk {
 
 # The spending plan for this plan; how much of what would need to be
 # spent to make it work.
-has spending_plan => (
+has (spending_plan => (
     isa => 'HashRef',
     is  => 'rw',
     default => sub { {} },
-);
+));
 
 # A function that calculate_risk's likely to call a lot; this returns
 # the cost for the given amount of the appropriate resource, and also
@@ -232,10 +233,10 @@ sub gain_resource_conversion_desire { }
 # $object could be a monster, item, or whatever.)
 # The name is set automatically by the AI itself, rather than by the
 # package, according to the package's filename and argument.
-has name => (
+has (name => (
     isa => 'Str',
     is  => 'rw',
-);
+));
 sub shortname {
     my $self = shift;
     local $_ = $self->name;
@@ -248,10 +249,10 @@ sub set_arg {
 }
 
 # The description of this plan; used to tell people what we're doing.
-has description => (
+has (description => (
     isa => 'Str',
     is  => 'rw',
-);
+));
 
 # Can we afford to carry out this plan?
 sub affordable {
@@ -306,11 +307,11 @@ sub succeeded {
 
 # Plans to remove difficulty from when this plan succeeds. It's a hash
 # from plan names to the plans.
-has reverse_dependencies => (
+has (reverse_dependencies => (
     isa => 'HashRef[TAEB::AI::Planar::Plan]',
     is  => 'rw',
     default => sub { {} },
-);
+));
 # Reset difficulty but not d_difficulty. That way, there's still a
 # timeout if this didn't make the plan possible after all.
 sub reactivate_dependencies {
@@ -322,26 +323,26 @@ sub reactivate_dependencies {
 }
 
 # What the AI told us our desire was, so we can spread it properly.
-has desire => (
+has (desire => (
     isa => 'Num',
     is  => 'rw',
-);
-has desire_with_risk => (
+));
+has (desire_with_risk => (
     isa => 'Num',
     is  => 'rw',
-);
+));
 
 # The path used to give desirability to this plan
-has dependency_path => (
+has (dependency_path => (
     isa     => 'ArrayRef[TAEB::AI::Planar::Plan]',
     is      => 'rw',
     default => sub { [] },
-);
-has dependency_path_aistep => (
+));
+has (dependency_path_aistep => (
     isa     => 'Num',
     is      => 'rw',
     default => -1,
-);
+));
 sub add_dependency_path {
     my $self = shift;
     my $on = shift;
@@ -463,11 +464,11 @@ sub spread_desirability {
 # and plans can also self-invalidate by setting validity to 0
 # elsewhere (succeeded is common, as plans normally act to make
 # themselves redundant due to their nature).
-has validity => (
+has (validity => (
     isa => 'Bool',
     is  => 'rw',
     default => 1
-);
+));
 sub validate {
     my $self = shift;
     $self->validity or TAEB->ai->validitychanged(1);
@@ -479,11 +480,11 @@ sub invalidate { }
 # Even non-metaplans may want to spawn sometimes.
 sub planspawn { }
 
-has last_planspawn => (
+has (last_planspawn => (
     isa => 'Int',
     is  => 'rw',
     default => -1
-);
+));
 sub maybe_planspawn {
     my $self = shift;
     my $aistep = shift;

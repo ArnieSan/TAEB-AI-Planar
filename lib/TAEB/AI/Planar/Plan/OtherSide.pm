@@ -1,23 +1,24 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::OtherSide;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a tile as argument.
-has tile => (
+has (tile => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->tile(shift);
 }
 
-has _level => (
+has (_level => (
     isa => 'Maybe[TAEB::World::Level]',
     is  => 'rw',
-);
+));
 
 sub invalidate { shift->validity(0); }
 

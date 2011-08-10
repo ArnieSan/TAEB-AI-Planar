@@ -3,14 +3,15 @@ package TAEB::AI::Planar::Plan::Investigate;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use TAEB::Spoilers::Monster;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a tile (preferably with a door on) as argument.
-has tile => (
+has (tile => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->tile(shift);

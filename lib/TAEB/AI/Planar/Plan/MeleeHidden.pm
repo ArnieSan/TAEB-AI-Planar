@@ -2,14 +2,15 @@
 package TAEB::AI::Planar::Plan::MeleeHidden;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take a tile as argument.
-has tile => (
+has (tile => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->tile(shift);

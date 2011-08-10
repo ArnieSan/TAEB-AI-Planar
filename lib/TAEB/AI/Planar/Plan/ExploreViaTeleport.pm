@@ -1,18 +1,19 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::ExploreViaTeleport;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
-has current_tile_memory => (
+has (current_tile_memory => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is      => 'rw',
     default => undef,
-);
-has time_memory => (
+));
+has (time_memory => (
     isa     => 'Int',
     is      => 'rw',
     default => -1,
-);
+));
 
 sub aim_tile {
     my $self = shift;

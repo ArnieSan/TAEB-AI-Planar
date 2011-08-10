@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::Unengulf;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We can't move before attacking an engulfer.

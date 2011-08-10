@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::Wolfsbane;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 sub aim_tile {
@@ -32,7 +33,7 @@ sub calculate_extra_risk {
 # This plan needs a continuous stream of validity from our senses.
 sub invalidate {shift->validity(0);}
 
-use constant description => 'Eating food in our inventory';
+use constant description => 'Curing lycanthropy';
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

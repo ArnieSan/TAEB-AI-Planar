@@ -1,13 +1,14 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::Hitpoints;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
-has _value => (
+has (_value => (
     isa => 'Num',
     is  => 'rw',
     default => 10, # hitpoints are one of the most valuable resources
-);
+));
 
 sub amount {
     return TAEB->hp-1;

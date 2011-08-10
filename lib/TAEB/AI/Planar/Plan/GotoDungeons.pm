@@ -2,12 +2,13 @@
 package TAEB::AI::Planar::Plan::GotoDungeons;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
-has _level => (
+has (_level => (
     isa => 'Maybe[TAEB::World::Level]',
     is  => 'rw',
-);
+));
 
 sub aim_tile {
     # If we're already in the Dungeons, bail.

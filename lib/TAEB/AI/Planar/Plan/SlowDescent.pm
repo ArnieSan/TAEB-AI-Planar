@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::SlowDescent;
 use TAEB::OO;
 use TAEB::Spoilers::Sokoban;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 sub spread_desirability {

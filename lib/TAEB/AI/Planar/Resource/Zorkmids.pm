@@ -1,13 +1,14 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::Zorkmids;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
-has _value => (
+has (_value => (
     isa => 'Num',
     is  => 'rw',
     default => 0.1, # gold is better spent than hoarded
-);
+));
 
 sub amount {
     TAEB->known_debt or TAEB->send_message(check => 'debt');

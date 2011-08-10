@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::Pay;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We always do payment from our current tile.

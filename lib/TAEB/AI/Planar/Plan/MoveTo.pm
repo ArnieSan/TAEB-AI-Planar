@@ -5,6 +5,7 @@ use TAEB::Util 'refaddr';
 use Tie::RefHash;
 use TAEB::AI::Planar::TacticsMapEntry;
 use TAEB::Spoilers::Sokoban;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # A metaplan. This one encompasses all methods of moving from a
@@ -15,11 +16,11 @@ extends 'TAEB::AI::Planar::Plan::Tactical';
 # shouldn't be generated with a TME that isn't adjacent to the target
 # tile.
 
-has tile => (
+has (tile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_additional_args {
     my $self = shift;
     $self->tile(shift);

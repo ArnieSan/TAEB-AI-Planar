@@ -1,16 +1,17 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::FightDamage;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
 # This encapsulates all damage sources that are usable once per fight;
 # primarily, throwables and spells.
 
-has _value => (
+has (_value => (
     isa => 'Num',
     is  => 'rw',
     default => 25, # Fairly large
-);
+));
 
 # Split out from amount to avoid code duplication; other things care
 # about which projectiles we have too

@@ -3,35 +3,36 @@ package TAEB::AI::Planar::Plan::SolveSokoban;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use TAEB::Spoilers::Sokoban;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
-has bouldertile => (
+has (bouldertile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
-);
-has monster => (
+));
+has (monster => (
     isa => 'Maybe[TAEB::World::Monster]',
     is  => 'rw',
-);
-has mimictile => (
+));
+has (mimictile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
-);
-has need_to_wait => (
+));
+has (need_to_wait => (
     isa     => 'Bool',
     is      => 'rw',
     default => 0
-);
-has push_turn => (
+));
+has (push_turn => (
     isa     => 'Num',
     is      => 'rw',
     default => -1
-);
-has push_backoff => (
+));
+has (push_backoff => (
     isa     => 'Num',
     is      => 'rw',
     default => 1
-);
+));
 
 sub aim_tile {
     my $self = shift;

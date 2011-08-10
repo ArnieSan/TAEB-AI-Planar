@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::Nop;
 use TAEB::OO;
 use TAEB::AI::Planar::TacticsMapEntry;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # A tactical plan to do nothing. Needed because we have to get the

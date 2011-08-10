@@ -1,13 +1,14 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::AC;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
-has _value => (
+has (_value => (
     isa     => 'Num',
     is      => 'rw',
     default => 40,
-);
+));
 
 sub is_lasting { 1 }
 

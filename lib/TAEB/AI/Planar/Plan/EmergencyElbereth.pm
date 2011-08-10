@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::EmergencyElbereth;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 sub aim_tile {

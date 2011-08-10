@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::MoveFrom;
 use TAEB::OO;
 use TAEB::AI::Planar::TacticsMapEntry;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # A metaplan. This one encompasses all methods of moving /from/ a

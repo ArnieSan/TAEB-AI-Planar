@@ -2,15 +2,16 @@
 package TAEB::AI::Planar::Plan::ExploreLevel;
 use TAEB::OO;
 use TAEB::Util qw/vi2delta/;
+use Moose;
 use Set::Object;
 extends 'TAEB::AI::Planar::Plan';
 
 # We take a level as argument.
-has level => (
+has (level => (
     isa     => 'Maybe[TAEB::World::Level]',
     is      => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     my $level = shift;

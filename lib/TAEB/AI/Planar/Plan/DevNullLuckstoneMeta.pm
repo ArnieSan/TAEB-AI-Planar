@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::DevNullLuckstoneMeta;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 sub spread_desirability {

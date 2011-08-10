@@ -1,14 +1,15 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::Impossibility;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
 # Impossibilities are massive.
-has _value => (
+has (_value => (
     isa     => 'Num',
     is      => 'rw',
     default => 1e7,
-);
+));
 
 # An impossibility is the opposite of a delta; it represents the cost
 # of an impossible action. This is useful only because it can be

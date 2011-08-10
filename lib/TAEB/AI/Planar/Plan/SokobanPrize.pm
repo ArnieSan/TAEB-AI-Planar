@@ -2,13 +2,14 @@
 package TAEB::AI::Planar::Plan::SokobanPrize;
 use TAEB::OO;
 use TAEB::Spoilers::Sokoban;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
-has prizetile => (
+has (prizetile => (
     is => 'rw',
     isa => 'Maybe[TAEB::World::Tile]',
     default => undef,
-);
+));
 
 # Gets us the Sokoban prize, with no restrictions on what we do with
 # it after then.

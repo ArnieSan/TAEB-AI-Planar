@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::Delta;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
 # General notes: a delta is an almost worthless resource that exists
@@ -14,11 +15,11 @@ sub amount {
 }
 
 # Deltas are tiny.
-has _value => (
+has (_value => (
     isa     => 'Num',
     is      => 'rw',
     default => 1e-7,
-);
+));
 
 # Deltas never run out.
 sub scarcity {

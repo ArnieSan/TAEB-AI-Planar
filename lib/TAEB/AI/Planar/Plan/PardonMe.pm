@@ -2,19 +2,20 @@
 package TAEB::AI::Planar::Plan::PardonMe;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
-has timesinrow => (
+has (timesinrow => (
     isa     => 'Int',
     is      => 'rw',
     default => 0
-);
+));
 
-has tile => (
+has (tile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_additional_args {
     my $self = shift;
     $self->tile(shift);

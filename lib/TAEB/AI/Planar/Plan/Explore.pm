@@ -1,12 +1,13 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::Explore;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
-has tile => (
+has (tile => (
     isa => 'TAEB::World::Tile',
     is  => 'rw',
-);
+));
 sub set_arg {
     my $self = shift;
     $self->tile(shift);

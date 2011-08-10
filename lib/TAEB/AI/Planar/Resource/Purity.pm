@@ -1,16 +1,17 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource::Purity;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Resource';
 
 # Being a lycanthrope is bad!
 
 # Turning into wolf/rat/jackal form leads to all sorts of trouble.
-has _value => (
+has (_value => (
     isa     => 'Num',
     is      => 'rw',
     default => 60,
-);
+));
 
 sub is_lasting { 1 }
 

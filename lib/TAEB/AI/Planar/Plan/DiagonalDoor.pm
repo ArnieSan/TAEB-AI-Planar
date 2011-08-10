@@ -2,23 +2,24 @@
 package TAEB::AI::Planar::Plan::DiagonalDoor;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
-has tile => (
+has (tile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
-has door => (
+));
+has (door => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
-has wasclosed => (
+));
+has (wasclosed => (
     isa => 'Bool',
     is  => 'rw',
     default => 0,
-);
+));
 sub set_additional_args {
     my $self = shift;
     $self->tile(shift);

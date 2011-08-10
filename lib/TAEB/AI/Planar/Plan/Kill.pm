@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::Kill;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 # There are 3 plans in Planar that are involved in the removal of monsters.
@@ -19,11 +20,11 @@ extends 'TAEB::AI::Planar::Plan';
 #   which will help us get past it.
 
 # We take a monster as argument.
-has monster => (
+has (monster => (
     isa     => 'Maybe[TAEB::World::Monster]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->monster(shift);

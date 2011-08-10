@@ -3,24 +3,25 @@ package TAEB::AI::Planar::Plan::FloorFood;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi assert/;
 use TAEB::Spoilers::Monster;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take an item, or a spoiler and tile, as argument.
-has item => (
+has (item => (
     isa     => 'Maybe[NetHack::Item]',
     is  => 'rw',
     default => undef,
-);
-has tile => (
+));
+has (tile => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
-has spoiler => (
+));
+has (spoiler => (
     isa     => 'Maybe[NetHack::Monster::Spoiler]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     my $arg = shift;
@@ -75,11 +76,11 @@ sub gain_resource_conversion_desire {
 
 # The number of turns it takes to eat a corpse is equal to 3 plus
 # its weight shifted right 6 places.
-has _risk => (
+has (_risk => (
     isa => 'Num',
     is  => 'rw',
     default => 0,
-);
+));
 sub calculate_extra_risk {
     my $self = shift;
     my $risk = 0;

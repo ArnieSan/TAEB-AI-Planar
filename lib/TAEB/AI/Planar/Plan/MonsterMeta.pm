@@ -1,17 +1,18 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::MonsterMeta;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 # A plan that does nothing but create other plans, as appropriate to
-# the item in question.
+# the monster in question.
 
 # We take a monster as argument.
-has monster => (
+has (monster => (
     isa     => 'Maybe[TAEB::World::Monster]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->monster(shift);

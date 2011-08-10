@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::Strategic;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 # Go somewhere, do something. A base class for all the varied plans
@@ -41,28 +42,28 @@ sub mobile_target { 0 }
 
 # Make sure the aim_tile is the same when calculating risk and when
 # performing the action.
-has aim_tile_cache => (
+has (aim_tile_cache => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
-);
-has used_travel_to => (
+));
+has (used_travel_to => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
-);
+));
 
 # Calculating how good Elberething is
-has elbereth_saves => (
+has (elbereth_saves => (
     isa => 'Num',
     is  => 'rw',
     default => 0,
-);
+));
 
 # Extra make_safer_plans for long plans. This is a ref of their names.
-has extra_msp => (
+has (extra_msp => (
     isa => 'ArrayRef[Str]',
     is => 'rw',
     default => sub { [] },
-);
+));
 
 # Risk. There is both cost and danger in pathing somewhere, but plans
 # may often want to do something even costlier and more dangerous.
@@ -295,11 +296,11 @@ sub attack_monster_risk {
 # The maximum distance to try to travel. This is divided by 4 upon
 # each failed travel (to a minimum of 1), multiplied by 2 upon each
 # successful travel (to a maximum of 256).
-has travel_distance => (
+has (travel_distance => (
     isa     => 'Int',
     is      => 'rw',
     default => 256,
-);
+));
 sub increase_travel_distance {
     my $self = shift;
     my $d = $self->travel_distance;

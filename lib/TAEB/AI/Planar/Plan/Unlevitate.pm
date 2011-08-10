@@ -3,19 +3,19 @@ package TAEB::AI::Planar::Plan::Unlevitate;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use NetHack::Inventory::Equipment;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
-has taking_off => (
+has (taking_off => (
     isa     => 'Maybe[NetHack::Item]',
     is      => 'rw',
     default => undef,
-);
-has unwielding => (
+));
+has (unwielding => (
     isa     => 'Bool',
     is      => 'rw',
     default => 0,
-);
-
+));
 
 sub levitation_item {
     my $self = shift;

@@ -1,17 +1,18 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::InventoryItemMeta;
 use TAEB::OO;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 # A plan that does nothing but create other plans, as appropriate to
 # the item in question.
 
 # We take an item as argument.
-has item => (
+has (item => (
     isa     => 'Maybe[NetHack::Item]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->item(shift);

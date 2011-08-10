@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::FallbackMeta;
 use TAEB::OO;
 use TAEB::Util qw/vi2delta/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 # For fallback searches, we search tiles where we haven't been searching

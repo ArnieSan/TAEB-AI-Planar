@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::ThroughTrap;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
 # Traps that we can route through, but at an additional cost in resources.
@@ -27,11 +28,11 @@ use constant trap_costs => {
     # polytrap not worth ever routing through, that's too risky
 };
 
-has tile => (
+has (tile => (
     isa => 'Maybe[TAEB::World::Tile]',
     is  => 'rw',
     default => undef,
-);
+));
 sub set_additional_args {
     my $self = shift;
     $self->tile(shift);

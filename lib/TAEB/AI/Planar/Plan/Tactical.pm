@@ -3,6 +3,7 @@ package TAEB::AI::Planar::Plan::Tactical;
 use TAEB::OO;
 use TAEB::AI::Planar::TacticsMapEntry;
 use TAEB::Util qw/delta2vi refaddr/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
 # Tactical plans. These are similar to strategic plans, but plan
@@ -67,11 +68,11 @@ sub appropriate_success_count {
 # routing's still done using them, but strategic plans that would
 # involve routing through them are rejected. Typically, toxicity lasts
 # for 5 tactical successes.
-has toxic_until => (
+has (toxic_until => (
     isa => 'Int',
     is  => 'rw',
     default => -1,
-);
+));
 # Override abandon in Plan.
 sub abandon {
     my $self = shift;

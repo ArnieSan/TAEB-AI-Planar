@@ -1,12 +1,13 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Resource;
 use TAEB::OO;
+use Moose;
 
-has _value => (
+has (_value => (
     isa => 'Num',
     is  => 'rw',
     default => 1.0,
-);
+));
 sub base_value {
     return shift->_value;
 }

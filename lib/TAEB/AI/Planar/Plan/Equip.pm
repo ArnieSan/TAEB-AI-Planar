@@ -2,29 +2,30 @@
 package TAEB::AI::Planar::Plan::Equip;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi refaddr/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take an item in our inventory as argument.
-has item => (
+has (item => (
     isa     => 'Maybe[NetHack::Item]',
     is      => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->item(shift);
 }
 
-has taking_off => (
+has (taking_off => (
     isa     => 'Maybe[NetHack::Item]',
     is      => 'rw',
     default => undef,
-);
-has unwielding => (
+));
+has (unwielding => (
     isa     => 'Bool',
     is      => 'rw',
     default => 0,
-);
+));
 
 sub aim_tile {
     my $self = shift;

@@ -2,14 +2,15 @@
 package TAEB::AI::Planar::Plan::PermaFood;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
 # We take an item in our inventory as argument.
-has item => (
+has (item => (
     isa     => 'Maybe[NetHack::Item]',
     is      => 'rw',
     default => undef,
-);
+));
 sub set_arg {
     my $self = shift;
     $self->item(shift);

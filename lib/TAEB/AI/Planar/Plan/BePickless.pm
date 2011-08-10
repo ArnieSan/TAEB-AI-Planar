@@ -3,15 +3,16 @@ return; #M::P
 package TAEB::AI::Planar::Plan::BePickless;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use Moose;
 extends 'TAEB::AI::Planar::Plan::Countermeasure';
 
 # Our argument is just outside the door of the shop, where we want
 # to or would have dropped the pick.
-has doorpad => (
+has (doorpad => (
     isa     => 'Maybe[TAEB::World::Tile]',
     is      => 'rw',
     default => undef,
-);
+));
 
 sub set_arg {
     my $self = shift;
