@@ -389,7 +389,7 @@ has (nearby_chokepoints => (
 has (chokepoint_last_updated => (
     isa     => 'HashRef[Int]',
     is      => 'rw',
-    default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
+    default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
 # undef if looking at the main tactics map; defined if looking at a chokepoint.
@@ -1035,7 +1035,7 @@ sub update_tactical_map {
             my $cetset = $self->chokepoint_examine_tiles;
             # Look for chokepoints that have recently been removed.
             for my $oldcp ($self->old_chokepoint_set->elements) {
-                 ($self->chokepoint_map->{$oldcp} // 0) == -2
+                 ($self->chokepoint_map->{refaddr $oldcp} // 0) == -2
                      and $self->old_chokepoint_set->delete($oldcp);
             }
             for my $ctile ($cetset->elements,
@@ -1045,7 +1045,7 @@ sub update_tactical_map {
                     my $tile = shift;
                     my $cpset = $self->nearby_chokepoints->{$tile};
                     $cpset and $cpset->size and $locset->insert($cpset->elements);
-                    ($self->chokepoint_map->{$tile} // 0) == -2
+                    ($self->chokepoint_map->{refaddr $tile} // 0) == -2
                         and $locset->insert($tile);
                     $cetset->delete($tile);
                 });
@@ -1058,7 +1058,7 @@ sub update_tactical_map {
         # Chokepoints we're standing on are routed a bit differently.
         # So if we're standing on a chokepoint, mark it for regeneration
         # next chokepoint routing.
-        ($self->chokepoint_map->{TAEB->current_tile} // 0) == -2
+        ($self->chokepoint_map->{refaddr(TAEB->current_tile)} // 0) == -2
             and $self->chokepoint_examine_tiles->insert(
                 TAEB->current_tile);
     }
@@ -1074,7 +1074,7 @@ sub update_tactical_map {
         # without risk (as it's a NOP).
         $self->tactical_target_tile($seed);
         $self->current_chokepoint($is_tct ? undef : $seed);
-        $is_tct or $clu->{$seed} = $aistep;
+        $is_tct or $clu->{refaddr $seed} = $aistep;
         my $map = $self->tactics_map;
         my $seedx = $seed->x;
         my $seedy = $seed->y;
@@ -1112,7 +1112,7 @@ sub update_tactical_map {
             if ($algorithm eq 'chokepoint' && !$ftr) {
                 my $tmetile = $tl->at($tx, $ty);
                 if (!$taint && ($seedx != $tx || $seedy != $ty) && 
-                    ($self->chokepoint_map->{$tmetile} // 0) == -2) {
+                    ($self->chokepoint_map->{refaddr $tmetile} // 0) == -2) {
                     $taint = 1;
 #                    TAEB->log->ai("Starting to taint at ($tx, $ty) " .
 #                                  "[seed = ($seedx, $seedy)]");
@@ -1178,7 +1178,7 @@ sub update_tactical_map {
             die "Chokepoint $cptile should have been mapped and wasn't"
                 unless $cpmap;
             $cpmap = $cpmap->{refaddr $tl};
-            my $cpclu = $is_tct ? $aistep : $clu->{$cptile};
+            my $cpclu = $is_tct ? $aistep : $clu->{refaddr $cptile};
             for my $seed (@seed_locations) {
                 my $stme = $cpmap->[$seed->x]->[$seed->y];
                 next unless defined $stme;
@@ -1228,7 +1228,7 @@ sub update_tactical_map {
 has (chokepoint_map => (
     is => 'rw',
     isa => 'HashRef[Int]',
-    default => sub { my %h = (); tie %h, 'Tie::RefHash'; \%h },
+    default => sub { {} },
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
 # A set of chokepoints. This is indexing the map, and contains the same
@@ -1250,10 +1250,10 @@ sub locate_chokepoints {
     $iterator eq 'each_tile' and $self->chokepoint_set->clear;
     $tcl->$iterator(sub {
         my $tile = shift;
-        if (($curmap->{$tile} // 0) == -2) {
+        if (($curmap->{refaddr $tile} // 0) == -2) {
             $self->chokepoint_set->delete($tile);
         }
-        $curmap->{$tile} = 0, return
+        $curmap->{refaddr $tile} = 0, return
             unless $self->tile_eventually_walkable($tile,0);
         my $routable_neighbours = 0;
         my $last_routable_neighbour = undef;
@@ -1276,7 +1276,7 @@ sub locate_chokepoints {
             }
         });
         $routable_neighbours = 3 if $routable_neighbours > 3;
-        $curmap->{$tile} = $routable_neighbours;
+        $curmap->{refaddr $tile} = $routable_neighbours;
 #D#        TAEB->log->ai("Placing $routable_neighbours at " . ($tile->x) . ", " .
 #D#                      ($tile->y));
     });
@@ -1287,12 +1287,12 @@ sub locate_chokepoints {
     # the square or change level, or in 100 turns.)
     $tcl->$iterator(sub {
         my $tile = shift;
-        return unless $curmap->{$tile} == 2;
+        return unless $curmap->{refaddr $tile} == 2;
         $tile->each_orthogonal(sub {
             my $adj = shift;
-            my $val = $curmap->{$adj} // 0;
+            my $val = $curmap->{refaddr $adj} // 0;
             if ($val == 3) {
-                $curmap->{$tile} = -2;
+                $curmap->{refaddr $tile} = -2;
                 $self->chokepoint_set->insert($tile);
                 # Is this a new chokepoint?
                 defined $self->fetch_tactics_map($tile)
@@ -1312,7 +1312,7 @@ sub add_threat {
     my $movetype = shift;
     my $nomark_tile = shift;
     my $adjonly = shift;
-    my $threatmap = $self->threat_map->{TAEB->current_level};
+    my $threatmap = $self->threat_map->{refaddr(TAEB->current_level)};
     # We flood the threat map with information about this threat.
     # This is done using a heap with elements of the form
     # [monsterturns, x, y], and a simple map which records if each
@@ -1454,7 +1454,7 @@ sub tme_from_tile {
         my $clu = $self->chokepoint_last_updated;
         for my $chokepoint ($cpset->elements) {
             # Use only chokepoint maps which have been updated at some point.
-            next unless $clu->{$chokepoint};
+            next unless $clu->{refaddr $chokepoint};
             my $cpmap = $self->fetch_tactics_map($chokepoint);
             my $cptme = $cpmap->{refaddr $tile->level}->[$tile->x]->[$tile->y];
             next unless defined $cptme;
@@ -1463,7 +1463,7 @@ sub tme_from_tile {
             # updated already. We may as well do that now to speed up access on
             # future turns.
             $cpset->delete($chokepoint), next if $cptme->{'step'} <
-                $clu->{$chokepoint};
+                $clu->{refaddr $chokepoint};
             my $maintmeforcp = $map->[$chokepoint->x]->[$chokepoint->y];
             next unless defined $maintmeforcp;
             next if $maintmeforcp->{'step'} != $aistep;
@@ -1545,7 +1545,7 @@ sub threat_check {
     # Clear the threat map for the current level.
     my $current_level = TAEB->current_level;
     my $threat_map = $self->threat_map;
-    my $tmcl = $threat_map->{$current_level} = [];
+    my $tmcl = $threat_map->{refaddr $current_level} = [];
     my $count = 0;
     # Mark squares on the threat map as impassable to monsters, if
     # necessary. Monster routing is much more primitive than player
@@ -1670,7 +1670,7 @@ sub threat_check {
     TAEB->in_pit and $trapturns = 10;
     TAEB->in_web and $trapturns = 1;
     if ($trapturns) {
-	my $threatmap = $self->threat_map->{TAEB->current_level};
+	my $threatmap = $self->threat_map->{refaddr(TAEB->current_level)};
 	TAEB->current_tile->each_adjacent(sub {
 	    my $tile = shift;
 	    # The impossibility here is to force Extricate to run
@@ -1687,7 +1687,7 @@ sub threat_check {
     }
     # Similar to traps: engulfing monsters.
     if (TAEB->is_engulfed) {
-	my $threatmap = $self->threat_map->{TAEB->current_level};
+	my $threatmap = $self->threat_map->{refaddr(TAEB->current_level)};
 	TAEB->current_tile->each_adjacent(sub {
 	    my $tile = shift;
 	    $threatmap->[$tile->x]->[$tile->y]->{"-1 Unengulf"}
@@ -1840,7 +1840,7 @@ sub drawing_modes {
         color => sub {
             my $tile = shift;
             my $ai = TAEB->ai;
-            my $status = $ai->plan_caches->{'ExploreLevel'}->{$tile};
+            my $status = $ai->plan_caches->{'ExploreLevel'}->{refaddr $tile};
             my $c;
             $status //= 0;
             $status ==  0 and $c = display_ro(color => COLOR_GRAY,    reverse => 1);
@@ -1861,7 +1861,7 @@ sub drawing_modes {
             my $tile = shift;
             my $ai = TAEB->ai;
             my $tcl = $tile->level;
-            my $cpvalue = $ai->chokepoint_map->{$tile} // 0;
+            my $cpvalue = $ai->chokepoint_map->{refaddr $tile} // 0;
             my $c;
             $cpvalue ==  0 and $c = display_ro(color => COLOR_GRAY);
             $cpvalue ==  1 and $c = display_ro(color => COLOR_BLUE);
@@ -1928,9 +1928,9 @@ sub drawing_modes {
             my $endpoint = $ai->current_plan->aim_tile_cache;
             my @chain = $ai->calculate_tme_chain($endpoint);
             defined $_ and
-                $path{$_->{'tile_level'}->at($_->{'tile_x'},$_->{'tile_y'})} = 1
+                $path{refaddr $_->{'tile_level'}->at($_->{'tile_x'},$_->{'tile_y'})} = 1
                 for @chain;
-            $path{$endpoint} = 2;
+            $path{refaddr $endpoint} = 2;
             $ai->tiles_on_path(\%path);
         },
         color => sub {
@@ -1968,9 +1968,9 @@ sub drawing_modes {
             } else { $color = $tile->debug_color; }
 
             $color = display_ro(color => COLOR_MAGENTA, @reverse)
-                if $ai->tiles_on_path->{$tile};
+                if $ai->tiles_on_path->{refaddr $tile};
             $color = display_ro(color => COLOR_BRIGHT_MAGENTA, @reverse)
-                if ($ai->tiles_on_path->{$tile} // 0) == 2;
+                if ($ai->tiles_on_path->{refaddr $tile} // 0) == 2;
 
             return $color;
         },

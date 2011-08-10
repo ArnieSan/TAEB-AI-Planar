@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::ScareMonster;
 use TAEB::OO;
-use TAEB::Util qw/delta2vi/;
+use TAEB::Util qw/delta2vi refaddr/;
 use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
@@ -87,8 +87,8 @@ sub check_possibility_inner {
         # should be a convert-tactics-to-strategy function in the AI
         # somewhere?
         my $planname = $ai->get_plan("Eliminate",$monster)->name;
-        $ai->threat_map->{$tile->level}->[$tile->x]->[$tile->y]->{"-1 $planname"}
-            = $timesaved;
+        $ai->threat_map->{refaddr($tile->level)}->
+            [$tile->x]->[$tile->y]->{"-1 $planname"} = $timesaved;
     }
     return if TAEB->is_blind; # cannot engrave here
 #    TAEB->log->ai("Scaring might work");

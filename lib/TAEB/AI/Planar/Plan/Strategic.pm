@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::Strategic;
 use TAEB::OO;
+use TAEB::Util qw/refaddr/;
 use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
@@ -156,7 +157,7 @@ sub calculate_risk {
 
 	## START DEBUG CODE
 # 	TAEB->log->ai("Spreading desire to msp $planname...");
-# 	my $thme = $ai->threat_map->{$target_tme->{tile_level}}->
+# 	my $thme = $ai->threat_map->{refaddr $target_tme->{tile_level}}->
 # 	    [$target_tme->{tile_x}]->[$target_tme->{tile_y}];
 # 	for my $p (keys %$thme) {
 # 	    defined($thme->{$p}) or next;
@@ -232,7 +233,7 @@ sub aim_tile_turns {
     my $resources = $ai->resources;
     my $alevel = $aim->level;
     my $tlevel = TAEB->current_level;
-    my $thme = $ai->threat_map->{$alevel}->[$aim->x]->[$aim->y];
+    my $thme = $ai->threat_map->{refaddr $alevel}->[$aim->x]->[$aim->y];
     my %resamounts = ('Time' => $turns);
     my $cost = 0;
     my $elbereth = $self->writes_elbereth;

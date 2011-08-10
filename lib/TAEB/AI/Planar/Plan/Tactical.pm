@@ -163,7 +163,7 @@ sub add_possible_move {
         # situation where this fails (burden should be taken care of in the
         # threat map), but if there is one, this needs generalising.
         for my $iter (0 .. ($timethisstep > 1 ? 1 : 0)) {
-            my $thme = $ai->threat_map->{$oldlevel}->
+            my $thme = $ai->threat_map->{refaddr $oldlevel}->
                 [$iter ? $oldx : $newx]->
                 [$iter ? $oldy : $newy];
             for my $p (keys %$thme) {

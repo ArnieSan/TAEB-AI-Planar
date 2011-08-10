@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::ExploreLevel;
 use TAEB::OO;
-use TAEB::Util qw/vi2delta/;
+use TAEB::Util qw/vi2delta refaddr/;
 use Moose;
 use Set::Object;
 extends 'TAEB::AI::Planar::Plan';
@@ -47,13 +47,13 @@ sub spread_desirability {
         $cache->{'_lastlevel'} = $level;
         $cache->{'_laststep'} = $TAEBstep;
         # The level cache holds cells with positive values, or value -2.
-        $cache->{$level} //= Set::Object->new;
-        my $lcache = $cache->{$level};
+        $cache->{refaddr $level} //= Set::Object->new;
+        my $lcache = $cache->{refaddr $level};
         TAEB->log->ai("ExploreLevel with iterator $iterator.");
         $level->$iterator(sub {
             my $tile = shift;
             # Yes, the cached value is also cached...
-            my $tilecache = ($cache->{$tile} //= 0);
+            my $tilecache = ($cache->{refaddr $tile} //= 0);
             my $explored  = $tile->explored;
             my $tiletype  = $tile->type;
 
@@ -75,43 +75,43 @@ sub spread_desirability {
             # the only way a tile's cache value can become 1.
             if ($tile->has_boulder && $tiletype eq 'obscured') {
                 $lcache->insert($tile);
-                $cache->{$tile} = 4;
+                $cache->{refaddr $tile} = 4;
             } elsif ($tile->is_interesting && !$tile->stepped_on) {
                 $lcache->insert($tile);
-                $cache->{$tile} = 5;
+                $cache->{refaddr $tile} = 5;
             } 
             if ($tiletype =~ /^(?:rock|wall)$/o && !$tile->has_boulder) {
-                $cache->{$tile} = -1;
+                $cache->{refaddr $tile} = -1;
             } elsif ($tilecache > -1 && $tilecache < 4 && $explored) {
-                $cache->{$tile} = -2;
+                $cache->{refaddr $tile} = -2;
                 $lcache->insert($tile);
                 $tile->each_adjacent(sub {
                     my $x = shift;
                     if($x->type eq 'unexplored') {
                         $lcache->insert($x);
-                        $cache->{$x} = 1;
+                        $cache->{refaddr $x} = 1;
                     }
                 });
             } elsif ($tilecache < 3 && !$explored && $ai->tile_walkable($tile)) {
-                $cache->{$tile} = 3;
+                $cache->{refaddr $tile} = 3;
                 $lcache->insert($tile);
                 $tile->each_adjacent(sub {
                     my $x = shift;
                     if($x->type eq 'unexplored') {
                         $lcache->insert($x);
-                        $cache->{$x} = 1;
+                        $cache->{refaddr $x} = 1;
                     }
                 });
             } elsif (!$tilecache && $tiletype ne 'unexplored') {
-                $cache->{$tile} = 2;
+                $cache->{refaddr $tile} = 2;
                 $lcache->insert($tile);
             }
         });
     }
     if($self->useful_to_depend(1, $level)) {
-        my $lcache = $cache->{$level};
+        my $lcache = $cache->{refaddr $level};
         for my $tile ($lcache->elements) {
-            my $tilecache = $cache->{$tile};
+            my $tilecache = $cache->{refaddr $tile};
             
             # Search dead-end corridors and doorways, if we've explored the
             # square to search from first.
@@ -124,14 +124,14 @@ sub spread_desirability {
                 } else {
                     # If this tile is explored, but not currently a dead end,
                     # it never will be. So mark this tile as 'not a dead end'.
-                    $cache->{$tile} = -3;
+                    $cache->{refaddr $tile} = -3;
                     $lcache->delete($tile);
                 }
             } elsif ($tilecache >= 4) {
                 if ((!$tile->is_interesting || $tile->stepped_on) &&
                     ($tile->type ne 'obscured' || !$tile->has_boulder)) {
                     $lcache->delete($tile);
-                    $cache->{$tile} = 0;
+                    $cache->{refaddr $tile} = 0;
                 } else {
                     $self->depends(1,"LookAt",$tile);
                 }
