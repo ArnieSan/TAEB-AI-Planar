@@ -78,15 +78,6 @@ has tile_level => (
     isa => 'TAEB::World::Level',
 );
 
-# The plans that were calculated with a tentative risk from this TME,
-# and need their risk calculated if it changes.
-has tentative_plans => (
-    isa => 'ArrayRef[Str]',
-);
-has tentative_plans_valid_on_step => (
-    isa => 'Int',
-);
-
 # The plans that could potentially make this tile less dangerous.
 # (This is generally Eliminating nearby monsters.) It's a hash ref
 # whose keys are the plans and whose value is the amount of risk that
