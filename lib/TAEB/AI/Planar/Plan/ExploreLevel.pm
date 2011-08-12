@@ -38,7 +38,7 @@ sub spread_desirability {
     my $cache = $ai->plan_caches->{'ExploreLevel'};
     $cache or $ai->plan_caches->{'ExploreLevel'} = $cache = {};
     # We're only going to have new info to cache about the current level.
-    if ($level == TAEB->current_level || !defined $cache->{$level}) {
+    if ($level == TAEB->current_level || !defined $cache->{refaddr $level}) {
         my $iterator = 'each_tile';
         my $TAEBstep = TAEB->step;
         $iterator = 'each_changed_tile_and_neighbors'

@@ -2400,7 +2400,8 @@ sub item_value {
     # item we're currently wielding/wearing counts its full
     # use-benefit, as does the best other item (in inventory or on the
     # floor anywhere); but other items are penalised 90% of their benefit
-    # for each nonwielded item better than them.
+    # for each nonwielded item better than them. If we have several such
+    # items in inventory, we compare inventory letter as a tiebreak.
     my $use_benefit_factor = 1;
     my $benefit = $self->use_benefit($item,$cost);
     my $subtype = $self->item_subtype($item);
@@ -2415,8 +2416,9 @@ sub item_value {
                 my $check_subtype = $self->item_subtype($check);
                 $check_subtype && $check_subtype eq $subtype or next C;
             }
-            $self->use_benefit($check,$cost) > $benefit
-                and $use_benefit_factor /= 10;
+            ($self->use_benefit($check,$cost) <=> $benefit
+             || ($check->slot // ' ') cmp ($item->slot // ' ')) > 0
+             and $use_benefit_factor /= 10;
         }
     }
     $item->is_wielded || ($item->can('is_worn') && $item->is_worn)
