@@ -44,12 +44,13 @@ sub spread_desirability {
         $iterator = 'each_changed_tile_and_neighbors'
             if $cache->{'_lastlevel'} && $cache->{'_lastlevel'} == $level
             && ($cache->{'_laststep'} // -2) + 1 == $TAEBstep;
+        TAEB->log->ai("ExploreLevel with iterator $iterator (laststep = ".
+                      ($cache->{'_laststep'}//0).", step = $TAEBstep).");
         $cache->{'_lastlevel'} = $level;
         $cache->{'_laststep'} = $TAEBstep;
         # The level cache holds cells with positive values, or value -2.
         $cache->{refaddr $level} //= Set::Object->new;
         my $lcache = $cache->{refaddr $level};
-        TAEB->log->ai("ExploreLevel with iterator $iterator.");
         $level->$iterator(sub {
             my $tile = shift;
             # Yes, the cached value is also cached...
@@ -108,7 +109,10 @@ sub spread_desirability {
             }
         });
     }
-    if($self->useful_to_depend(1, $level)) {
+    # useful_to_depend could theoretically save time here, but in
+    # practice seems to cost more time than it saves, and makes no
+    # difference to the end result.
+    if(1) { # $self->useful_to_depend(1, $level)) {
         my $lcache = $cache->{refaddr $level};
         for my $tile ($lcache->elements) {
             my $tilecache = $cache->{refaddr $tile};
@@ -117,7 +121,7 @@ sub spread_desirability {
             # square to search from first.
             if($tilecache == -2) {
                 my $orthogonals = scalar ($tile->grep_orthogonal(
-                                              sub {$cache->{(shift)} == -1}));
+                                              sub {$cache->{(refaddr shift)} == -1}));
                 # Dead-end; a very good place to search, even when not stuck.
                 if($orthogonals == 3) {
                     $self->depends($mines ? 0.5 : 1, "Search", $tile);
