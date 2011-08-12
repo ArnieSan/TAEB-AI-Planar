@@ -2205,6 +2205,16 @@ sub _get_bests {
     }
 }
 
+# A cache for use_benefit. What's cached is the value, and the step that
+# the value is valid on; the key is "cost" or "anticost" followed by the
+# item's refaddr.
+has (_use_benefit_cache => (
+    isa     => 'HashRef[ArrayRef[Num]]',
+    is      => 'rw',
+    default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+));
+
 # The benefit that would be gained from wielding/wearing this; or the
 # benefit that is gained from wielding/wearing this, in the case that
 # it's already wielded/worn.
@@ -2217,6 +2227,12 @@ sub use_benefit {
     my $self = shift;
     my $item = shift;
     my $cost = shift // 'anticost';
+    my $aistep = $self->aistep;
+
+    my $cel = $self->_use_benefit_cache->{$cost . refaddr $item};
+
+    defined $cel and $cel->[1] == $aistep and return $cel->[0];
+
     my $anticost = ($cost eq 'cost' ? 'anticost' : 'cost');
     my $resources = $self->resources;
     my $value = 0;
@@ -2310,7 +2326,12 @@ sub use_benefit {
         for TAEB->inventory->items;
 
     $value -= $resources->{'Delta'}->$cost(1/refaddr($item)); # tiebreak
-    return 0 if $value < 0;
+
+    $value = 0 if $value < 0;
+
+    $self->_use_benefit_cache->{$cost . refaddr $item} =
+        [$value, $aistep];
+
     return $value;
 }
 
