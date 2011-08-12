@@ -42,10 +42,10 @@ sub check_possibility_inner {
 	    #D# TAEB->log->ai("Evaluating move (non door) to " . $tile->x . "," .
 	    #D#	$tile->y);
             my $level = $tile->level;
-            if (($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
+            if ($can_squeeze ||
+                ($tile->x == $tmetile->x || $tile->y == $tmetile->y) ||
 		$ai->$twob($level->at($tile->x, $tmetile->y),1) ||
-		$ai->$twob($level->at($tmetile->x, $tile->y),1) ||
-		$can_squeeze) {
+		$ai->$twob($level->at($tmetile->x, $tile->y),1)) {
                 $self->generate_plan($tme, "MoveTo", $tile);
             }
 	    if (($tile->type eq 'opendoor' || $tile->type eq 'closeddoor')

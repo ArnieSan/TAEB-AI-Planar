@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Resource::FightDamage;
 use TAEB::OO;
 use Moose;
+use MooseX::ClassAttribute;
 extends 'TAEB::AI::Planar::Resource';
 
 # This encapsulates all damage sources that are usable once per fight;
@@ -14,8 +15,25 @@ has (_value => (
 ));
 
 # Split out from amount to avoid code duplication; other things care
-# about which projectiles we have too
+# about which projectiles we have too. This needs memoisation, or the
+# inventory matching takes up around 12% of the time spent in Planar.
+# TODO: Even better would be to do this via dead-reckoning.
+
+class_has (_projectilelist => (
+    isa => 'ArrayRef[NetHack::Item]',
+    is  => 'rw',        
+));
+
+class_has (_projectilelist_valid_on_step => (
+    isa => 'Num',
+    is  => 'rw',
+    default => -1,
+));
+
 sub projectilelist {
+    my $aistep = TAEB->ai->aistep;
+    $aistep == __PACKAGE__->_projectilelist_valid_on_step
+        and return @{(__PACKAGE__->_projectilelist)};
     my @projectiles;
     for my $type (qw/dagger spear shuriken dart rock/) {
         push @projectiles, (TAEB->inventory->find(
@@ -24,6 +42,8 @@ sub projectilelist {
                             cost       => 0,
                            ));
     }
+    __PACKAGE__->_projectilelist_valid_on_step($aistep);
+    __PACKAGE__->_projectilelist(\@projectiles);
     return @projectiles;
 }
 

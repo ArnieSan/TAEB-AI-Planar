@@ -51,6 +51,7 @@ noticed. Things marked with a + are now fixed.
   - Does this require being able to detect shops at range?
   - We should at least check for pickaxe messages
 - Killed by a thrown dagger while trying to regain HP (Rest|DefensiveElbereth)
+- Ditto, except it was a pyrolisk
 - Didn't cause a death but: being chased by a faster monster (it
   miscounted the turns somehow)
 - Repeatedly changing level and getting hit by a monster it couldn't

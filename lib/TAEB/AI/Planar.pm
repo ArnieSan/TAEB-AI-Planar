@@ -1591,6 +1591,8 @@ sub threat_check {
     # The current tile is impassible to monsters for the space of one
     # action if it has at least 3 intact Elbereths.
     # TODO: Other tiles with Elbereth on?
+    # TODO: This is not true for attacks that would scuff an Elbereth
+    # up (noticeably melee and projectiles).
     my $tct = TAEB->current_tile;
     # No point in checking if there was no Elbereth written here
     # beforehand and we weren't alerted when we stepped on the tile,
@@ -2185,13 +2187,18 @@ sub _get_bests {
 
     for my $check (TAEB->inventory->items,
                    map {$_->items} (map {@$_} (@{TAEB->dungeon->levels}))) {
-        if ($check->can('hands') && defined($check->hands)) {
-            if ($check->hands == 2) {
-                $_best_2hw_val = max($_best_2hw_val,
-                    $val_dpot * TAEB::Spoilers::Combat->damage($check));
-            } else {
-                $_best_1hw_val = max($_best_1hw_val,
-                    $val_dpot * TAEB::Spoilers::Combat->damage($check));
+        if ($check->can('hands')) {
+            my $hands = $check->hands;
+            if (defined ($hands)) {
+                if ($hands == 2) {
+                    $_best_2hw_val = max(
+                        $_best_2hw_val,
+                        $val_dpot * TAEB::Spoilers::Combat->damage($check));
+                } else {
+                    $_best_1hw_val = max(
+                        $_best_1hw_val,
+                        $val_dpot * TAEB::Spoilers::Combat->damage($check));
+                }
             }
         }
 
@@ -2242,12 +2249,13 @@ sub use_benefit {
     # multiply by .8682 (the chance of random armour not being cursed);
     # in addition, we subtract the AC of our current armour in the same
     # slot, unless the item is our current armour.
-    if($item->can('ac') && defined $item->ac &&
+    if($item->can('ac') &&
        $self->item_subtype($item) && !$item->is_cursed) {{
         my $slot = $self->item_subtype($item);
         last unless TAEB->inventory->equipment->can($slot);
-        my $currently_in_slot = TAEB->inventory->equipment->$slot;
         my $ac = $item->ac;
+        last unless defined $ac;
+        my $currently_in_slot = TAEB->inventory->equipment->$slot;
         defined $currently_in_slot && $currently_in_slot->can('ac') &&
             defined $currently_in_slot->ac && $currently_in_slot != $item
             and $ac -= $currently_in_slot->ac;
@@ -2304,14 +2312,15 @@ sub use_benefit {
         defined $current_weapon && $current_weapon != $item and
             $damage -= TAEB::Spoilers::Combat->damage($current_weapon);
 
-        if ($item->hands == 2
-            && (!defined $current_weapon || $current_weapon->hands != 2)
+        my $ih = $item->hands;
+        my $ch = $current_weapon ? $current_weapon->hands : 0;
+
+        if ($ih == 2 && $ch != 2
             && $_best_shield_val > 0) {
             $value -= $_best_shield_val;
         }
 
-        if ($item->hands == 1
-            && (defined $current_weapon && $current_weapon->hands == 2)
+        if ($ih == 1 && $ch != 1
             && $_best_shield_val > 0) {
             $value += $_best_shield_val;
         }
