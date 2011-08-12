@@ -241,6 +241,7 @@ sub aim_tile_turns {
     my @extra_msp = ();
     for my $p (keys %$thme) {
 	defined($thme->{$p}) or next;
+        $p eq 'stairsmod' and next;
 	my ($thmeturns, $planname) = split / /, $p;
 	next if $thmeturns >= $turns;
         # The chance that an iterative Elbereth-writing in the dust fails

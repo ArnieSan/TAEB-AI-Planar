@@ -3,6 +3,8 @@ to either die, or to crash. The intention is that looking
 for patterns here will enable bugs or AI deficiencies to be
 noticed. Things marked with a + are now fixed.
 
+- Forgetting the location of a bugbear and being killed by
+  it from 1hp
 - Being stunned
   - Partially fixed; retry now works properly from this
 - Invisible monsters
@@ -21,8 +23,6 @@ noticed. Things marked with a + are now fixed.
   + This makes me even more suspicious that there's a
     caching bug related to changing level
     + This one's been fixed now, I think
-- Forgetting the location of a bugbear and being killed by
-  it from 1hp
 - Bumping a shopkeeper when blind
   - This one happens relatively often. I wonder if there's an easy
     solution? You can often sort-of guess where a shop is by the
@@ -55,3 +55,7 @@ noticed. Things marked with a + are now fixed.
   miscounted the turns somehow)
 - Repeatedly changing level and getting hit by a monster it couldn't
   remember just after the change
+- Exploring while on very low HP and surrounded by monsters, after
+  rejecting a bunch of other explore plans; it's not clear why this
+  plan was thought by the bot to be safe (at a cost of 0.02hp, 2
+  turns)

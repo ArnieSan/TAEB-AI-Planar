@@ -11,6 +11,7 @@ use TAEB::Spoilers::Sokoban;
 use Storable;
 use Set::Object qw/weak_set/;
 use Tie::RefHash;
+use POSIX qw/floor/;
 use Module::Pluggable
     'search_path' => ['TAEB::AI::Planar::Resource'],
     'sub_name' => 'resource_names',
@@ -1341,7 +1342,12 @@ sub add_threat {
 	return if $adjonly && $t > 0;
 	$visitmap[$x]->[$y] = 1;
         my $txy = $threatmap->[$x]->[$y];
-	my $rt = $t / $relspeed;
+        # Monsters guarding stairs can attack us as we come back up.
+        # Therefore, we give them two turn's advantage when
+        # considering the threat on that square. The call to floor()
+        # allows for monsters to get turns more often than expected
+        # due to rounding errors.
+	my $rt = floor(($t + $txy->{'stairsmod'}) / $relspeed);
 	$txy->{"$rt $planname"} = $danger
             unless ($adjonly && exists $txy->{'boulder'})
                 || (defined $nomark_tile &&
@@ -1576,6 +1582,10 @@ sub threat_check {
                 $coly->{'phase'} = undef;
                 $coly->{'eignore'} = undef;
  	    }
+            # Stairs, we have to come back to blind, so they give two
+            # turns of advantage to the monster.
+            $coly->{'stairsmod'} =
+                $tile->isa("TAEB::World::Tile::Stairs") ? -2 : 0;
 	}
     }
     # The current tile is impassible to monsters for the space of one

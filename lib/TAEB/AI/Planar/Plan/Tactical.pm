@@ -169,6 +169,7 @@ sub add_possible_move {
             for my $p (keys %$thme) {
                 # Not all possible values of $p are threats.
                 defined($thme->{$p}) or next;
+                $p eq 'stairsmod' and next;
                 # If the threat never gets here in time, ignore it.
                 my ($turns, $reductionplan) = split / /, $p;
                 # Debug code for threat calculation
