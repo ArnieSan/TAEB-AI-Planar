@@ -13,6 +13,18 @@ sub set_arg {
     $self->tile(shift);
 }
 
+# Marginally favour pathing to closer squares first, if there's a tie.
+# This tends to prevent a need to go back and re-explore locations
+# later.
+sub calculate_extra_risk {
+    my $self = shift;
+    my $tct = TAEB->current_tile;
+    my $tile = $self->tile;
+    $self->cost("Delta",
+                ($tct->x-$tile->x)*($tct->x-$tile->x)+
+                ($tct->y-$tile->y)*($tct->y-$tile->y));
+}
+
 sub aim_tile {
     return shift->tile;
 }

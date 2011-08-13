@@ -3,43 +3,31 @@ package TAEB::AI::Planar::Plan::PushBoulder;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use Moose;
-extends 'TAEB::AI::Planar::Plan::Tactical';
-
-has (tile => (
-    isa => 'Maybe[TAEB::World::Tile]',
-    is  => 'rw',
-    default => undef,
-));
-sub set_additional_args {
-    my $self = shift;
-    $self->tile(shift);
-}
+extends 'TAEB::AI::Planar::Plan::DirectionalTactic';
 
 sub calculate_risk {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
+    my $tile = $self->tile($tme);
     $self->cost("Time",1);
     $self->level_step_danger($tile->level);
 }
 
-sub check_possibility_inner {
+sub check_possibility {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
-    $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
+    $self->add_directional_move($tme);
 }
 
 sub action {
     my $self = shift;
-    my $tile = $self->tile;
-    return TAEB::Action->new_action(
-	'move', direction => delta2vi($tile->x - TAEB->x, $tile->y - TAEB->y));
+    $self->tile; # memorize it
+    return TAEB::Action->new_action('move', direction => $self->dir);
 }
 
 sub succeeded {
     my $self = shift;
-    return TAEB->current_tile == $self->tile;
+    return TAEB->current_tile == $self->memorized_tile;
 }
 
 use constant description => 'Pushing a boulder';

@@ -3,37 +3,25 @@ package TAEB::AI::Planar::Plan::Stairs;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use Moose;
-extends 'TAEB::AI::Planar::Plan::Tactical';
-
-has (tile => (
-    isa => 'Maybe[TAEB::World::Tile]',
-    is  => 'rw',
-    default => undef,
-));
-sub set_additional_args {
-    my $self = shift;
-    $self->tile(shift);
-}
+extends 'TAEB::AI::Planar::Plan::ComplexTactic';
 
 sub calculate_risk {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
     $self->cost("Time",1);
-    $self->level_step_danger($tile->other_side->level);
+    $self->level_step_danger($self->tile->level);
 }
 
-sub check_possibility_inner {
+sub is_possible {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile->other_side;
-    return unless defined $tile; # if we don't know where they go, then...
-    $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
+    my $tile = $self->tile_from;
+    return $tile->can("other_side") && defined $tile->other_side;
 }
 
 sub action {
     my $self = shift;
-    my $tile = $self->tile;
+    my $tile = $self->tile_from;
     return TAEB::Action->new_action('ascend') if $tile->type eq 'stairsup';
     return TAEB::Action->new_action('descend') if $tile->type eq 'stairsdown';
     return undef;
@@ -41,8 +29,7 @@ sub action {
 
 sub succeeded {
     my $self = shift;
-    return 0 unless $self->tile->type =~ /^stairs/o;
-    return TAEB->current_tile == $self->tile->other_side;
+    return TAEB->current_tile == $self->tile;
 }
 
 use constant description => 'Using stairs';

@@ -8,23 +8,13 @@ use TAEB::Spoilers::Sokoban;
 use Moose;
 extends 'TAEB::AI::Planar::Plan::Tactical';
 
-# A metaplan. This one encompasses all methods of moving from a
-# particular TME to a particular tile; it works by looking at the tile
-# that's being moved to, then spawning an appropriate plan (or
-# appropriate plans) to move there (such as OpenDoor+KickDownDoor, or
-# Walk). This only allows for movement from adjacent tiles; it
-# shouldn't be generated with a TME that isn't adjacent to the target
-# tile.
-
-has (tile => (
-    isa => 'Maybe[TAEB::World::Tile]',
-    is  => 'rw',
-    default => undef,
-));
-sub set_additional_args {
-    my $self = shift;
-    $self->tile(shift);
-}
+# A metaplan. This one encompasses all methods of moving to a
+# particular tile; it works by looking at the tile that's being moved
+# to, then spawning an appropriate plan (or appropriate plans) to move
+# there (such as OpenDoor+KickDownDoor, or Walk). This only allows for
+# movement from adjacent tiles (as does the current tactical routing
+# system in general). This metaplan is called by the AI to update the
+# tactical info for a square.
 
 # It's good to push a boulder onto a square if it has two or more
 # adjacent squares which are adjacent to each other.
@@ -42,40 +32,35 @@ sub safe_boulder_square {
     return scalar keys %xhash > 1 && scalar keys %yhash > 1;
 }
 
-sub check_possibility_inner {
+sub check_possibility {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
-    my $x    = $tile->x;
-    my $y    = $tile->y;
-    my $l    = $tile->level;
+    my $x    = $tme->{'tile_x'};
+    my $y    = $tme->{'tile_y'};
+    my $l    = $tme->{'tile_level'};
+    my $tile = $l->at($x,$y);
     my $ai   = TAEB->ai;
     my $aistep = $ai->aistep;
-    # Bail as fast as we can if a faster way to move to this tile has
-    # already been locked into the tactical map, to save needless
-    # computation.
-    #D# TAEB->log->ai("Evaluating MoveTo($x,$y) from " . $tme->{tile_x} . "," .
-    #D#	    $tme->{tile_y} . "...");
-    my $currenttme = $ai->tactics_map->{refaddr $l}->[$x]->[$y];
-    return if defined $currenttme && $currenttme->{'step'} == $aistep;
-    # Otherwise, continue with the calculation...
-    my $tmex = $tme->{'tile_x'};
-    my $tmey = $tme->{'tile_y'};
-    my $tmel = $tme->{'tile_level'};
     my $type = $tile->type;
     my $sokoban = defined $l->branch && $l->branch eq 'sokoban';
 
-    # Things which might care about which direction we approach the tile from.
-
     if($type eq 'closeddoor') {
-	# Open the door, or kick it down.
-	$self->generate_plan($tme,"OpenDoor",$tile);
-	$self->generate_plan($tme,"KickDownDoor",$tile);
+	# Open the door, or kick it down. Opening must be orthogonal
+        # (actually, it needn't, but it needs to be orthogonal to walk
+        # through it afterwards...), kicking down can be diagonal.
+	$self->generate_plan($tme,"OpenDoor",'h');
+	$self->generate_plan($tme,"OpenDoor",'j');
+	$self->generate_plan($tme,"OpenDoor",'k');
+	$self->generate_plan($tme,"OpenDoor",'l');
+	$self->generate_plan($tme,"KickDownDoor",'s');
     }
 
-    if($type eq 'opendoor' && ($tmex == $x || $tmey == $y)) {
-	# This is just a Walk, but the direction it comes from matters.
-	$self->generate_plan($tme,"Walk",$tile);
+    if($type eq 'opendoor') {
+	# We can only Walk to it orthogonally.
+	$self->generate_plan($tme,"Walk",'h');
+	$self->generate_plan($tme,"Walk",'j');
+	$self->generate_plan($tme,"Walk",'k');
+	$self->generate_plan($tme,"Walk",'l');
     }
 
     # Boulders can sometimes be pushed. It depends on what's beyond them.
@@ -83,92 +68,38 @@ sub check_possibility_inner {
     # on a safe square atm. We also may want to push a boulder which is
     # in a safe location, but only if specifically aiming there; so we use
     # PushBoulderRisky instead.
-    if($tile->has_boulder && !$sokoban) {{
-        #D# TAEB->log->ai("Considering to push boulder");
-        my $dx = $x - $tmex;
-        my $dy = $y - $tmey;
-        last if $dx && $dy; # don't push boulders diagonally
-   	    my $beyond = $l->at_safe($x+$dx,$y+$dy);
+    if($tile->has_boulder && !$sokoban) {
+        for my $bdir (['h',-1,0],['j',0,1],['k',0,-1],['l',1,0]) {
+            my ($dir,$dx,$dy) = @$bdir;
+            #D# TAEB->log->ai("Considering to push boulder");
+            my $beyond = $l->at_safe($x+$dx,$y+$dy);
             my $plantype = (safe_boulder_square($tile, $ai) ?
                             "PushBoulderRisky" : "PushBoulder");
-        if(defined $beyond and $beyond->type eq 'unexplored') {
-            $self->generate_plan($tme,$plantype,$tile);
+            if(defined $beyond and $beyond->type eq 'unexplored') {
+                $self->generate_plan($tme,$plantype,$dir);
+            }
+            # If we can push the boulder to a square with two adjacent
+            # neighbours, we can route round it from there. (Except in
+            # Sokoban, but we shouldn't blindly push boulders there
+            # anyway.) So continue moving beyond until we find either an
+            # obstructed square, or a safely-pushable-to square; but don't
+            # push a boulder if it's already on a safely-pushable-to
+            # square (leave it unroutable instead). We use
+            # is_inherently_unwalkable here; monsters can move, and are
+            # often shown as I glyphs, so we want impossibility tracking
+            # to track the monsters rather than assuming the boulder won't
+            # move.
+            while (defined $beyond && !$beyond->has_boulder &&
+                   !$beyond->is_inherently_unwalkable(1,1) &&
+                   !safe_boulder_square($beyond, $ai, $tile)) {
+                $beyond = $l->at_safe($beyond->x+$dx,$beyond->y+$dy);
+            }
+            if(defined $beyond && !$beyond->has_boulder &&
+               !$beyond->is_inherently_unwalkable(1,1)) {
+                $self->generate_plan($tme,$plantype,$dir);
+            }
         }
-        # If we can push the boulder to a square with two adjacent
-        # neighbours, we can route round it from there. (Except in
-        # Sokoban, but we shouldn't blindly push boulders there
-        # anyway.) So continue moving beyond until we find either an
-        # obstructed square, or a safely-pushable-to square; but don't
-        # push a boulder if it's already on a safely-pushable-to
-        # square (leave it unroutable instead). We use
-        # is_inherently_unwalkable here; monsters can move, and are
-        # often shown as I glyphs, so we want impossibility tracking
-        # to track the monsters rather than assuming the boulder won't
-        # move.
-        while (defined $beyond && !$beyond->has_boulder &&
-               !$beyond->is_inherently_unwalkable(1,1) &&
-               !safe_boulder_square($beyond, $ai, $tile)) {
-            $beyond = $l->at_safe($beyond->x+$dx,$beyond->y+$dy);
-        }
-        if(defined $beyond && !$beyond->has_boulder &&
-          !$beyond->is_inherently_unwalkable(1,1)) {
-        $self->generate_plan($tme,$plantype,$tile);
-        }        
-    }}
-
-    # For things that don't care about which direction we approach the tile
-    # from, there's an optimisation trick; the first MoveTo aiming at that
-    # tile in any given pathfind will necessarily be the one that returns
-    # the most optimal value, so we may as well use it. (Note that this is
-    # why Walk favours paths which are orthogonal first, diagonal second;
-    # although that's not quite direction-agnostic, doing it that way
-    # doesn't break this optimisation.)
-    # Note that this breaks if tiles have different costs to move /off/,
-    # but that would break the AI anyway; instead, the cost of moving onto
-    # a "sticky" tile should also include the cost to move back off it
-    # again, which is slightly counterintuitive but helps centralise the
-    # cost rather than spreading it all over the AI, requiring a lot of
-    # special-casing.
-    # The cache is placed on the AI, in the plan_caches hash. The plan
-    # name is hardcoded here deliberately; if this is subclassed for
-    # some reason, we still want MoveTo's cache itself if this
-    # procedure is still being used.
-    my $cache = $ai->plan_caches->{'MoveTo'};
-    if(!defined $cache) {
-	$cache = {};
-	$ai->plan_caches->{'MoveTo'} = $cache;
     }
-    my ($levelcache, $worldcache);
-    # Write the cache referencing out in full, to avoid issues with
-    # stringisation of chokepoints, rather than using Tie::RefHash
-    # which seems not to work correctly in this context.
-    $worldcache = $ai->current_chokepoint ?
-        $cache->{refaddr $ai->current_chokepoint} :
-        $cache->{'main'};
-    if(!defined $worldcache) {
-        $worldcache = {};
-        ($ai->current_chokepoint ?
-         $cache->{refaddr $ai->current_chokepoint} :
-         $cache->{'main'}) = $worldcache;
-    }
-    $levelcache = $worldcache->{refaddr $l};
-    if(!defined $levelcache) {
-	$levelcache = [];
-	$levelcache->[$_] = [] for 0..79;
-	$worldcache->{refaddr $l} = $levelcache;
-    }
-#D#    TAEB->log->ai("refaddr worldcache is ".(refaddr $worldcache));
-#D#    TAEB->log->ai("refaddr level is ".(refaddr $l));
-#D#    TAEB->log->ai("refaddr levelcache is ".(refaddr $levelcache));
-#D#    TAEB->log->ai("refaddr chokepoint is ".(
-#D#                      $ai->current_chokepoint ?
-#D#                      refaddr $ai->current_chokepoint :
-#D#                      'main'));
-    if (($levelcache->[$x]->[$y] // -1) == $aistep) {
-	#D#TAEB->log->ai("We've already considered moving here");
-	return;
-    }
-    $levelcache->[$x]->[$y] = $aistep;
 
     # We can just walk to passable tiles. There could be something blocking
     # them, but if so Walk should notice, and if it doesn't impossibility
@@ -177,34 +108,34 @@ sub check_possibility_inner {
     # there.
     if($type =~ /^(?:fountain|stairsup|stairsdown|ice|drawbridge|altar|
                      corridor|floor|grave|sink|throne|obscured)$/xo) {
-	$self->generate_plan($tme,"Walk",$tile);
+	$self->generate_plan($tme,"Walk",'s');
     }
     # Unexplored tiles can be searched to explore them, if moving next
     # to them doesn't explore them (e.g. when blind). We shouldn't do
-    # this unless we've stepped onto the tile to search them from,
-    # though, as it would be semantically wrong; generally speaking
-    # tiles become explored when we walk next to them, and if tiles
-    # are more than distance 1 away we don't yet know if they're
-    # unexplored.
+    # this unless they're adjacent to a stepped-on tile, though, as it
+    # would be semantically wrong; generally speaking tiles become
+    # explored when we walk next to them, and if tiles are more than
+    # distance 1 away we don't yet know if they're unexplored.
     my $into_blindness;
-    if($type eq 'unexplored' && $tmel->at($tmex,$tmey)->stepped_on) {
-	$self->generate_plan($tme,"LightTheWay",$tile);
+    if($type eq 'unexplored' && TAEB->is_blind &&
+       $tile->any_adjacent(sub{shift->stepped_on})) {
+	$self->generate_plan($tme,"LightTheWay",'s');
 	$into_blindness = 1;
     }
     # Certain traps are passable, at a cost.
     if($type eq 'trap') {
-	$self->generate_plan($tme,"ThroughTrap",$tile);
+	$self->generate_plan($tme,"ThroughTrap",'s');
     }
     # In Sokoban, mimics are pathable by waking and killing them.
     if($sokoban && $tile->has_boulder &&
        !TAEB::Spoilers::Sokoban->probably_has_genuine_boulder($tile)) {
-        $self->generate_plan($tme,"ViaMimic",$tile);
+        $self->generate_plan($tme,"ViaMimic",'s');
     }
     # we want to path through unexplored because much of it will be rock
     # but if we're blind, we have no way of knowing when to stop digging (yet?)
     if($type eq 'rock' || ($type eq 'unexplored' && !$into_blindness) ||
 	    $type eq 'wall' || $tile->has_boulder) {
-	$self->generate_plan($tme,"Tunnel",$tile);
+	$self->generate_plan($tme,"Tunnel",'s');
     }
     # TODO: Need much more here
 }

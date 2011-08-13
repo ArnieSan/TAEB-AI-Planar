@@ -3,7 +3,8 @@ package TAEB::AI::Planar::Plan::ThroughTrap;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use Moose;
-extends 'TAEB::AI::Planar::Plan::Tactical';
+extends 'TAEB::AI::Planar::Plan::DirectionalTactic';
+with 'TAEB::AI::Planar::Meta::Role::SqueezeChecked';
 
 # Traps that we can route through, but at an additional cost in resources.
 # This uses /maximum/ damage for traps; we want to be very cautious around
@@ -28,30 +29,20 @@ use constant trap_costs => {
     # polytrap not worth ever routing through, that's too risky
 };
 
-has (tile => (
-    isa => 'Maybe[TAEB::World::Tile]',
-    is  => 'rw',
-    default => undef,
-));
-sub set_additional_args {
-    my $self = shift;
-    $self->tile(shift);
-}
-
 sub calculate_risk {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
+    my $tile = $self->tile($tme);
     my $extra_costs = trap_costs->{$tile->trap_type};
     $self->cost("Time",1);
     $self->cost($_,$extra_costs->{$_}) for keys %$extra_costs;
     $self->level_step_danger($tile->level); # is this accurate?
 }
 
-sub check_possibility_inner {
+sub check_possibility {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
+    my $tile = $self->tile($tme);
     return if $tile->type ne 'trap';
     if (defined $tile->monster) {
 	# We need to generate a plan to scare the monster out of the
@@ -63,25 +54,20 @@ sub check_possibility_inner {
     return unless TAEB->ai->tile_walkable($tile); # avoid traps in Sokoban
     return unless defined $tile->trap_type;
     return unless defined trap_costs->{$tile->trap_type};
-    $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
+    $self->add_directional_move($tme,$tile->x,$tile->y,$tile->level);
 }
 
 sub replaceable_with_travel { 0 }
 sub action {
     my $self = shift;
-    my $tile = $self->tile;
-    my $dir = delta2vi($tile->x - TAEB->x, $tile->y - TAEB->y);
-    if (!defined $dir) {
-	die "Could not move from ".TAEB->x.", ".TAEB->y." to ".
-	    $tile->x.", ".$tile->y." because they aren't adjacent.";
-    }
-    return TAEB::Action->new_action(
-	'move', direction => $dir);
+    $self->tile; # memorize it
+    my $dir = $self->dir;
+    return TAEB::Action->new_action('move', direction => $dir);
 }
 
 sub succeeded {
     my $self = shift;
-    return TAEB->current_tile == $self->tile;
+    return TAEB->current_tile == $self->memorized_tile;
 }
 
 use constant description => 'Walking through a trap';

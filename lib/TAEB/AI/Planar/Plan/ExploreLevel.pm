@@ -109,44 +109,37 @@ sub spread_desirability {
             }
         });
     }
-    # useful_to_depend could theoretically save time here, but in
-    # practice seems to cost more time than it saves, and makes no
-    # difference to the end result.
-    if(1) { # $self->useful_to_depend(1, $level)) {
-        my $lcache = $cache->{refaddr $level};
-        for my $tile ($lcache->elements) {
-            my $tilecache = $cache->{refaddr $tile};
-            
-            # Search dead-end corridors and doorways, if we've explored the
-            # square to search from first.
-            if($tilecache == -2) {
-                my $orthogonals = scalar ($tile->grep_orthogonal(
-                                              sub {$cache->{(refaddr shift)} == -1}));
-                # Dead-end; a very good place to search, even when not stuck.
-                if($orthogonals == 3) {
-                    $self->depends($mines ? 0.5 : 1, "Search", $tile);
-                } else {
-                    # If this tile is explored, but not currently a dead end,
-                    # it never will be. So mark this tile as 'not a dead end'.
-                    $cache->{refaddr $tile} = -3;
-                    $lcache->delete($tile);
-                }
-            } elsif ($tilecache >= 4) {
-                if ((!$tile->is_interesting || $tile->stepped_on) &&
-                    ($tile->type ne 'obscured' || !$tile->has_boulder)) {
-                    $lcache->delete($tile);
-                    $cache->{refaddr $tile} = 0;
-                } else {
-                    $self->depends(1,"LookAt",$tile);
-                }
-            } elsif ($tilecache > 0) {
-                $self->depends(1,"Explore",$tile);
+    my $lcache = $cache->{refaddr $level};
+    for my $tile ($lcache->elements) {
+        my $tilecache = $cache->{refaddr $tile};
+        
+        # Search dead-end corridors and doorways, if we've explored the
+        # square to search from first.
+        if($tilecache == -2) {
+            my $orthogonals = scalar ($tile->grep_orthogonal(
+                                          sub {$cache->{(refaddr shift)} == -1}));
+            # Dead-end; a very good place to search, even when not stuck.
+            if($orthogonals == 3) {
+                $self->depends($mines ? 0.5 : 1, "Search", $tile);
             } else {
+                # If this tile is explored, but not currently a dead end,
+                # it never will be. So mark this tile as 'not a dead end'.
+                $cache->{refaddr $tile} = -3;
                 $lcache->delete($tile);
             }
+        } elsif ($tilecache >= 4) {
+            if ((!$tile->is_interesting || $tile->stepped_on) &&
+                ($tile->type ne 'obscured' || !$tile->has_boulder)) {
+                $lcache->delete($tile);
+                $cache->{refaddr $tile} = 0;
+            } else {
+                $self->depends(1,"LookAt",$tile);
+            }
+        } elsif ($tilecache > 0) {
+            $self->depends(1,"Explore",$tile);
+        } else {
+            $lcache->delete($tile);
         }
-    } else {
-        TAEB->log->ai("Not exploring $level, there's definitely a better plan");
     }
     # Eliminating (not mitigating) invisible monsters can help us
     # explore by opening up more of the level.

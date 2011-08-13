@@ -199,24 +199,6 @@ sub calculate_risk {
             ($self->in_make_safer_on_step == $ai->aistep
              ? 1 : $ai->analysis_window);
     }
-    # Mark the fact we've considered this in the TME. Only /extra/ risk
-    # is marked in the TME; the rest of the risk is already there. Our
-    # desire counterbalances that; it'll hopefully be rather better than
-    # desires for future plans, saving a lot of needless calculation
-    # (higher desires are calculated earlier). There's a rather irksome
-    # complication here, to do with impossibility; if a plan uses too
-    # many cheap resources, it'll fail, and we may want a plan that uses
-    # fewer but more expensive resources to take its place. Therefore,
-    # this check needs to check affordability taking routing risk into
-    # account, but checked_at_desire without it.
-    if($self->affordable) {
-        my $desire_minus_extra_risk = $self->desire - $extra_risk;
-        if (($target_tme->{'c_a_d_valid_on_step'} // -1) != $aistep ||
-            $target_tme->{'checked_at_desire'} < $desire_minus_extra_risk) {
-            $target_tme->{'c_a_d_valid_on_step'} = $aistep;
-            $target_tme->{'checked_at_desire'} = $desire_minus_extra_risk;
-        }
-    }
     return $risk;
 }
 

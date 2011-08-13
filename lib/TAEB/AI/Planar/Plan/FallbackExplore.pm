@@ -34,17 +34,15 @@ sub spread_desirability {
         && !$level->is_minetown;
     my $blind = TAEB->is_blind;
     my $ai = TAEB->ai;
-    if ($self->useful_to_depend(1, $level)) {
-        $level->each_tile(sub {
-            my $tile = shift;
-            if($ai->tile_walkable($tile)) {
-                my $orthogonals = scalar $tile->grep_orthogonal(
-                    sub {$self->is_search_blocked(shift)});
-                ($orthogonals == 1 || $orthogonals == 2) and
-                    $self->depends($mines ? 0.7 : 1, "Search", $tile);
-            }
-        });
-    }
+    $level->each_tile(sub {
+        my $tile = shift;
+        if($ai->tile_walkable($tile)) {
+            my $orthogonals = scalar $tile->grep_orthogonal(
+                sub {$self->is_search_blocked(shift)});
+            ($orthogonals == 1 || $orthogonals == 2) and
+                $self->depends($mines ? 0.7 : 1, "Search", $tile);
+        }
+    });
     $self->depends(0.8, "ExploreViaTeleport");
     # if we're even considering this, also recheck stairs after the
     # next action. TODO: I don't get why this is necessary; when we

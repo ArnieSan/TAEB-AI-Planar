@@ -3,11 +3,12 @@ package TAEB::AI::Planar;
 use TAEB::OO;
 use Moose;
 use Heap::Simple::XS;
-use TAEB::Util qw/refaddr weaken display_ro :colors any max/;
+use TAEB::Util qw/refaddr weaken display_ro :colors any max deltas/;
 use Scalar::Util qw/reftype/;
 use Time::HiRes qw/gettimeofday tv_interval/;
 use TAEB::Spoilers::Combat;
 use TAEB::Spoilers::Sokoban;
+use TAEB::AI::Planar::TacticsMapEntry qw/numerical_risk_from_spending_plan/;
 use Storable;
 use Set::Object qw/weak_set/;
 use Tie::RefHash;
@@ -265,16 +266,17 @@ sub add_capped_desire {
     }
 }
 
-# The tactics heap is out here for much the same reason that the
-# strategy plan heap is; the plans themselves need to be able to
-# modify it.
+# The tactics heap. The elements are of the form [tme, dirindex,
+# spending_plan, taint, tactic], plus [xfrom, yfrom, lfrom] if
+# dirindex is undef; tactic is a tactic index in the lists, or a
+# tactical plan object if dirindex is undef.
 has (_tacticsheap => (
     isa     => 'Heap::Simple::XS',
     is      => 'rw',
     default => sub {
 	return Heap::Simple::XS->new(
 	    order => '<',
-	    elements => [Object => 'numerical_risk'],
+	    elements => 'Any',
 	    dirty => 1,
 	);
     },
@@ -297,40 +299,6 @@ has (tactical_target_tile => (
     default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
-# Whether to taint TMEs as they're added. This is used by the
-# 'chokepoint' routing algorithm to know when it can stop routing.
-# (This is different from Perl taint, but works a similar way: tainted
-# TMEs can only create other tainted TMEs, and create a sort of
-# "barrier" of don't-bother-to-routability that can't be routed past
-# from this point. I suppose theoretically you could use Perl's actual
-# taint mechanism to implement this, but it would be more trouble than
-# it was worth, and anyway semantically wrong.)
-has (taint_new_tmes => (
-    isa     => 'Bool',
-    is      => 'rw',
-    default => 0,
-    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-));
-has (untainted_tme_count => (
-    isa     => 'Int',
-    is      => 'rw',
-    default => 0,
-    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
-));
-# Add a possible move to the tactics heap.
-sub add_possible_move {
-    my $self = shift;
-    my $tme = shift;
-    my $taint = $self->taint_new_tmes;
-    $tme->{'taint'} = $taint;
-    $self->untainted_tme_count($self->untainted_tme_count+1)
-        unless $taint;
-    $self->_tacticsheap->insert($tme);
-    # Debug line; comment this out when not in use.
-#    TAEB->log->ai("Adding potential tactic (taint = $taint) " .
-#			   $tme->{'tactic'}->name .
-#			   " with risk " . $tme->numerical_risk);
-}
 
 # Resources.
 has (resources => (
@@ -958,6 +926,9 @@ has (need_full_chokepoint_recalc => (
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
 
+# Matches the order in T::A::P::P::Tactical, TAEB::Util::deltas
+use constant _dindex_to_vi => [qw/y b u n h l k j/];
+
 sub update_tactical_map {
     my $self = shift;
     my $curlevel = TAEB->current_level;
@@ -967,9 +938,13 @@ sub update_tactical_map {
     my $tct = TAEB->current_tile;
     my $last_ttt = $self->tactical_target_tile;
     my $aistep = $self->aistep;
+    my $map = $self->tactics_map;
+    my $thmap = $self->threat_map;
     $ftr = $last_ttt->level != $curlevel if $last_ttt;
+
     # Do a tactical recalc every 100 turns, to prevent us getting stuck
-    # if there's a monster next to the stairs.
+    # if there's a monster next to the stairs. TODO: This is a hack,
+    # a better solution is really needed.
     if (TAEB->turn > $self->last_tactical_recalculation + 100 ||
         $algorithm eq 'world') {
         $ftr = 1;
@@ -984,7 +959,8 @@ sub update_tactical_map {
     if ($algorithm eq 'chokepoint' && $curlevel->monster_count) {
         # Even non-threatening monsters violate the assumptions that
         # chokepoint makes (that is, that tiles won't change routing
-        # properties unless they change type).
+        # properties unless they change type). TODO: Handle I glyphs
+        # somehow? They aren't really monsters.
         $algorithm = 'level';
     }
     if ($algorithm eq 'chokepoint' &&
@@ -995,10 +971,12 @@ sub update_tactical_map {
         # tunneling is allowed...
         $algorithm = 'level';
     }
+    # TODO: get chokepoint working with the new system
+    $algorithm eq 'chokepoint' and $algorithm = 'level';
     $self->full_tactical_recalculation and $ftr = 1;
+
     # If we've changed level, reset all the TMEs.
     if ($ftr) {
-        my $map = $self->tactics_map;
         TAEB->log->ai("Resetting all TMEs...");
         for my $levelgroup (@{TAEB->dungeon->levels}) {
             for my $level (@$levelgroup) {
@@ -1012,7 +990,9 @@ sub update_tactical_map {
         $self->need_full_chokepoint_recalc(1);
     }
     $self->tactical_target_tile(TAEB->current_tile);
+    # TODO: Can we get around calling this when not chokepoint routing?
     $self->locate_chokepoints;
+
     # We iterate from several different routing points.
     # For 'level' and 'world' algorithms, we just use the current tile.
     # For 'chokepoint', we iterate from every chokepoint that needs a
@@ -1063,6 +1043,62 @@ sub update_tactical_map {
             and $self->chokepoint_examine_tiles->insert(
                 TAEB->current_tile);
     }
+
+    # For efficiency, we cache the tactical plan, and its spending
+    # plan, of moving onto each square in its TME. This is typically
+    # symmetrical, but can be different in each direction. This is
+    # also where the tactical plans first come in; we use MoveTo to
+    # tag a TME with the appropriate tactics for moving there.
+    my $iterator = $self->full_tactical_recalculation
+        ? "each_tile" : "each_changed_tile_and_neighbors";
+    # Iterate over the current level or whole map as appropriate.
+    for my $levelgroup (@{$ftr ? TAEB->dungeon->levels :
+                              [[TAEB->current_level]]}) {
+        for my $level (@$levelgroup) {
+            # Note that for this to work, it critically requires TAEB
+            # monster objects to reflect monster /observations/, not
+            # monster memory, so that we don't try to ScareMonster a
+            # blank space because the monster memory expired but
+            # each_changed_tile_and_neighbours didn't tell us because
+            # the tile hadn't changed.
+            my $levelmap = $map->{refaddr $level};
+            $level->$iterator(sub {
+                my $tile = shift;
+                my $tx = $tile->x;
+                my $ty = $tile->y;
+                my $esp = [];
+                my $tme = $levelmap->[$tx]->[$ty] = {
+                    # prevtile, prevlevel stuff is all undef
+                    step => -1,
+                    considered => -1,
+                    # risk, level_risk should be set before being used
+                    # so we leave them undef so we get a warning if
+                    # they aren't
+                    other_tactics => [],
+                    entry_tactics => [[],[],[],[],[],[],[],[]],
+                    entry_spending_plans => [[]],
+                    is_symmetrical => 1,
+                    tile_x => $tx,
+                    tile_y => $ty,
+                    tile_level => $level,
+                    make_safer_plans => {},
+                    # hasn't been checked, leave checked_at_desire undef
+                    taint => 0,
+                    source => 'uninitialised',
+                };
+                bless $tme, "TAEB::AI::Planar::TacticsMapEntry";
+                $self->get_tactical_plan("MoveTo", [$level,$tx,$ty])->
+                    check_possibility($tme);
+                $self->get_tactical_plan("MoveFrom", [$level,$tx,$ty])->
+                    check_possibility($tme);
+            });
+        }
+    }
+
+    # Actually calculate all the TMEs we're going to calculate this
+    # step. This depends on the algorithm, as to whether it's all the
+    # TMEs in the world, TMEs on the current level, or TMEs near
+    # changed chokepoints.
     my $clu = $self->chokepoint_last_updated;
     for my $iter ('tct', @seed_locations) {
         my $is_tct = !blessed $iter;
@@ -1076,24 +1112,29 @@ sub update_tactical_map {
         $self->tactical_target_tile($seed);
         $self->current_chokepoint($is_tct ? undef : $seed);
         $is_tct or $clu->{refaddr $seed} = $aistep;
-        my $map = $self->tactics_map;
         my $seedx = $seed->x;
         my $seedy = $seed->y;
         my $nearby = $self->nearby_chokepoints;
+        my $seedtme = $map->{refaddr $seed->level}->[$seedx]->[$seedy];
 #        TAEB->log->ai("Doing routing from $seedx, $seedy on map $map");
-        $self->taint_new_tmes(0); # nops are never tainted
-        $self->get_tactical_plan("Nop")->check_possibility;
-        while ($self->untainted_tme_count) {
-            my $tme = $heap->extract_top;
-            my $tx  = $tme->{'tile_x'};
-            my $ty  = $tme->{'tile_y'};
-            my $tl  = $tme->{'tile_level'};
-            my $row = $map->{refaddr $tl}->[$tx];
-            my $taint = $tme->{'taint'};
-#            TAEB->log->ai("Current untainted count is ".
-#                          $self->untainted_tme_count);
-            $self->untainted_tme_count($self->untainted_tme_count-1)
-                unless $taint;
+        my $untainted = 1; # number of untainted TMEs
+        $seedtme->{$_} = undef
+            for qw/prevtile_level  prevtile_x  prevtile_y
+                   prevlevel_level prevlevel_x prevlevel_y/;
+        $seedtme->{'step'} = -1;
+        $seedtme->{'risk'} = {}; $seedtme->{'level_risk'} = {};
+        $seedtme->{'make_safer_plans'} = {};
+        $heap->key_insert(0, [$seedtme, undef, {}, 0, 'Nop',
+                              $seedx, $seedy, $seed->level]);
+        while ($untainted) {
+            my $tmedir = $heap->extract_top;
+            my $tme    = $tmedir->[0];
+            my $taint  = $tmedir->[3];
+            my $tx     = $tme->{'tile_x'};
+            my $ty     = $tme->{'tile_y'};
+            my $tl     = $tme->{'tile_level'};
+#            TAEB->log->ai("Current untainted count is $untainted");
+            $untainted-- unless $taint;
             # If we're off the level, just ignore this TME, to avoid
             # updating the entire dungeon every step, unless we just
             # changed level.
@@ -1101,13 +1142,135 @@ sub update_tactical_map {
             next if refaddr($tl) != $curlevelra && !$ftr;
             # If we've already found an easier way to get here, ignore
             # this method of getting here.
-            next if exists $row->[$ty] && $row->[$ty]->{'step'} == $aistep;
+            next if $tme->{'step'} == $aistep;
             # This is the best way to get here; add it to the tactical
             # map, then spread possibility from it via the MoveFrom
-            # metaplan.
-            $row->[$ty] = $tme;
-            # The next line is debug code only, but I seem to use it far too
-            # often. Just comment it out, don't remove it.
+            # metaplan. We do this by updating the TME; what needs
+            # changing are the previous x/y/l values (on tiles/levels),
+            # and the spending plan, as well as marking the TME as
+            # up-to-date.
+            my $dir    = $tmedir->[1];
+            my $sp     = $tmedir->[2]; # total risk for the move
+            my %risk   = %$sp;
+            my $tindex = $tmedir->[4];
+
+            my ($px, $py, $pl, $tactic, $oldtme);
+
+#            TAEB->log->ai("Considering move ".$self->planname("",$tmedir));
+
+            if (defined $dir) {
+                # We're moving one step within the level.
+                my ($dx, $dy) = @{[deltas]->[$dir]};
+                $px = $tx - $dx; # if moving (+1,+1), we're coming from (-1,-1)
+                $py = $ty - $dy;
+                $pl = $tl;
+
+                $oldtme = $map->{refaddr $pl}->[$px]->[$py];
+
+                # For such tactics, the calling convention is to give the
+                # TME coordinates we're moving /to/, and the direction the
+                # move is made in.
+                $tactic = $self->get_tactical_plan(
+                    $tme->{'entry_tactics'}->[$dir]->[$tindex],
+                    [$tl, $tx, $ty, _dindex_to_vi->[$dir]]);
+
+                # Add cost from threats on this tile onto the spending
+                # plan, because it wasn't done earlier. (This can be
+                # marginally incorrect in situations where a threat on a
+                # square would control which route was used to reach it
+                # due to balancing resources; I'm not too fussed about
+                # that, though.)
+                my %msp = %{$oldtme->{'make_safer_plans'}};
+                # TODO: Record in the threat map if there are actually
+                # any threats, to speed this process up if there
+                # aren't.
+                my $oldthme = $thmap->{refaddr $pl}->[$px]->[$py];
+                my $newthme = $thmap->{refaddr $tl}->[$tx]->[$ty];
+                my $timetohere = $sp->{'Time'} // 0;
+                my $timethisstep = $tme->{'entry_spending_plans'}->
+                    [$tme->{'is_symmetrical'} ? 0 : $dir]->[$tindex]
+                    ->{'Time'} // 0;
+                for my $iter (0 .. ($timethisstep > 1 ? 1 : 0)) {
+                    my $thme = $iter ? $oldthme : $newthme;
+                    for my $p (keys %$thme) {
+                        defined($thme->{$p}) or next;
+                        $p eq 'stairsmod' and next;
+                        # Ignore threats that won't get here in time.
+                        my ($turns, $reductionplan) = split / /, $p;
+                        $turns > $timetohere and next;
+                        my $riskmul = $timetohere - $turns;
+                        if ($iter) {
+                            $riskmul = $timethisstep - 1 if
+                                $riskmul > $timethisstep - 1;
+                        } else {
+                            $riskmul -= $timethisstep - 1
+                                if $timethisstep > 1;
+                            $riskmul = 1 if $riskmul < 1;
+                        }
+                        my $threatrisk = $thme->{$p};
+                        $risk{$_} += $$threatrisk{$_} * $riskmul
+                            for keys %$threatrisk;
+                        $msp{$reductionplan} +=
+                            $self->resources->{$_}->cost($$threatrisk{$_})
+                            for keys %$threatrisk;
+                    }
+                }
+                $tme->{'make_safer_plans'} = \%msp;
+            } else {
+                $px = $tmedir->[5];
+                $py = $tmedir->[6];
+                $pl = $tmedir->[7];
+                $oldtme = $map->{refaddr $pl}->[$px]->[$py];
+                # We're given an entire, heavyweight tactical plan object.
+                # This is, fortunately, rare.
+                # TODO: Threats? We'd need some hint as to how the plan
+                # in question worked.
+                $tactic = $tindex;
+                $tme->{'make_safer_plans'} = $oldtme->{'make_safer_plans'};
+            }
+
+            $tme->{'prevtile_level'} = $pl;
+            $tme->{'prevtile_x'} = $px;
+            $tme->{'prevtile_y'} = $py;
+            $tme->{'step'} = $aistep;
+            # considered should already be right
+            $tme->{'risk'} = \%risk;
+            $tme->{'tactic'} = $tactic; # TODO: defer this into tme_from_tile?
+            $tme->{'taint'} = $taint; # TODO: is this necessary?
+            $tme->{'source'} = $ftr ? 'world' : 'level';
+
+            if ($ftr) {
+                if ($pl == $tl) {
+                    if ($px != $tx || $py != $ty) {
+                        die 'Intralevel path in undefined direction'
+                            unless defined $dir;
+                        $tme->{'prevlevel_level'} = $oldtme->{'prevlevel_level'};
+                        $tme->{'prevlevel_x'} = $oldtme->{'prevlevel_x'};
+                        $tme->{'prevlevel_y'} = $oldtme->{'prevlevel_y'};
+                        # The spending plan in $tmedir is the /total/ spending
+                        # plan. We want the one-step spending plan to update
+                        # lrisk, so we grab it from the TME itself.
+                        # TODO: What if this is nondirectional?
+                        my %lrisk = %{$tme->{'entry_spending_plans'}
+                                      ->[$tme->{'is_symmetrical'} ? 0 : $dir]
+                                      ->[$tindex]};
+                        $lrisk{$_} += $oldtme->{'level_risk'}->{$_}
+                            for keys %{$oldtme->{'level_risk'}};
+                        $tme->{'level_risk'} = \%lrisk;
+                    } # otherwise it's a NOP, with already updated risks, etc
+                } else {
+                    $tme->{'prevlevel_level'} = $pl;
+                    $tme->{'prevlevel_x'} = $px;
+                    $tme->{'prevlevel_y'} = $py;
+                    # We don't have the spending plan between the levels
+                    # stored anywhere right now, so we need to subtract.
+                    my %lrisk = %{$tme->{'risk'}};
+                    $lrisk{$_} -= $oldtme->{'risk'}->{$_}
+                        for keys %{$oldtme->{'risk'}};
+                    $tme->{'level_risk'} = \%lrisk;
+                }
+            }
+
 #	TAEB->log->ai("Locking in TME " . $tme->{'tactic'}->name . " at $tx, $ty");
             # Maybe start tainting?
             if ($algorithm eq 'chokepoint' && !$ftr) {
@@ -1127,11 +1290,98 @@ sub update_tactical_map {
                     }
                 }
             }
-            $self->taint_new_tmes($taint);
-            $self->get_tactical_plan("MoveFrom", [$tl,$tx,$ty])->
-                check_possibility($tme);
+
+            # Now spread to neighbours.
+            # The rules are: each adjacent tile for which we have a
+            # plan to move there is checked. If it already has a TME
+            # locked in for the step, skip it; if it already has a TME
+            # being considered and is symmetrical, skip it; otherwise
+            # calculate the spending plans for each method of moving
+            # there, and enheap the cheapest.
+            for my $d (0 .. 7) {
+                my ($nx, $ny) = @{[deltas]->[$d]};
+                $nx += $tx; $ny += $ty;
+#                TAEB->log->ai("Checking direction $d ($nx,$ny)");
+                $nx < 0 || $nx > 79 || $ny < 1 || $ny > 21 and next;
+                my $ntme = $map->{refaddr $tl}->[$nx]->[$ny];
+                my $d2 = $d;
+                my $sym = 0;
+                $d2 = 0, $sym = 1 if $ntme->{'is_symmetrical'};
+#                if (!$sym) {TAEB->log->ai("Routing asymmetrical ($nx, $ny)");}
+                !scalar($ntme->{'entry_tactics'}->[$d]) and next;
+                $ntme->{'step'} == $aistep and next;
+                $sym && $ntme->{'considered'} == $aistep and next;
+                $ntme->{'considered'} = $aistep;
+#                TAEB->log->ai("It isn't locked in yet.");
+
+                my $ti = 0;
+                my $bestcost = '+inf';
+                my $bestsp = undef;
+                my $besti = undef;
+#                if (!$sym) {TAEB->log->ai("About to count spending plans (d2 = $d2)");
+#                TAEB->log->ai(Dumper($ntme));}
+                for my $nesp (@{$ntme->{'entry_spending_plans'}->[$d2]}) {
+#                    if (!$sym) {TAEB->log->ai("On spending plan $ti");}
+                    my %nsp = %risk;
+                    $nsp{$_} += $$nesp{$_} for keys %$nesp;
+                    my $cost = numerical_risk_from_spending_plan(\%nsp);
+                    if ($cost < $bestcost) {
+                        $bestcost = $cost;
+                        $besti = $ti;
+                        $bestsp = \%nsp;
+                    }
+                    $ti++;
+                }
+                if (defined $bestsp) {
+                    # A little trick; we want to favour orthogonal
+                    # moves over diagonal, but don't want to break
+                    # symmetry. So we add a tiny amount onto the cost
+                    # of diagonal moves here, so that all it affects
+                    # is the order of unheaping, and the modified
+                    # value is not seen by anything else.
+                    $heap->key_insert(
+                        $bestcost + ($d < 4 ? 1e-10 : 0),
+                        [$ntme, $d, $bestsp, $taint, $besti]);
+                    !$taint and $untainted++;
+                }
+            }
+            # Complex plans: plans that don't move one square
+            # sideways. This is much "simpler" than directional plans,
+            # but much less efficient; it is, however, the unusual
+            # case, and won't be called much, so that's less of an
+            # issue. This doesn't look at nor update considered,
+            # because to do so would break the optimisation on
+            # directional routing.
+            for my $op (@{$tme->{'other_tactics'}}) {
+                # We can make no assumptions, so recalculate risk.
+#                TAEB->log->ai("Checking complex tactic ".$op->name);
+                next unless $op->is_possible($tme);
+                next if $op->difficulty;
+                $op->next_plan_calculation;
+                $op->spending_plan({});
+                $op->calculate_risk($tme);
+                my %nsp = %{$op->spending_plan};
+                $nsp{$_} += $risk{$_} for keys %risk;
+                my $cost = numerical_risk_from_spending_plan(\%nsp);
+                my $ttile = $op->tile;
+                my ($nx, $ny, $nl) = ($ttile->x, $ttile->y, $ttile->level);
+                my $ntme = $map->{refaddr $nl}->[$nx]->[$ny];
+#                TAEB->log->ai("Enheaping complex tactic ".$op->name.
+#                              " at cost $cost");
+                $heap->key_insert(
+                    $cost,
+                    [$ntme, undef, \%nsp, $taint, $op,
+                     $tx, $ty, $tl]);
+                $taint or $untainted++;
+            }
         }
+        # Mark the seed as having no previous TME.
+        $seedtme->{$_} = undef
+            for qw/prevtile_level  prevtile_x  prevtile_y
+                   prevlevel_level prevlevel_x prevlevel_y/;
     }
+
+    # Chokepoint routing requires an extra step.
     $self->current_chokepoint(undef); # back to the main map
     if ($algorithm eq 'chokepoint' && !$ftr) {
         # Now we've done local routing, we need to route globally.
@@ -1200,6 +1450,7 @@ sub update_tactical_map {
                         tile_y           => $stme->{'tile_y'},
                         tile_level       => $tl,
                         step             => $aistep,
+                        considered       => $aistep,
                         source           => 'globalchokepoint',
                         make_safer_plans => {}, # no threats allowed!
                     };
@@ -1432,8 +1683,11 @@ sub tme_from_tile {
     my $map  = $self->tactics_map->{refaddr $tile->level};
     return undef unless defined $map; # it might be on an unpathed level
     my $tme  = $map->[$tile->x]->[$tile->y];
-    # It doesn't matter whether this TME is tainted; it'll be accurate anyway.
+
+    # It doesn't matter whether this TME is tainted; if it was
+    # computed this step, it'll be accurate anyway.
     return $tme if defined $tme && $tme->{'step'} == $self->aistep;
+
     # If the TME's out of date but on our level, it means we had a
     # routing failure ('world' or 'level' algorithms), or that we need
     # to look at the chokepoint maps ('chokepoint' algorithm).
@@ -1497,16 +1751,20 @@ sub tme_from_tile {
         return \%newtme;
     }
     return undef unless defined $tme; # we might not be able to route there
+
     # Get an updated interlevel TME. We recalculate the risk fields of
     # the TME in question by getting the TME from the previous level, then
     # adding the level-risk of this one. This is done recursively, so it
     # will work over all levels, even if the tactics map is being calculated
     # lazily.
-    my %risk = %{$tme->{'level_risk'}};
+
+    # This case can happen on a disconnected map.
+    return undef unless $tme->{'prevlevel_level'};
     my $prevtme = $self->tme_from_tile(
         $tme->{'prevlevel_level'}->at(
             $tme->{'prevlevel_x'}, $tme->{'prevlevel_y'}));
     return undef unless $prevtme && $prevtme->{'step'} == $self->aistep;
+    my %risk = %{$tme->{'level_risk'}};
     $risk{$_} += $prevtme->{'risk'}->{$_} for keys %{$prevtme->{'level_risk'}};
     $tme->{'risk'} = \%risk;
     $tme->{'step'} = $self->aistep;
@@ -1817,7 +2075,8 @@ sub loadplans {
         "Unlevitate",        # plan for removing levitation items
         "DefensiveElbereth", # a dependency of strategic plans in general
 	# Tactical metaplans
-	"MoveFrom",          # tactical metaplan for tiles
+	"MoveTo",            # tactical metaplan for normal movement
+	"MoveFrom",          # tactical metaplan for unusual movement
 	"Nop",               # stub tactical plan
 	# Goal metaplans
 	$self->overall_plan);# metaplan for strategy

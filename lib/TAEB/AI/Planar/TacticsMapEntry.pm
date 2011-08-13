@@ -1,17 +1,18 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::TacticsMapEntry;
+use Exporter 'import';
+@EXPORT_OK = qw/numerical_risk_from_spending_plan/;
 
 =begin comment
 
 This is an unencapsulated object for performance reasons. (It's about
 a 33% speedup in the tactical mapping, 20% in the bot as a whole, so
 it's pretty much necessary. Objects here are created by blessing
-hashes in the caller; most of the fields of the TME aren't designed to
-be modified once created, although that could be possible
-too. Therefore, there is nothing in the package apart from one
-method. As an unencapsulated class can be very hard to use, though,
-without at least some guide as to what it's meant to look like, a
-Moosish version is provided in this massive comment as a guide.
+hashes in the caller. Therefore, there is nothing in the package apart
+from one method and one function. As an unencapsulated class can be
+very hard to use, though, without at least some guide as to what it's
+meant to look like, a Moosish version is provided in this massive
+comment as a guide.
 
 # Details of the tile we have to path to before we can path to this
 # one. Calculating a path is done by tracing the prevtile chain back
@@ -44,9 +45,22 @@ has prevlevel_y => (
     default => undef,
 );
 
-# The risk of stepping onto this tile (= cost + danger).
-# This is a hash whose keys are resource names and whose values are
-# the amount of that resource it costs.
+# The step on which this TME was last updated.
+has step => (
+    isa => 'Int',
+);
+
+# The step on which this TME was last added to the tactics heap.
+# (This is used to identify if it's on the tactics heap at the
+# moment.)
+has considered => (
+    isa => 'Int',
+);
+
+# The risk of stepping onto this tile (= cost + danger), relative to
+# the player's current location on step step. This is a hash whose
+# keys are resource names and whose values are the amount of that
+# resource it costs (i.e., a spending plan).
 has risk => (
     isa => 'HashRef[Num]',
     default => sub { {} },
@@ -60,11 +74,52 @@ has level_risk => (
     default => sub { {} },
 );
 
-# The tactical plan used to step onto this tile from the previous one.
-# This is try()ed to get the action that is needed to step here.
+# The tactic used to enter this TME (only valid if step==aistep).
 has tactic => (
-    isa => 'Maybe[TAEB::AI::Plan]',
-    default => undef,
+    isa => 'TAEB::AI::Planar::Plan::Tactical',
+);
+
+# The tactical plan classes that are needed to enter this tile in each
+# of the directions, in the order in TAEB::Util::deltas; that is,
+# ybunhlkj (i.e. "y" means "enter by going northwest"). More than one
+# plan might be possible for a particular movement, or none at all, so
+# we use a varying-length ArrayRef which lists the plans in no
+# particular order (using a Set would be semantically correct but
+# overkill. The class names are just the last component (after
+# TAEB::AI::Planar::Plan::), not the full name.
+has entry_tactics => (
+    isa => 'ArrayRef[ArrayRef[Str]]',
+);
+
+# The spending plans for entering this tile from each of the
+# directions. As above, but with spending plans instead of
+# names. If the plan is symmetrical, this has length 1 not 8; it's
+# expanded when symmetry is broken. The spending plans themselves
+# may well share, and so should be treated as immutable (i.e. copy
+# and replace the hash if you need to change it, don't change
+# individual elements in it).
+has entry_spending_plans => (
+    isa => 'ArrayRef[ArrayRef[HashRef[Num]]]',
+);
+
+# Tactics for leaving this tile in ways more complex than can be
+# represented by the entry_tile mechanism.
+has other_tactics => (
+    isa => 'ArrayRef[TAEB::AI::Planar::Plan::Tactical]'
+);
+
+# Optimisation: in the common case, entering a tile works the same way
+# no matter where you're coming from. (This is not necessarily the
+# case for, e.g, doorways, or squares you have to squeeze to enter.)
+# This boolean just flags whether that's the case or not; leaving it
+# as false is always fine, but setting it to true will make the code
+# more efficient (and incorrect in the case that it isn't actually
+# symmetrical). update_tactical_map initialises this to true; it's the
+# responsibility of tactical plans to set it to false if they break
+# symmetry (which add_possible_move will do automatically if given an
+# asymmetrical movement specification).
+has is_symmetrical => (
+    isa => 'Bool',
 );
 
 # The tile that this entry refers to.
@@ -94,21 +149,6 @@ has make_safer_plans => (
     default => sub { {} },
 );
 
-# The desire minus extra risk (i.e. all the risk that isn't part of
-# this TME) at which a plan aiming at this TME was verified to be
-# possible.
-has checked_at_desire => (
-    isa => 'Maybe[Num]',
-);
-has c_a_d_valid_on_step => (
-    isa => 'Maybe[Int]'
-);
-
-# The step on which this TME was last updated.
-has step => (
-    isa => 'Int',
-);
-
 # Whether this TME is tainted. Taintedness is only used by certain
 # routing algorithms; its generic meaning is that tainted TMEs can
 # only generate other tainted TMEs, and when all TMEs are tainted
@@ -117,7 +157,8 @@ has taint =>
     isa => 'Bool',
 );
 
-# Where this TME came from.
+# What routing algorithm, and what stage of that algorithm, was
+# last used to update this TME.
 has source =>
     isa => 'Str',
 );
@@ -126,13 +167,17 @@ has source =>
 
 =cut
 
+sub numerical_risk_from_spending_plan {
+    my $tpr = TAEB->ai->resources;
+    my $sp = shift;
+    my $risk = 0;
+    $risk += $tpr->{$_}->cost($sp->{$_}) for keys %$sp;
+    return $risk;
+}
+
 sub numerical_risk {
     my $self = shift;
-    my $risk = 0;
-    my $tpr = TAEB->ai->resources;
-    $risk += $tpr->{$_}->cost($self->{'risk'}->{$_})
-	for keys %{$self->{'risk'}};
-    return $risk;
+    return numerical_risk_from_spending_plan($self->{'risk'});
 }
 
 1;

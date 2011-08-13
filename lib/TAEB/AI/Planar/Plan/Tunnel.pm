@@ -3,7 +3,7 @@ package TAEB::AI::Planar::Plan::Tunnel;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use Moose;
-extends 'TAEB::AI::Planar::Plan::Tactical';
+extends 'TAEB::AI::Planar::Plan::DirectionalTactic';
 
 has (unequipping => (
     isa => 'Bool',
@@ -43,32 +43,21 @@ sub get_pick_and_time {
     return (@$c = ($pick, $time, TAEB->ai->aistep, $timecost));
 }
 
-has (tile => (
-    isa => 'Maybe[TAEB::World::Tile]',
-    is  => 'rw',
-    default => undef,
-));
-sub set_additional_args {
-    my $self = shift;
-    $self->tile(shift);
-}
-
 sub calculate_risk {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
 
     (undef, undef, undef, my $timecost) = $self->get_pick_and_time;
 
     $self->cost("Time", $timecost);
-    $self->level_step_danger;
+    $self->level_step_danger($tme->{'tile_level'});
 }
 
 my %dig = ( wall => 1, rock => 1, closeddoor => 1 );
-sub check_possibility_inner {
+sub check_possibility {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
+    my $tile = $self->tile($tme);
     return if !$dig{ $tile->type } && !$tile->has_boulder;
 
     # Don't dig in sight of monsters (including peacefuls, they tend to
@@ -82,23 +71,18 @@ sub check_possibility_inner {
     return if $tile->level->is_minetown;
     return if ($tile->level->branch // '') eq 'sokoban'; #XXX other nondig
 
+
     # Don't dig near a shop
     return if $tile->any_diagonal( sub { shift->in_shop; } );
 
-    $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
+    $self->add_directional_move($tme);
 }
 
 sub replaceable_with_travel { 0 }
 sub action {
     my $self = shift;
-    my $tile = $self->tile;
-    my $dir = delta2vi($tile->x - TAEB->x, $tile->y - TAEB->y);
+    $self->tile; # memorize it
     (my $pick, undef, undef, undef) = $self->get_pick_and_time;
-
-    if (!defined $dir) {
-	die "Could not move from ".TAEB->x.", ".TAEB->y." to ".
-	    $tile->x.", ".$tile->y." because they aren't adjacent.";
-    }
 
     if ($pick->hands == 2) {
         # To use a mattock, we need to unequip a shield first.
@@ -112,7 +96,7 @@ sub action {
 
     $self->unequipping(0);
     return TAEB::Action->new_action(
-	'apply', direction => $dir, item => $pick);
+	'apply', direction => $self->dir, item => $pick);
 }
 
 sub succeeded {
@@ -123,11 +107,10 @@ sub succeeded {
     }
     # Don't use tile_walkable here, it'll have a cached value from
     # the wrong aistep
-    return $self->tile->is_walkable(0,1);
+    return $self->memorized_tile->is_walkable(0,1);
 }
 
 use constant description => 'Digging through a wall';
-use constant references => ['ScareMonster'];
 use constant uninterruptible_by => ['Equip','PickupItem'];
 
 __PACKAGE__->meta->make_immutable;

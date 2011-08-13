@@ -3,7 +3,8 @@ package TAEB::AI::Planar::Plan::PardonMe;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
 use Moose;
-extends 'TAEB::AI::Planar::Plan::Tactical';
+extends 'TAEB::AI::Planar::Plan::DirectionalTactic';
+with 'TAEB::AI::Planar::Meta::Role::SqueezeChecked';
 
 has (timesinrow => (
     isa     => 'Int',
@@ -11,21 +12,12 @@ has (timesinrow => (
     default => 0
 ));
 
-has (tile => (
-    isa => 'Maybe[TAEB::World::Tile]',
-    is  => 'rw',
-    default => undef,
-));
-sub set_additional_args {
-    my $self = shift;
-    $self->tile(shift);
-}
-
 sub calculate_risk {
     my $self = shift;
+    my $tme  = shift;
     # The time this takes us depends on the speed of the monster. Also,
     # one extra turn for the time it takes to walk.
-    my $spoiler = $self->tile->monster->spoiler;
+    my $spoiler = $self->tile($tme)->monster->spoiler;
     if (defined $spoiler && $spoiler->speed > 0)
     {
 	$self->cost("Time",TAEB->speed/$spoiler->speed+1);
@@ -47,14 +39,14 @@ sub calculate_risk {
         TAEB->log->ai("Adding penalty cost $penalty to PardonMe");
         $penalty > 4 and $self->mark_impossible;
     } else {$self->timesinrow(0);}
-    $self->level_step_danger($self->tile->level);
+    $self->level_step_danger($self->tile($tme)->level);
 }
 
-sub check_possibility_inner {
+sub check_possibility {
     my $self    = shift;
     my $tme     = shift;
     my $ai      = TAEB->ai;
-    my $tile    = $self->tile;
+    my $tile    = $self->tile($tme);
     my $monster = $tile->monster;
 #    TAEB->log->ai("Considering to ask $monster off $tile");
     return unless defined $monster;
@@ -64,7 +56,7 @@ sub check_possibility_inner {
     my $spoiler = $tile->monster->spoiler;
     return if $spoiler and !($spoiler->speed);
 #    TAEB->log->ai("It might work");
-    $self->add_possible_move($tme,$tile->x,$tile->y,$tile->level);
+    $self->add_directional_move($tme);
 }
 
 sub action {
