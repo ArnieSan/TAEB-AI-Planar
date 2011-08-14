@@ -11,8 +11,8 @@ use Moose::Role;
 requires 'add_possible_move';
 requires 'tile';
 
-use constant _vineighbors => {
-    y => ['h','k'], u => ['l','k'], b => ['h','j'], n => ['l','j']
+use constant _virneighbors => {
+    n => ['h','k'], b => ['l','k'], u => ['h','j'], y => ['l','j']
 };
 use constant _vireverse => {qw/y n n y u b b u h l l h j k k j/};
 
@@ -25,7 +25,7 @@ around ('add_possible_move' => sub {
     my $tile = $self->tile($tme);
     my $ai = TAEB->ai;
     my $sokoban = TAEB->current_level->branch // '' eq 'sokoban';
-    my $passable = $sokoban ? 'tile_walkable' : 'tile_walkable_or_boulder';
+    my $passable = $sokoban ? 'tile_walkable_or_boulder' : 'tile_walkable';
 
     $dir eq 's' and $dir = 'ybunhlkj';
     my @dir = split //, $dir;
@@ -33,16 +33,18 @@ around ('add_possible_move' => sub {
 
     @dir = map {do{{ # just using {{...}} parses incorrectly
         /[hjkl]/o and last; # these are safe
+        # We can't move from off the map.
+        $tile->at_direction(_vireverse->{$_}) or ($_ = '', last);
         # We can't move diagonally out of a door.
         $tile->at_direction(_vireverse->{$_})->type eq 'opendoor'
             and ($_ = '', last);
         # We don't disallow squeezing if the square we move from is
         # impassable. (This helps to preserve symmetry.)
-        $ai->$passable($tile->at_direction($_)) or last;
+        $ai->$passable($tile->at_direction(_vireverse->{$_})) or last;
         # Otherwise, we're squeezing if both its orthogonal neighbours
         # are impassable.
-        $ai->$passable($tile->at_direction(_vineighbors->{$_}->[0])) and last;
-        $ai->$passable($tile->at_direction(_vineighbors->{$_}->[1])) and last;
+        $ai->$passable($tile->at_direction(_virneighbors->{$_}->[0])) and last;
+        $ai->$passable($tile->at_direction(_virneighbors->{$_}->[1])) and last;
         $_ = '';
     }}; $_} @dir;
 
