@@ -59,7 +59,9 @@ sub calculate_extra_risk {
 
 sub reach_action_succeeded {
     my $item = shift->item;
-    return !defined $item->slot; # if it isn't in our inventory, it worked
+    defined $item->slot or return 1;
+    TAEB->inventory->get($item->slot) and return 0;
+    return 1;
 }
 
 # This plan needs a continuous stream of validity from our inventory,

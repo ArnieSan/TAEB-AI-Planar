@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::PardonMe;
 use TAEB::OO;
 use TAEB::Util qw/delta2vi/;
+use TAEB::AI::Planar::Plan::Tunnel;
 use Moose;
 extends 'TAEB::AI::Planar::Plan::DirectionalTactic';
 with 'TAEB::AI::Planar::Meta::Role::SqueezeChecked';
@@ -89,6 +90,13 @@ sub succeeded {
     my $self = shift;
     # It succeeded if the monster is no longer in the way.
     ($self->validity(0), return 1) if ! defined $self->tile->monster;
+    # Shopkeepers won't move if we have a pickaxe or mattock.
+    if ($self->tile->monster->is_shk) {
+        my ($p, undef, undef, undef) =
+            TAEB::AI::Planar::Plan::Tunnel->get_pick_and_time;
+        return 0 if $p;
+    }
+
     return undef; # try again; TODO: Figure out when this won't work
 }
 

@@ -9,6 +9,7 @@ use Time::HiRes qw/gettimeofday tv_interval/;
 use TAEB::Spoilers::Combat;
 use TAEB::Spoilers::Sokoban;
 use TAEB::AI::Planar::TacticsMapEntry qw/numerical_risk_from_spending_plan/;
+use TAEB::AI::Planar::Plan::Tunnel;
 use Storable;
 use Set::Object qw/weak_set/;
 use Tie::RefHash;
@@ -751,12 +752,21 @@ sub next_plan_action {
         @illegal_plans = (@illegal_plans,
                           @{$self->abandoned_tactical_plan->uninterruptible_by});
     }
+    if (defined $self->old_plans->[0]) {
+        @illegal_plans = (@illegal_plans,
+                          @{$self->old_plans->[0]->unfollowable_by});
+    }
+    if (defined $self->old_tactical_plans->[0]) {
+        @illegal_plans = (@illegal_plans,
+                          @{$self->old_tactical_plans->[0]->unfollowable_by});
+    }
     $self->currently_modifiers('');
 
     # If we had trouble doing what we wanted to do last turn due to
     # levitation, we're almost certainly going to have the same trouble
     # this turn. So, we want to unlevitate above all else.
-    # TODO: Is this check in the wrong place?
+    # TODO: Is this check in the wrong place? It's sort-of like a
+    # threat, except that it's strategic rather than tactical.
     TAEB->log->ai("Trying to unlevitate before doing anything else"),
         $self->add_capped_desire($self->get_plan('Unlevitate'), 1.1e8)
             if $self->problematic_levitation_step+1 >= TAEB->step;
@@ -1940,7 +1950,7 @@ sub threat_check {
     TAEB->in_pit and $trapturns = 10;
     TAEB->in_web and $trapturns = 1;
     if ($trapturns) {
-	my $threatmap = $self->threat_map->{refaddr(TAEB->current_level)};
+	my $threatmap = $self->threat_map->{refaddr($current_level)};
 	TAEB->current_tile->each_adjacent(sub {
 	    my $tile = shift;
 	    # The impossibility here is to force Extricate to run
@@ -1957,7 +1967,7 @@ sub threat_check {
     }
     # Similar to traps: engulfing monsters.
     if (TAEB->is_engulfed) {
-	my $threatmap = $self->threat_map->{refaddr(TAEB->current_level)};
+	my $threatmap = $self->threat_map->{refaddr($current_level)};
 	TAEB->current_tile->each_adjacent(sub {
 	    my $tile = shift;
 	    $threatmap->[$tile->x]->[$tile->y]->{"-1 Unengulf"}
@@ -1965,7 +1975,30 @@ sub threat_check {
             $count++;
 	});
 	$self->get_plan("Unengulf")->validate();
-    }    
+    }
+    # Shop doorways can't be entered while holding a digging tool. We
+    # block the doorway, and all squares adjacent to the doorway that
+    # are inside the shop (just in case we end up in the doorway
+    # somehow).
+    if (TAEB::AI::Planar::Plan::Tunnel->has_pick) {
+        for my $door ($current_level->tiles_of("opendoor")) {
+            if ($door->any_orthogonal(sub{shift->in_shop})) {
+                my $threatmap = $self->threat_map->{refaddr($current_level)};
+                $threatmap->[$door->x]->[$door->y]->
+                    {"-1 ".$self->get_plan("EnterShop", $door)->name}
+                    = {Impossibility => 1};
+                $door->each_adjacent(sub {
+                    my $tile = shift;
+                    if ($tile->in_shop) {
+                        $threatmap->[$tile->x]->[$tile->y]->
+                        {"-1 ".$self->get_plan("EnterShop", $door)->name}
+                        = {Impossibility => 1};
+                    }
+                });
+                $count++;
+            }
+        }
+    }
     $self->threat_count($count);
 }
 
@@ -2073,6 +2106,7 @@ sub loadplans {
 	"Extricate",         # metaplan for traps we're in
         "Unengulf",          # (meta)plan for engulfing monsters
         "Unlevitate",        # plan for removing levitation items
+        "EnterShop",         # plan for getting past shop doorways
         "DefensiveElbereth", # a dependency of strategic plans in general
 	# Tactical metaplans
 	"MoveTo",            # tactical metaplan for normal movement
@@ -2614,6 +2648,8 @@ has (_devnull_item_hack => (
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
 
+our $shopping_cache = 0;
+
 # Positive aspects of the item value.
 sub item_value {
     my $self = shift;
@@ -2624,6 +2660,10 @@ sub item_value {
 
     if ($_best_valid_on_step != $self->aistep) {
         $self->_get_bests;
+        # also remember if we're shopping
+        $shopping_cache = TAEB->current_tile->any_adjacent(sub {
+            shift->in_shop;
+        });
     }
 
     # If the item is permafood, its value is its nutrition minus its
@@ -2644,9 +2684,11 @@ sub item_value {
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart|rock|shuriken)\b/ and
         $value += $resources->{'FightDamage'}->$cost($item->quantity *
             TAEB::Spoilers::Combat->damage($item));
-    # Pick axes help us dig.
-    $item->match(identity => ['pick-axe', 'dwarvish mattock']) and
-	$value += $resources->{'Tunnelling'}->$cost($item->quantity * 1e8);
+    # Pick axes help us dig. Except in shops.
+    if (!$shopping_cache) {
+        $item->match(identity => ['pick-axe', 'dwarvish mattock']) and
+            $value += $resources->{'Tunnelling'}->$cost($item->quantity * 1e8);
+    }
     # Luckstones give us luck, but only if we don't already have one.
     if ($item->identity && $item->identity eq 'luckstone') {
 	my $count = @{[ TAEB->has_item('luckstone') ]};

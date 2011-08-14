@@ -437,6 +437,8 @@ sub references { [] }
 
 # Plans which mustn't be used to interrupt this plan
 sub uninterruptible_by { [] }
+# Plans which mustn't be used immediately after this plan succeeds
+sub unfollowable_by { [] }
 
 # Stuff to remove once a better way is available
 sub item_tile {

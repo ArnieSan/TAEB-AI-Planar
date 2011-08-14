@@ -43,6 +43,12 @@ sub get_pick_and_time {
     return (@$c = ($pick, $time, TAEB->ai->aistep, $timecost));
 }
 
+sub has_pick {
+    my ($self) = @_;
+    my ($pick) = get_pick_and_time;
+    return $pick;
+}
+
 sub calculate_risk {
     my $self = shift;
     my $tme  = shift;
