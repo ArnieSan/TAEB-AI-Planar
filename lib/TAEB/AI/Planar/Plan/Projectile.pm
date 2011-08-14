@@ -67,8 +67,7 @@ sub calculate_extra_risk {
     my $risk = $self->cost("FightDamage",
         TAEB::Spoilers::Combat->damage($self->get_projectile));
     my $monster = $self->monster;
-    $risk += $self->aim_tile_turns(
-        ceil($monster->average_actions_to_kill // 3) || 1);
+    $risk += $self->aim_tile_turns(1);
     # Chasing unicorns is fruitless
     $risk += $self->cost("Impossibility", 1) if $monster->is_unicorn &&
 	$self->aim_tile_cache != $self->aim_tile;

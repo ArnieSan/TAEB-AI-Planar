@@ -10,6 +10,21 @@ sub calculate_risk {
     my $tme  = shift;
     $self->cost("Time",1);
     $self->level_step_danger($self->tile->level);
+    if ($self->tile_from->level == TAEB->current_level) {
+        # Add two turns of attacks from all monsters in LOS.
+        # We're going to have to deal with them eventually, and now
+        # is better than later.
+        for my $monster (TAEB->current_level->monsters) {
+            next unless $monster->tile->in_los;
+            my $spoiler = $monster->spoiler;
+            if ($monster) {
+                $self->cost("Hitpoints",$monster->maximum_melee_damage*2);
+            } else {
+                # default for undeterminable monsters
+                $self->cost("Hitpoints",5*2);
+            }
+        }
+    }
 }
 
 sub is_possible {
