@@ -8,6 +8,12 @@ sub spread_desirability {
     my $self = shift;
     my $prio = 1;
 
+    # if we're in sokoban, aim for the Mines
+    if ((TAEB->current_level->branch // '') eq 'sokoban') {
+        $self->depends($prio,"GotoMines");
+        return;
+    }
+
     # if we're in the dungeons below 4, GET OUT
     if ((TAEB->current_level->branch // 'mines') ne 'mines' && TAEB->z > 4) {
 	$self->depends($prio,"Shallower");
@@ -38,7 +44,7 @@ sub spread_desirability {
 
 use constant description => 'Getting the Plastic Star in /dev/null';
 use constant references => ['Shallower', 'OtherSide', 'ExploreLevel',
-    'DigOutLevel'];
+                            'GotoMines', 'DigOutLevel'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
