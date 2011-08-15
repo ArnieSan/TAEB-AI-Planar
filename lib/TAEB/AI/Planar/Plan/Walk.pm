@@ -18,12 +18,6 @@ sub check_possibility {
     my $self = shift;
     my $tme  = shift;
     my $tile = $self->tile($tme);
-    if (defined $tile->monster) {
-	# We need to generate a plan to scare the monster out of the
-	# way, if the AI doesn't want to kill it for some reason.
-	$self->generate_plan($tme,"ScareMonster",$self->dir);
-	return;
-    }
     return unless TAEB->ai->tile_walkable($tile);
     $self->add_directional_move($tme);
 }
@@ -41,7 +35,6 @@ sub succeeded {
 }
 
 use constant description => 'Walking';
-use constant references => ['ScareMonster'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
