@@ -25,7 +25,7 @@ around ('add_possible_move' => sub {
     my $tile = $self->tile($tme);
     my $ai = TAEB->ai;
     my $sokoban = TAEB->current_level->branch // '' eq 'sokoban';
-    my $passable = $sokoban ? 'tile_walkable_or_boulder' : 'tile_walkable';
+    my $passable = $sokoban ? 'tile_walkable' : 'tile_walkable_or_boulder';
 
     $dir eq 's' and $dir = 'ybunhlkj';
     my @dir = split //, $dir;
