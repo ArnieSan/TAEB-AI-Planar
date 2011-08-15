@@ -93,7 +93,9 @@ sub spread_desirability {
                         $cache->{refaddr $x} = 1;
                     }
                 });
-            } elsif ($tilecache < 3 && !$explored && $ai->tile_walkable($tile)) {
+            } elsif ($tilecache < 3 && !$explored &&
+                     ($ai->tile_walkable($tile) ||
+                      $tile->type eq 'closeddoor')) {
                 $cache->{refaddr $tile} = 3;
                 $lcache->insert($tile);
                 $tile->each_adjacent(sub {
