@@ -61,6 +61,8 @@ sub aim_tile {
         return undef;
     }
     # Wake a mimic beyond the boulder, instead of pushing at it.
+    $self->monster($self->mimictile->monster)
+        if $self->mimictile && $self->mimictile->glyph eq 'I';
     return undef
             if $self->mimictile
             && $self->mimictile->glyph ne $self->mimictile->floor_glyph
