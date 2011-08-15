@@ -15,7 +15,6 @@ has (prizetile => (
 # it after then.
 sub spread_desirability {
     my $self = shift;
-    my $level = TAEB->current_level;
     if(TAEB::Spoilers::Sokoban->number_of_solved_sokoban_levels == 4) {
         my $sokotop = TAEB->dungeon->deepest_level(sub {
             my $level = shift;
@@ -34,13 +33,13 @@ sub spread_desirability {
             $self->prizetile($tile) if $tile == TAEB->current_tile;
         }
         # Look for the item, if we can't.
-        for my $door ($sokotop->tiles_of(qw/opendoor closeddoor/)) {
-            my $tile = $door->at_direction('h');
-            next if $tile->stepped_on;
-            next unless TAEB::Spoilers::Sokoban->
-                            is_sokoban_reward_tile($tile);
+        $sokotop->each_tile(sub {
+            my $tile = shift;
+            return if $tile->stepped_on;
+            return unless TAEB::Spoilers::Sokoban->
+                is_sokoban_reward_tile($tile);
             $self->depends(1,'LookAt',$tile);
-        }
+        });
     }
 }
 

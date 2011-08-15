@@ -21,7 +21,11 @@ sub spread_desirability {
     # Improving connectivity on the level allows us to more easily
     # reach the square we want to look at. TODO: directed explore?
     my $self = shift;
-    $self->depends(1,"ExploreLevel",$self->tile->level);
+    my $tile = $self->tile;
+    $self->depends(1,"ExploreLevel",$tile->level);
+    # If there's a monster on the tile we want to look at, get rid of
+    # it.
+    $tile->monster and $self->depends(1,"Eliminate",$tile->monster);
 }
 
 use constant description => 'Looking at a tile';
