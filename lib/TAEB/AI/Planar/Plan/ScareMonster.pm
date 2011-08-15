@@ -1,10 +1,8 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::ScareMonster;
 use TAEB::OO;
-use TAEB::Util qw/delta2vi refaddr/;
 use Moose;
-extends 'TAEB::AI::Planar::Plan::DirectionalTactic';
-with 'TAEB::AI::Planar::Meta::Role::SqueezeChecked';
+extends 'TAEB::AI::Planar::Plan::Strategic';
 
 has (turntried => (
     isa => 'Maybe[Int]',
@@ -16,100 +14,78 @@ has (timesinrow => (
     default => 0
 ));
 
-sub calculate_risk {
+# We take a monster as argument.
+has (monster => (
+    isa     => 'Maybe[TAEB::World::Monster]',
+    is  => 'rw',
+    default => undef,
+));
+sub set_arg {
     my $self = shift;
-    my $tme = shift;
-    my $tile = $self->tile($tme);
-    # The time this takes us depends on the speed of the monster.
-    my $spoiler = $tile->monster->spoiler;
-    if (defined $spoiler && $spoiler->speed > 0)
-    {
-	# There's a 72% chance of a valid dust-Elbereth.
-	# Remember to add 1 for the time it takes to step onto the tile!
-	$self->cost("Time",TAEB->speed/$spoiler->speed/0.72+1);
-        # Don't scare a monster when you could walk around it.
-        $self->cost("Delta",10);
-    } else {
-	# Most of the things we want to scare are rather slow...
-	$self->cost("Time",10);
+    $self->monster(shift);
+}
+
+sub aim_tile {
+    my $self = shift;
+    my $monster = $self->monster;
+
+    return unless $monster->respects_elbereth;
+    return if TAEB->ai->monster_is_peaceful($monster);
+    return if defined $monster->spoiler && $monster->spoiler->speed == 0;
+
+    return $monster->tile;
+}
+sub stop_early { 1 }
+sub mobile_target { 1 }
+# Whack it!
+sub has_reach_action { 1 }
+sub reach_action {
+    my $self = shift;
+    my $ai = TAEB->ai;
+    $self->turntried(TAEB->turn);
+    if (TAEB->current_tile->elbereths >= 1) {
+        return TAEB::Action->new_action('search', iterations => 1);
     }
+    return TAEB::Action->new_action('engrave');
+}
+
+sub spread_desirability {
+    my $self = shift;
+    $self->depends(1,"PardonMe",$self->monster);
+}
+
+sub calculate_extra_risk {
+    my $self = shift;
+
+    # The time this takes us depends on the speed of the monster. Also,
+    # one extra turn for the time it takes to walk.
+    my $spoiler = $self->monster->spoiler;
+    my $risk = $self->aim_tile_turns(TAEB->speed/$spoiler->speed/0.72+1);
+
     # If we're continuing with the same plan (i.e. this plan is
     # potentially abandonable), then the cost goes up over time.
     # (This is a compromise between marking it as impossible and
     # repeating indefinitely.)
-    my $ap = TAEB->ai->abandoned_tactical_plan;
+    my $ap = TAEB->ai->abandoned_plan;
     if (defined $ap && $ap->name eq $self->name) {
         my $tir = $self->timesinrow;
         my $speed = defined $spoiler ? $spoiler->speed : 12;
         my $penalty = $speed/TAEB->speed*$tir;
-        $self->cost("Time", $penalty);
+        $risk += $self->cost("Time", $penalty);
         $self->timesinrow($tir+1);
-        TAEB->log->ai("Adding penalty cost $penalty to PardonMe");
+        TAEB->log->ai("Adding penalty cost $penalty to ScareMonster");
         $penalty > 4 and $self->mark_impossible;
     } else {$self->timesinrow(0);}
-    $self->level_step_danger($tile->level);
+    return $risk;
 }
 
-sub check_possibility {
-    my $self = shift;
-    my $tme  = shift;
-    my $tile = $self->tile($tme);
-    my $monster = $tile->monster;
-    return unless defined $monster;
-#    TAEB->log->ai("Considering to scare $monster off $tile");
-    # It might be peaceful (shk, watchman...)
-    $self->generate_plan($tme,"PardonMe",$self->dir);
-    # We can't scare a monster that doesn't respect Elbereth.
-    return unless $monster->respects_elbereth;
-#    TAEB->log->ai("Monster $monster " . $monster->spoiler->name . " is scarable") if defined $monster->spoiler;
-    # We can't scare an immobile monster.
-    my $spoiler = $monster->spoiler;
-    my $timesaved = undef;
-    if($spoiler and !($spoiler->speed)) {
-        $timesaved = {Impossibility => 1};
-    } elsif($spoiler) {
-        $timesaved = {Time => TAEB->speed/$spoiler->speed/0.72+1};
-    }
-    # Eliminating may be faster, even if it's a peaceful.  TODO: This
-    # encapsulation-breaking messing with threats no longer works in
-    # check_possibility (and probably not anywhere else, come to think
-    # of it). In fact, I'm far from clear that it ever worked at
-    # all...
-=begin comment
-    if(defined $timesaved) {
-        my $ai = TAEB->ai;
-        # We need to convert this into a /strategic/ plan, Eliminate.
-        # This is done by inventing a threat on the square, and setting
-        # its difficulty for routing past to "impossible".
-        # TODO: This is rather encapsulation-breaking; maybe there
-        # should be a convert-tactics-to-strategy function in the AI
-        # somewhere?
-        my $planname = $ai->get_plan("Eliminate",$monster)->name;
-        $ai->threat_map->{refaddr($tile->level)}->
-            [$tile->x]->[$tile->y]->{"-1 $planname"} = $timesaved;
-    }
-=end comment
-=cut
-    return if TAEB->is_blind; # cannot engrave here
-#    TAEB->log->ai("Scaring might work");
-    $self->add_directional_move($tme);
-}
-
-sub action {
-    my $self = shift;
-    $self->turntried(TAEB->turn);
-    $self->tile; # memorize it
-    if (TAEB->current_tile->elbereths >= 1) {
-        return TAEB::Action->new_action('Search', iterations => 1);
-    }
-    return TAEB::Action->new_action('Engrave');
-}
+sub invalidate { shift->validity(0); }
 
 sub succeeded {
     my $self = shift;
     # It succeeded if the monster is no longer in the way.
     ($self->validity(0), return 1)
-        if !defined $self->memorized_tile->monster;
+        if !defined $self->monster->tile->monster;
     # If the attempt consumed no time, we're in a form that can't engrave.
     $self->turntried == TAEB->turn and return 0;
     return undef; # try again; TODO: Figure out when this won't work

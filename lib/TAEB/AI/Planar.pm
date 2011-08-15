@@ -1916,9 +1916,17 @@ sub threat_check {
         my $disposition = $enemy->disposition // 'hostile';
         my $movetype = 'walk';
         my $nomarktile = $default_ignore;
-        # Tame and peaceful monsters are not threats.
-        next if $disposition eq 'peaceful';
+
+        # Tame and peaceful monsters are not threats. We can't route
+        # through peacefuls, though.
         next if $disposition eq 'tame';
+        # Record that the monster can't be routed through.
+	my $plan = $self->get_plan("Eliminate", $enemy);
+	my $threatmap = $self->threat_map->{refaddr($current_level)};
+        $threatmap->[$tile->x]->[$tile->y]->{"-1 ".$plan->name}
+            = {Impossibility => 1};
+        next if $disposition eq 'peaceful';
+
 	if (defined($spoiler)) {
 	    # Passive-attack-only monsters are not dangerous to walk past,
 	    # and therefore not threats (they're risky to attack, but not
@@ -1946,7 +1954,7 @@ sub threat_check {
 	} else { # use a stock value as we don't know...
 	    $danger = {'Hitpoints' => 5};
 	}
-	my $plan = $self->get_plan(
+	$plan = $self->get_plan(
             ($movetype ne 'eignore' ? "Mitigate" : "MitigateWithoutElbereth"),
             $enemy);
 	# TODO: walk/fly/swim
@@ -2120,6 +2128,7 @@ sub loadplans {
 	# Threat metaplans
 	"Mitigate",          # metaplan for monsters
 	"MitigateWithoutElbereth",  # and for Elbereth-ignoring monsters
+        "Eliminate",         # route past a monster
 	"Extricate",         # metaplan for traps we're in
         "Unengulf",          # (meta)plan for engulfing monsters
         "Unlevitate",        # plan for removing levitation items

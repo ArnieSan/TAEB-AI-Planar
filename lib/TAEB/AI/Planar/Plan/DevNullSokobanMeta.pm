@@ -8,12 +8,13 @@ extends 'TAEB::AI::Planar::Plan';
 # it after then.
 sub spread_desirability {
     my $self = shift;
-    $self->depends(0.9,"SlowDescent");
+    $self->depends(0.9,"SolveSokoban");
     $self->depends(1,"SokobanPrize");
+    $self->depends(0.5,"SlowDescent"); # what to do after
 }
 
 use constant description => 'Trying to get the Sokoban star in /dev/null';
-use constant references => ['SlowDescent','SokobanPrize'];
+use constant references => ['SolveSokoban','SokobanPrize','SlowDescent'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
