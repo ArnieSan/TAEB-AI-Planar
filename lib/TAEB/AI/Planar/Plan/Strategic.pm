@@ -203,6 +203,9 @@ sub calculate_risk {
                 $ai->add_capped_desire($plan, $self->desire +
                                        $amount*$afactor - $risk);
             }
+            # Also use the plan in question as a fallback, in case we
+            # can't think of anything else to do.
+            $ai->add_capped_desire($plan, $self->desire + 1e6 * log 0.1);
             ## START DEBUG CODE
 #            TAEB->log->ai("MSP $plan: old method gives desire " .
 #                          $self->desire . " new method gives desire " .
