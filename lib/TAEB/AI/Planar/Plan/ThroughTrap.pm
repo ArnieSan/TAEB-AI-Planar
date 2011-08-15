@@ -48,7 +48,7 @@ sub check_possibility {
 	# We need to generate a plan to scare the monster out of the
 	# way, if the AI doesn't want to kill it for some reason. Yes,
 	# even if there's a trap on the same square.
-	$self->generate_plan($tme,"ScareMonster",$tile);
+	$self->generate_plan($tme,"ScareMonster",$self->dir);
 	return;
     }
     return unless TAEB->ai->tile_walkable($tile); # avoid traps in Sokoban
