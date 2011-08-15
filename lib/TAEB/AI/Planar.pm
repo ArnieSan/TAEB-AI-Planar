@@ -1986,16 +1986,13 @@ sub threat_check {
 	$self->get_plan("Unengulf")->validate();
     }
     # Shop doorways can't be entered while holding a digging tool. We
-    # block the doorway, and all squares adjacent to the doorway that
-    # are inside the shop (just in case we end up in the doorway
-    # somehow).
-    if (TAEB::AI::Planar::Plan::Tunnel->has_pick) {
+    # block all squares adjacent to the doorway that are inside the
+    # shop.
+    if (TAEB::AI::Planar::Plan::Tunnel->has_pick &&
+        !TAEB->current_tile->in_shop) {
         for my $door ($current_level->tiles_of("opendoor")) {
             if ($door->any_orthogonal(sub{shift->in_shop})) {
                 my $threatmap = $self->threat_map->{refaddr($current_level)};
-                $threatmap->[$door->x]->[$door->y]->
-                    {"-1 ".$self->get_plan("EnterShop", $door)->name}
-                    = {Impossibility => 1};
                 $door->each_adjacent(sub {
                     my $tile = shift;
                     if ($tile->in_shop) {
@@ -2605,9 +2602,10 @@ sub use_benefit {
         $value += $resources->{'AC'}->$cost($ac) unless $ac <= 0;
     }}
     # Likewise for weapons; for those we count their average damage. 90%
-    # chance that they aren't cursed.
+    # chance that they aren't cursed. We don't treat pickaxes as weapons
+    # because it causes trouble in shops.
     if($item->isa("NetHack::Item::Weapon") && !$item->is_cursed
-        && $item->appearance !~ /bolt|arrow/o) {
+        && $item->appearance !~ /bolt|arrow|pick-axe|mattock/o) {
         my $current_weapon = TAEB->inventory->equipment->weapon;
         my $damage = TAEB::Spoilers::Combat->damage($item);
         $damage *= .9 unless defined $item->is_cursed; # i.e. we know it isn't
@@ -2657,8 +2655,6 @@ has (_devnull_item_hack => (
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
 
-our $shopping_cache = 0;
-
 # Positive aspects of the item value.
 sub item_value {
     my $self = shift;
@@ -2669,10 +2665,6 @@ sub item_value {
 
     if ($_best_valid_on_step != $self->aistep) {
         $self->_get_bests;
-        # also remember if we're shopping
-        $shopping_cache = TAEB->current_tile->any_adjacent(sub {
-            shift->in_shop;
-        });
     }
 
     # If the item is permafood, its value is its nutrition minus its
@@ -2693,11 +2685,9 @@ sub item_value {
     $item->identity and $item->identity =~ /\b(?:spear|dagger|dart|rock|shuriken)\b/ and
         $value += $resources->{'FightDamage'}->$cost($item->quantity *
             TAEB::Spoilers::Combat->damage($item));
-    # Pick axes help us dig. Except in shops.
-    if (!$shopping_cache) {
-        $item->match(identity => ['pick-axe', 'dwarvish mattock']) and
-            $value += $resources->{'Tunnelling'}->$cost($item->quantity * 1e8);
-    }
+    # Pick axes help us dig.
+    $item->match(identity => ['pick-axe', 'dwarvish mattock']) and
+        $value += $resources->{'Tunnelling'}->$cost($item->quantity * 1e8);
     # Luckstones give us luck, but only if we don't already have one.
     if ($item->identity && $item->identity eq 'luckstone') {
 	my $count = @{[ TAEB->has_item('luckstone') ]};

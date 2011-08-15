@@ -31,14 +31,15 @@ sub planspawn {
     }
     # Pick up items if they seem useful.
     if ($ai->item_value($item) > 0) {
-	$ai->get_plan('PickupItem',$item)->validate;
+	$ai->get_plan($self->item_tile($item)->in_shop ?
+                      'BuyItem' : 'PickupItem',$item)->validate;
     }
 }
 
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Doing something with an item on the ground';
-use constant references => ['PickupItem','FloorFood'];
+use constant references => ['PickupItem','BuyItem','FloorFood'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

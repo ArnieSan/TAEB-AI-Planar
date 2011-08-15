@@ -44,8 +44,16 @@ sub gain_resource_conversion_desire {
     my $item  = $self->item;
     my $ai    = TAEB->ai;
     my $value = $ai->item_value($item);
-    #return if $ai->has_contermeasure("BePickless", $self->tile);
+    # Don't pickup pickaxes outside shops if we're inside a shop.
+    # Don't buy pickaxes if we know of any other pickaxes.
     if ($value > 0) {
+        if ($item->match(identity => ['pick-axe', 'dwarvish mattock'])) {
+            return
+                if TAEB->current_tile->any_orthogonal(sub {shift->in_shop}) &&
+                !$self->tile->in_shop;
+            # TODO: Check to see if we know of other pickaxes
+            return if $self->tile->in_shop;
+        }
 	$ai->add_capped_desire($self, $value);
     }
 }
@@ -69,10 +77,10 @@ sub reach_action {
 }
 sub reach_action_succeeded {
     my $self = shift;
-    # If the item is now in our inventory, it worked.
-    # (We may have picked up other items at the same time, that's
-    # irrelevant.)
-    return defined($self->item->slot);
+    # TODO: Figure out a way to determine if we picked the item up.
+    # (Checking for slot doesn't work, nor does checking the floor
+    # because there may have been two similar items.)
+    return 1;
 }
 
 # It takes one turn to pick up the item, plus all its drawbacks (weight
