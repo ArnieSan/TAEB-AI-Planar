@@ -14,16 +14,24 @@ sub calculate_risk {
         # Add two turns of attacks from all monsters in LOS.
         # We're going to have to deal with them eventually, and now
         # is better than later.
+        # If there are at least two such monsters capable of attacking,
+        # don't use the stairs at all until we've cleared them a bit
+        # (this is a bit hackish, but needed until we get a better AI
+        # for fighting mobs).
+        my $mcount = 0;
         for my $monster (TAEB->current_level->monsters) {
             next unless $monster->tile->in_los;
             my $spoiler = $monster->spoiler;
             if ($spoiler) {
-                $self->cost("Hitpoints",$monster->maximum_melee_damage*2);
+                my $maxd = $monster->maximum_melee_damage;
+                $self->cost("Hitpoints",$maxd*2);
+                $mcount++ if $maxd;
             } else {
                 # default for undeterminable monsters
                 $self->cost("Hitpoints",5*2);
             }
         }
+        $self->cost("Impossibility",1) if $mcount >= 2;
     }
 }
 
