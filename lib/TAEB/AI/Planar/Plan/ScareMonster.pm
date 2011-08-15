@@ -60,7 +60,7 @@ sub calculate_extra_risk {
     # The time this takes us depends on the speed of the monster. Also,
     # one extra turn for the time it takes to walk.
     my $spoiler = $self->monster->spoiler;
-    my $risk = $self->aim_tile_turns(TAEB->speed/$spoiler->speed/0.72+1);
+    my $risk = $self->aim_tile_turns(TAEB->speed/($spoiler?$spoiler->speed:12)/0.72+1);
 
     # If we're continuing with the same plan (i.e. this plan is
     # potentially abandonable), then the cost goes up over time.

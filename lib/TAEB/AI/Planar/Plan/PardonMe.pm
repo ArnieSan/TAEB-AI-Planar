@@ -26,15 +26,18 @@ sub set_arg {
 sub aim_tile {
     my $self = shift;
     my $monster = $self->monster;
+    my $spoiler = $monster->spoiler;
 
     # Hostiles won't move of their own accord.
     return unless TAEB->ai->monster_is_peaceful($monster);
+    # Nor will sessiles.
+    return if $spoiler && !$spoiler->speed;
 
     # Shopkeepers won't move if we have a pickaxe or mattock.
     if ($monster->is_shk) {
         my ($p) =
             TAEB::AI::Planar::Plan::Tunnel->get_pick_and_time;
-        return  if $p;
+        return if $p;
     }
 
     return $monster->tile;
