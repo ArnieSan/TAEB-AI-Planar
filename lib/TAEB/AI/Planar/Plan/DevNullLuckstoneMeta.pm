@@ -27,6 +27,7 @@ sub spread_desirability {
 
 	for my $level (@$stratum) {
 	    next if ($level->branch // 'mines') ne 'mines' && $level->z > 4;
+            next if $level->branch eq 'sokoban'; # can overlap with mines
 	    next if defined $mines && $level != $mines;
 	    $self->depends($prio * 0.95 ** $level->z, "ExploreLevel", $level);
 	    $bottom_mines = $level if ($level->branch // '') eq 'mines';
