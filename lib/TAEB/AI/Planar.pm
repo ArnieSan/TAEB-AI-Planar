@@ -10,7 +10,7 @@ use TAEB::Spoilers::Combat;
 use TAEB::Spoilers::Sokoban;
 use TAEB::AI::Planar::TacticsMapEntry qw/numerical_risk_from_spending_plan/;
 use TAEB::AI::Planar::Plan::Tunnel;
-use Storable;
+use Storable qw/dclone/;
 use Set::Object qw/weak_set/;
 use Tie::RefHash;
 use POSIX qw/floor/;
@@ -467,6 +467,10 @@ sub next_action {
 				   $self->abandoned_tactical_plan->name.
 				   " was abandoned.");
             $self->current_tactical_plan->reverse_dependencies
+                ->{$self->abandoned_tactical_plan->name} =
+                $self->abandoned_tactical_plan;
+            # Reinstate the tactical plan if the strategic plan succeeds
+            $self->current_plan->reverse_dependencies
                 ->{$self->abandoned_tactical_plan->name} =
                 $self->abandoned_tactical_plan;
 	}
@@ -1134,7 +1138,8 @@ sub update_tactical_map {
         $seedtme->{'step'} = -1;
         $seedtme->{'risk'} = {}; $seedtme->{'level_risk'} = {};
         $seedtme->{'make_safer_plans'} = {};
-        $heap->key_insert(0, [$seedtme, undef, {}, 0, 'Nop',
+        $heap->key_insert(0, [$seedtme, undef, {}, 0,
+                              $self->get_tactical_plan('Nop'),
                               $seedx, $seedy, $seed->level]);
         while ($untainted) {
             my $tmedir = $heap->extract_top;
@@ -1190,10 +1195,7 @@ sub update_tactical_map {
                 # square would control which route was used to reach it
                 # due to balancing resources; I'm not too fussed about
                 # that, though.)
-                my %msp = %{$oldtme->{'make_safer_plans'}};
-                # TODO: Record in the threat map if there are actually
-                # any threats, to speed this process up if there
-                # aren't.
+                my %msp = %{dclone($oldtme->{'make_safer_plans'})};
                 my $oldthme = $thmap->{refaddr $pl}->[$px]->[$py];
                 my $newthme = $thmap->{refaddr $tl}->[$tx]->[$ty];
                 my $timetohere = $sp->{'Time'} // 0;
@@ -1201,28 +1203,35 @@ sub update_tactical_map {
                     [$tme->{'is_symmetrical'} ? 0 : $dir]->[$tindex]
                     ->{'Time'} // 0;
                 for my $iter (0 .. ($timethisstep > 1 ? 1 : 0)) {
-                    my $thme = $iter ? $oldthme : $newthme;
-                    for my $p (keys %$thme) {
-                        defined($thme->{$p}) or next;
-                        $p eq 'stairsmod' and next;
-                        # Ignore threats that won't get here in time.
-                        my ($turns, $reductionplan) = split / /, $p;
-                        $turns > $timetohere and next;
-                        my $riskmul = $timetohere - $turns;
-                        if ($iter) {
-                            $riskmul = $timethisstep - 1 if
-                                $riskmul > $timethisstep - 1;
-                        } else {
-                            $riskmul -= $timethisstep - 1
-                                if $timethisstep > 1;
-                            $riskmul = 1 if $riskmul < 1;
+                    my $thme = $iter ? $newthme : $oldthme;
+                    # TODO: Handle threats on different levels sanely
+                    if ($iter  && $tl == $curlevel ||
+                        !$iter && $pl == $curlevel) {
+                        for my $p (keys %$thme) {
+                            defined($thme->{$p}) or next;
+                            $p eq 'stairsmod' and next;
+                            # Ignore threats that won't get here in time.
+                            my ($turns, $reductionplan) = split / /, $p;
+                            $turns > $timetohere and next;
+                            my $riskmul = $timetohere - $turns;
+                            if ($iter) {
+                                $riskmul = $timethisstep - 1 if
+                                    $riskmul > $timethisstep - 1;
+                            } else {
+                                $riskmul -= $timethisstep - 1
+                                    if $timethisstep > 1;
+                                $riskmul = 1 if $riskmul < 1;
+                            }
+                            my $threatrisk = $thme->{$p};
+                            $msp{$reductionplan}->{$_} //= 0 for keys %$threatrisk;
+#                            $msp{$reductionplan}->{$_} > ($risk{$_}//0) ? TAEB->log->ai("MSP already saves more than it costs: $_ $risk{$_} ".$msp{$reductionplan}->{$_}." oldrisk ".$oldtme->{'risk'}->{$_}." oldmsp ".$oldtme->{'make_safer_plans'}->{$reductionplan}->{$_}." at ($tx,$ty)") : TAEB->log->ai("MSP already saves $_ ".$msp{$reductionplan}->{$_}. " risk ".($risk{$_}//0)." at ($tx,$ty)") for keys %$threatrisk;
+                            $risk{$_} += $$threatrisk{$_} * $riskmul
+                                for keys %$threatrisk;
+                            $msp{$reductionplan}->{$_} +=
+                                $$threatrisk{$_} * $riskmul
+                                for keys %$threatrisk;
+#                            $msp{$reductionplan}->{$_} > ($risk{$_}//0) ? TAEB->log->ai("MSP saves more than it costs: $_ $risk{$_} ".$msp{$reductionplan}->{$_}." oldrisk ".$oldtme->{'risk'}->{$_}." oldmsp ".$oldtme->{'make_safer_plans'}->{$reductionplan}->{$_}." at ($tx,$ty)") : TAEB->log->ai("MSP saves $_ ".$msp{$reductionplan}->{$_}. " risk ".($risk{$_}//0)." at ($tx,$ty)") for keys %$threatrisk;
                         }
-                        my $threatrisk = $thme->{$p};
-                        $risk{$_} += $$threatrisk{$_} * $riskmul
-                            for keys %$threatrisk;
-                        $msp{$reductionplan} +=
-                            $self->resources->{$_}->cost($$threatrisk{$_})
-                            for keys %$threatrisk;
                     }
                 }
                 $tme->{'make_safer_plans'} = \%msp;
@@ -1281,7 +1290,7 @@ sub update_tactical_map {
                 }
             }
 
-#	TAEB->log->ai("Locking in TME " . $tme->{'tactic'}->name . " at $tx, $ty");
+#            TAEB->log->ai("Locking in TME " . $tme->{'tactic'}->name . " at $tx, $ty");
             # Maybe start tainting?
             if ($algorithm eq 'chokepoint' && !$ftr) {
                 my $tmetile = $tl->at($tx, $ty);

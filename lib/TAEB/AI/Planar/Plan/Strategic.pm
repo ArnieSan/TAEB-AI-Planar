@@ -2,6 +2,7 @@
 package TAEB::AI::Planar::Plan::Strategic;
 use TAEB::OO;
 use TAEB::Util qw/refaddr/;
+use TAEB::AI::Planar::TacticsMapEntry qw/numerical_risk_from_spending_plan/;
 use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
@@ -131,6 +132,14 @@ sub calculate_risk {
 	return 0;
     }
 #    TAEB->log->ai("Checking risk reductions for $self...");
+    my $extra_risk = $risk;
+    my $afactor = ($self->in_make_safer_on_step == $ai->aistep
+             ? 1 : $ai->analysis_window);
+    if($aim != $tct) {
+        # Grab the total risk from the last TME in the chain.  If we're not
+        # dealing with the problem, penalize according to analysis_window.
+        $risk += $self->cost_from_tme($target_tme) * $afactor;
+    }
     # Before returning the risk, spread risk-reduction dependencies.
     for my $planname ('DefensiveElbereth', (@{$self->extra_msp}),
                       (keys %{$target_tme->{'make_safer_plans'}})) {
@@ -145,7 +154,9 @@ sub calculate_risk {
             $self->desire < $amount and $amount = $self->desire;
         } else {
             $plan = $ai->plans->{$planname};
-            $amount = $target_tme->{'make_safer_plans'}->{$planname};
+            # TODO: MSPs for aim_tile_turns-related risk
+            $amount = numerical_risk_from_spending_plan(
+                $target_tme->{'make_safer_plans'}->{$planname} // {});
         }
 	if (!defined $plan) {
             # TODO: Figure out why this happens. I /think/ it's because
@@ -173,7 +184,37 @@ sub calculate_risk {
         {
             $ai->add_capped_desire($plan, $amount);
         } else {
-            $ai->add_capped_desire($plan, $self->desire);
+            # We want to give the plan desire equal to the amount
+            # we'll have after it eliminates the threat for
+            # us. Exception: if the plan would be impossible due to
+            # resource hangup after eliminating the threat.
+            # TODO: With multiple threats, work out the desire after
+            # all are eliminated, adding on the risk of each of the
+            # other elimination plans. (Doing that could be a mess...)
+            AFFORDABLECHECK: {
+                my $sp = $self->spending_plan;
+                my $mssp = $target_tme->{'make_safer_plans'}->{$planname} // {};
+                for my $r (keys %$sp) {
+                    my $n = $sp->{$r} - ($mssp->{$r} // 0);
+                    $n <= 0 and next;
+                    $ai->resources->{$r}->amount < $n
+                        and last AFFORDABLECHECK;
+                }
+                $ai->add_capped_desire($plan, $self->desire +
+                                       $amount*$afactor - $risk);
+            }
+            ## START DEBUG CODE
+#            TAEB->log->ai("MSP $plan: old method gives desire " .
+#                          $self->desire . " new method gives desire " .
+#                          ($self->desire+$amount*$afactor-$risk) .
+#                          " difference = " . ($amount*$afactor-$risk));
+#            TAEB->log->ai("$self: risk $risk afactor $afactor amount $amount extra_risk $extra_risk");
+#            use Data::Dumper;
+#            TAEB->log->ai("Risk spending plan ".Dumper($target_tme->{'risk'}).
+#                          "MSP spending plan ".Dumper($target_tme->
+#                                                      {'make_safer_plans'}->
+#                                                      {$planname}));
+            ## END DEBUG CODE
         }
 	# This needs to run before the plan calculates risk in order to
 	# have any effect. Therefore, if the plan's been calculated
@@ -190,14 +231,6 @@ sub calculate_risk {
             }
         }
         $self->add_dependency_path($plan);
-    }
-    my $extra_risk = $risk;
-    if($aim != $tct) {
-        # Grab the total risk from the last TME in the chain.  If we're not
-        # dealing with the problem, penalize according to analysis_window.
-        $risk += $self->cost_from_tme($target_tme) *
-            ($self->in_make_safer_on_step == $ai->aistep
-             ? 1 : $ai->analysis_window);
     }
     return $risk;
 }

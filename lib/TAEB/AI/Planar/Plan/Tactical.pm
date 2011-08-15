@@ -83,6 +83,10 @@ sub abandon {
     my $self = shift;
     $self->toxic_until(TAEB->ai->tactical_success_count + 5);
 }
+after (reactivate_dependencies => sub {
+    my $self = shift;
+    $self->toxic_until(-1);
+});
 
 # Some tactical plans can be replaced by travelling instead, to save
 # time. This should be set to 1 if a travel to the destination of the

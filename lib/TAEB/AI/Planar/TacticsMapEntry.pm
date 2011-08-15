@@ -135,9 +135,9 @@ has tile_level => (
 
 # The plans that could potentially make this tile less dangerous.
 # (This is generally Eliminating nearby monsters.) It's a hash ref
-# whose keys are the plans and whose value is the amount of risk that
-# would be eliminated if the plan were carried out, from the point of
-# view of stepping onto this tile.
+# whose keys are the plans and whose value is the spending plan of
+# risk that would be eliminated if the plan were carried out, from the
+# point of view of stepping onto this tile.
 # When calculating the risk of a path, this is accumulated along the
 # path; therefore, the small amounts of risk this gives will add up
 # over time and distance. Such plans also have a risk multiplier on
@@ -145,7 +145,7 @@ has tile_level => (
 # the case everywhere but the Planes, more or less). Note that these
 # plans are /strategic/ plans.
 has make_safer_plans => (
-    isa => 'Maybe[HashRef[Num]]',
+    isa => 'Maybe[HashRef[HashRef[Num]]]',
     default => sub { {} },
 );
 
