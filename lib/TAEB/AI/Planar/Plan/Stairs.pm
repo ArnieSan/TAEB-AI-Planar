@@ -17,7 +17,7 @@ sub calculate_risk {
         for my $monster (TAEB->current_level->monsters) {
             next unless $monster->tile->in_los;
             my $spoiler = $monster->spoiler;
-            if ($monster) {
+            if ($spoiler) {
                 $self->cost("Hitpoints",$monster->maximum_melee_damage*2);
             } else {
                 # default for undeterminable monsters
