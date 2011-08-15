@@ -8,9 +8,9 @@ extends 'TAEB::AI::Planar::Plan';
 # it after then.
 sub spread_desirability {
     my $self = shift;
-    $self->depends(0.9,"SolveSokoban");
     $self->depends(1,"SokobanPrize");
-    $self->depends(0.5,"SlowDescent"); # what to do after
+    $self->depends(0.9,"SolveSokoban");
+    $self->depends(0.8,"SlowDescent"); # what to do after Sokoban
 }
 
 use constant description => 'Trying to get the Sokoban star in /dev/null';

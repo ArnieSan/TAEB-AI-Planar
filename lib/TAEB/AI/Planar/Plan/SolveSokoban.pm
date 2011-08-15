@@ -168,9 +168,10 @@ sub spread_desirability {
         return;
     }
     # Otherwise, if we're outside Sokoban and haven't seen an unsolved
-    # Sokoban level, go to Sokoban.
+    # Sokoban level (or completed all four levels), go to Sokoban.
     $self->depends(1,"GotoSokoban")
-        unless defined $firstlevel;
+        unless defined $firstlevel or
+        TAEB::Spoilers::Sokoban->number_of_solved_sokoban_levels == 4;
 }
 
 use constant description => 'Solving Sokoban';
