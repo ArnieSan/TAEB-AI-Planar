@@ -1179,6 +1179,7 @@ sub update_tactical_map {
             my $sp     = $tmedir->[2]; # total risk for the move
             my %risk   = %$sp;
             my $tindex = $tmedir->[4];
+            my $threats_added = 0;
 
             my ($px, $py, $pl, $tactic, $oldtme);
 
@@ -1214,16 +1215,17 @@ sub update_tactical_map {
                     [$tme->{'is_symmetrical'} ? 0 : $dir]->[$tindex]
                     ->{'Time'} // 0;
                 for my $iter (0 .. ($timethisstep > 1 ? 1 : 0)) {
-                    my $thme = $iter ? $newthme : $oldthme;
+                    my $thme = $iter ? $oldthme : $newthme;
                     # TODO: Handle threats on different levels sanely
-                    if ($iter  && $tl == $curlevel ||
-                        !$iter && $pl == $curlevel) {
+                    if ($iter  && $pl == $curlevel ||
+                        !$iter && $tl == $curlevel) {
                         for my $p (keys %$thme) {
                             defined($thme->{$p}) or next;
                             $p eq 'stairsmod' and next;
                             # Ignore threats that won't get here in time.
                             my ($turns, $reductionplan) = split / /, $p;
                             $turns > $timetohere and next;
+                            $threats_added++;
                             my $riskmul = $timetohere - $turns;
                             if ($iter) {
                                 $riskmul = $timethisstep - 1 if
@@ -1341,7 +1343,9 @@ sub update_tactical_map {
                 !scalar($ntme->{'entry_tactics'}->[$d]) and next;
                 $ntme->{'step'} == $aistep and next;
                 $sym && $ntme->{'considered'} == $aistep and next;
-                $ntme->{'considered'} = $aistep;
+                # If this tile has threats, another tile might make
+                # a better route to the next tile.
+                $ntme->{'considered'} = $aistep unless $threats_added;
 #                TAEB->log->ai("It isn't locked in yet.");
 
                 my $ti = 0;
