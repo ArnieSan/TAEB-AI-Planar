@@ -60,3 +60,5 @@ noticed. Things marked with a + are now fixed.
   rejecting a bunch of other explore plans; it's not clear why this
   plan was thought by the bot to be safe (at a cost of 0.02hp, 2
   turns)
+- Dropping food to save wait, praying too early, then starving
+- Praying too early to cure lycanthropy
