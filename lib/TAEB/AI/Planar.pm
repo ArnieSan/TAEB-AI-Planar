@@ -156,7 +156,10 @@ has (old_tactical_plans => (
 # or tactics-fail or succeed. It is actually marked as abandoned if
 # a different plan is selected at the next step and it is potentially
 # abandoned. This variable holds the current potentially abandoned
-# plan, if there is one.
+# plan, if there is one. We need to track the most recent tactical
+# plan even if it succeeds, if the strategic plan undef's, so we can
+# "choose to go in the other direction", but we need to track if it
+# succeeded.
 has (abandoned_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan]',
     is      => 'rw',
@@ -167,6 +170,12 @@ has (abandoned_tactical_plan => (
     isa     => 'Maybe[TAEB::AI::Planar::Plan::Tactical]',
     is      => 'rw',
     default => undef,
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+));
+has (tactical_plan_succeeded => (
+    isa     => 'Bool',
+    is      => 'rw',
+    default => 0,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
 # This list is separate merely for efficiency reasons.
@@ -516,6 +525,7 @@ sub next_action {
 	    TAEB->log->ai("Ugh, tactic ".
 				   $self->current_tactical_plan->name.
 				   " failed...", level => 'info');
+        $self->tactical_plan_succeeded($succeeded ? 0 : 1);
     }
     if ((defined $succeeded && $succeeded == 1) ||
 	!defined $self->current_tactical_plan)
@@ -752,7 +762,8 @@ sub next_plan_action {
         @illegal_plans = (@illegal_plans,
                           @{$self->abandoned_plan->uninterruptible_by});
     }
-    if (defined $self->abandoned_tactical_plan) {
+    if (defined $self->abandoned_tactical_plan &&
+        !$self->tactical_plan_succeeded) {
         @illegal_plans = (@illegal_plans,
                           @{$self->abandoned_tactical_plan->uninterruptible_by});
     }
