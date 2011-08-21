@@ -689,6 +689,21 @@ sub next_plan_action {
     for my $item (TAEB->current_level->items) {
 	$self->get_plan("GroundItemMeta",$item)->validate;
     }
+    # Initialise interesting_tiles, for if we only just unfroze the
+    # AI.
+    if (!defined $self->interesting_tiles) {
+        my $itiles = {};
+        for my $levelgroup (@{TAEB->dungeon->levels}) {
+            for my $level (@$levelgroup) {
+                $level->each_tile(sub {
+                    my $tile = shift;
+                    $tile->is_interesting and
+                        $itiles->{refaddr $tile} = $tile;
+                });
+            }
+        }
+        $self->interesting_tiles($itiles);
+    }
     for my $tile (values %{$self->interesting_tiles}) {
 	# Interesting tiles have Investigate as a metaplan. These are
 	# tiles on which we know there are items, but not what.
@@ -2454,17 +2469,22 @@ sub handle_tile_changes {
 subscribe tile_type_change => \&handle_tile_changes;
 subscribe boulder_change   => \&handle_tile_changes;
 
+# Do laziness by hand, so nothing tries to call this before the
+# dungeon is loaded.
 has (interesting_tiles => (
-    isa     => 'HashRef[TAEB::World::Tile]',
+    isa     => 'Maybe[HashRef[TAEB::World::Tile]]',
     is      => 'rw',
-    default => sub { {} },
+    default => undef,
     traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
 ));
-
+# Tiles are added to interesting_tiles here, removed in
+# next_plan_action. There's no point in updating this if the cache
+# hasn't been initialized yet, though.
 subscribe tile_became_interesting => sub {
     my $self = shift;
     my $what = shift;
     my $tile = $what->tile;
+    return unless $self->interesting_tiles;
     $self->interesting_tiles->{refaddr $tile} = $tile;
 };
 
