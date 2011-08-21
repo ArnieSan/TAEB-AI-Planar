@@ -34,7 +34,6 @@ sub spread_desirability {
             $seensoko = 1;
             $level->has_type('stairsup') ||
                 TAEB::Spoilers::Sokoban->remaining_pits($level) or
-                TAEB->log->ai("I want to explore the top of Sokoban"),
                 $self->depends($urgency+0.0005,'ExploreLevel',$level);
         }
         if(!$level->known_branch ||

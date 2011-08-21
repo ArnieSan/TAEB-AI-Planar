@@ -3,11 +3,9 @@ use TAEB::OO;
 use Moose;
 extends 'TAEB::AI::Planar::Plan';
 
-# Note that this plan works on branch-recognition, not the dungeon
-# graph. That's because it's designed to be suitable for reconnecting
-# a broken dungeon graph (among other things; it would also be
-# suitable for the ascension run, although just pathing to the first
-# level upstairs would be a more robust way to do that).
+# Aims towards dlvl 1. This plan is designed for reconnecting a broken
+# dungeon graph (say, we just feel through a trapdoor), so it works on
+# branch recognition and ignores the dungeon graph.
 sub spread_desirability {
     my $self = shift;
     my $plan = 'AscendAvoidingBranches';

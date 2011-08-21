@@ -6,46 +6,43 @@ extends 'TAEB::AI::Planar::Plan';
 
 sub spread_desirability {
     my $self = shift;
-    my $prio = 1;
-
-    # if we're in sokoban, aim for the Mines
-    if ((TAEB->current_level->branch // '') eq 'sokoban') {
-        $self->depends($prio,"GotoMines");
-        return;
-    }
-
-    # if we're in the dungeons below 4, GET OUT
-    if ((TAEB->current_level->branch // 'mines') ne 'mines' && TAEB->z > 4) {
-	$self->depends($prio,"Shallower");
-	return;
-    }
-
-    my $bottom_mines;
-
-    for my $stratum (@{TAEB->dungeon->levels}) {
-	my ($mines) = grep { ($_->branch // '') eq 'mines' } @$stratum;
-
-	for my $level (@$stratum) {
-	    next if ($level->branch // 'mines') ne 'mines' && $level->z > 4;
-            next if $level->branch eq 'sokoban'; # can overlap with mines
-	    next if defined $mines && $level != $mines;
-	    $self->depends($prio * 0.95 ** $level->z, "ExploreLevel", $level);
-	    $bottom_mines = $level if ($level->branch // '') eq 'mines';
-
-	    for my $exit ($level->exits) {
-		$self->depends($prio * 0.95 ** $level->z, "OtherSide", $exit)
-		    unless $exit->other_side;
-	    }
-	}
-    }
-
-    $self->depends(0.5, "DigOutLevel", $bottom_mines)
-	if defined $bottom_mines;
+    # More than anything else, connect the dungeon graph.
+    defined $_ and $_->validity and $self->depends(1,'OtherSide',$_->tile)
+        for TAEB->ai->plans_by_type('OtherSide');
+    # This relies on shallowest_level short-circuiting.
+    my $urgency = 0.95;
+    my $seensoko = 0;
+    my $seenthislevel = 0;
+    my $bottommines;
+    my $shallowmines = TAEB->dungeon->shallowest_level(sub {
+        my $l = shift; $l->known_branch && $l->branch eq 'mines'
+    });
+    # the first Mines level can't have a z above 5
+    my $minesz = $shallowmines ? $shallowmines->z : 5;
+    TAEB->dungeon->shallowest_level(sub {
+        my $level = shift;
+        $urgency -= 0.001;
+        $level == TAEB->current_level and $seenthislevel = 1;
+        if(!$level->known_branch || $level->branch eq 'mines' ||
+           $level->branch eq 'dungeons' && $level->z < $minesz) {
+            $self->depends($urgency,'ExploreLevel',$level);
+            $self->depends(1.8-$urgency,'FallbackExplore',$level);
+        }
+        $bottommines = $level
+            if $level->known_branch && $level->branch eq 'mines';
+        return 0;
+    });
+    # If the current level isn't connected in the dungeon graph, try to
+    # go shallower.
+    $seenthislevel or $self->depends($urgency,'Shallower');
+    # 0.9 is between ExploreLevel and FallbackExplore.
+    $self->depends(0.9,'DigOutLevel', $bottommines)
+        if $bottommines;
 }
 
-use constant description => 'Getting the Plastic Star in /dev/null';
+use constant description => 'Trying to find the Mines luckstone';
 use constant references => ['Shallower', 'OtherSide', 'ExploreLevel',
-                            'GotoMines', 'DigOutLevel'];
+                            'FallbackExplore', 'DigOutLevel'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
