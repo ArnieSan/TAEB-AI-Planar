@@ -317,7 +317,7 @@ has (reverse_dependencies => (
 sub reactivate_dependencies {
     my $self = shift;
     my @deps = values %{$self->reverse_dependencies};
-    TAEB->log->ai($self->name . " was reactivated.");
+#    TAEB->log->ai($self->name . " was reactivated.");
     $self->reverse_dependencies({});
     $_->required_success_count(-1), $_->reactivate_dependencies for @deps;
 }

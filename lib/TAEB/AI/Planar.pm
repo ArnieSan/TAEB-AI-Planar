@@ -713,9 +713,9 @@ sub next_plan_action {
     }
     # Delete any plans which are still invalid.
     for my $planname (keys %{$self->plans}) {
-	(delete $self->plans->{$planname},
-         TAEB->log->ai("Eliminating invalid plan $planname",
-                       level => 'debug'))
+	delete $self->plans->{$planname}
+#         TAEB->log->ai("Eliminating invalid plan $planname",
+#                       level => 'debug'))
 	    unless $self->plans->{$planname}->validity;
     }
 
