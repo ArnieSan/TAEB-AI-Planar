@@ -68,7 +68,13 @@ sub calculate_extra_risk {
     my $risk = $self->cost("FightDamage", $damage);
     my $monster = $self->monster;
     my $mhp = 4.5 * max map { $_->hitdice} $monster->possibilities;
-    $risk += $self->aim_tile_turns(max(1, $mhp / ($damage // 2.5)));
+    my $att = max(1, $mhp / ($damage // 2.5));
+    # At range, we only need to be able to survive for one throw.
+    # In melee, use the same formula as the melee calculation.
+    $att = 1 if
+        abs ($monster->tile->x - TAEB->x) >= 2 ||
+        abs ($monster->tile->y - TAEB->y) >= 2;
+    $risk += $self->aim_tile_turns($att);
     # Chasing unicorns is fruitless
     $risk += $self->cost("Impossibility", 1) if $monster->is_unicorn &&
 	$self->aim_tile_cache != $self->aim_tile;
