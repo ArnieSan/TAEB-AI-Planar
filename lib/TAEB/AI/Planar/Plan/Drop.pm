@@ -5,6 +5,13 @@ use TAEB::Util qw/delta2vi/;
 use Moose;
 extends 'TAEB::AI::Planar::Plan::Strategic';
 
+# Record when the plan was created, as an aistep.
+has (birthday => (
+    isa     => 'Maybe[Int]',
+    is      => 'rw',
+    default => undef,
+));
+
 # We take an item in our inventory as argument.
 has (item => (
     isa     => 'Maybe[NetHack::Item]',
@@ -14,6 +21,7 @@ has (item => (
 sub set_arg {
     my $self = shift;
     $self->item(shift);
+    $self->birthday(TAEB->ai->aistep);
 }
 
 sub aim_tile {
@@ -36,6 +44,12 @@ sub reach_action {
     return TAEB::Action->new_action('drop', items => [$item]);
 }
 
+# This should really be in some module. But I don't know which offhand.
+sub is_power_of_2 {
+    my $arg = shift;
+    return $arg && !($arg & ($arg-1));
+}
+
 # Dropping an item gains us its drawbacks, but loses us its advantages.
 sub gain_resource_conversion_desire {
     my $self = shift;
@@ -43,13 +57,20 @@ sub gain_resource_conversion_desire {
     my $item = $self->item;
     # Bump our own desirability.
     $self->validity(0), return 0 unless defined $self->item;
-    my ($affordable, $cost) = $ai->item_drawback_cost($item,'anticost');
-    my $value = $ai->item_value($item, 'cost');
-    # If an item breaks resource constraints, drop it no matter how
-    # useful it is.
-    $value = 0 unless $affordable;
-    TAEB->log->ai("$item: value $value, cost $cost");
-    $ai->add_capped_desire($self, $cost - $value);
+    # As an optimisation, we don't check whether we need to drop things
+    # every turn; just on turns after a pickup or drop, or if the plan
+    # has existed for a power-of-2 number of aisteps.
+    if (($ai->old_plans->[0] &&
+         $ai->old_plans->[0]->name =~ /^(?:BuyItem|PickupItem|Drop)/o) ||
+        is_power_of_2($ai->aistep - $self->birthday)) {
+        my ($affordable, $cost) = $ai->item_drawback_cost($item,'anticost');
+        my $value = $ai->item_value($item, 'cost');
+        # If an item breaks resource constraints, drop it no matter how
+        # useful it is.
+        $value = 0 unless $affordable;
+        TAEB->log->ai("$item: value $value, cost $cost");
+        $ai->add_capped_desire($self, $cost - $value);
+    }
 }
 
 sub calculate_extra_risk {

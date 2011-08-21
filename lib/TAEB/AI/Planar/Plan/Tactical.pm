@@ -102,6 +102,11 @@ sub replaceable_with_travel { 0 }
 # direction won't necessarily be able to persist data between
 # check_possibility and, say, action, but that's a dubious thing to be
 # doing anyway. This isn't an issue for nondirectional plans.
+#
+# For metaplans (MoveTo and MoveFrom), this is called as a class
+# method for optimisation reasons, and so it can only refer to
+# methods like generate_plan and tme_tile that don't care about
+# properties of the caller.
 sub check_possibility {
     die "All tactical plans must override check_possibility";
 }

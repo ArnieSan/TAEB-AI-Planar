@@ -12,13 +12,13 @@ has (_level => (
 
 sub aim_tile {
     shift->_level(TAEB->current_level);
-    return TAEB->current_level->first_tile(sub {
-        my $tile = shift;
-        $tile->type eq 'stairsdown' and
+    for my $tile (TAEB->current_level->tiles_of('stairsdown')) {
+        return $tile if
             !defined($tile->other_side) ||
             !$tile->other_side->known_branch ||
             $tile->other_side->branch ne 'mines';
-    });
+    }
+    return;
 }
 
 sub has_reach_action { 1 }

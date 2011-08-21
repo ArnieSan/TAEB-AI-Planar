@@ -161,7 +161,7 @@ sub calculate_risk {
             # they may be getting risk from themselves... This is
             # correct for aim_tile_turns, but in the case of a plan
             # with a mobile target, not correct for routing.
-            if ($self->was_caused_by($plan) && $self->mobile_target) {
+            if ($plan && $self->was_caused_by($plan) && $self->mobile_target) {
                 $risk -= $amount*$afactor;
                 # In this case, we can't possibly give the plan more
                 # desire than it already has, so don't even bother

@@ -689,13 +689,15 @@ sub next_plan_action {
     for my $item (TAEB->current_level->items) {
 	$self->get_plan("GroundItemMeta",$item)->validate;
     }
-    TAEB->current_level->each_tile(sub {
-	my $tile = shift;
+    for my $tile (values %{$self->interesting_tiles}) {
 	# Interesting tiles have Investigate as a metaplan. These are
 	# tiles on which we know there are items, but not what.
-	$tile->is_interesting and
+	if ($tile->is_interesting) {
             $self->get_plan("Investigate",$tile)->validate;
-    });
+        } else {
+            delete $self->interesting_tiles->{refaddr $tile};
+        }
+    }
     # Various interesting sorts of terrain get TerrainMeta.
     my $tbt = TAEB->current_level->tiles_by_type;
     for my $tile (@{$tbt->{'fountain'}},
@@ -1112,10 +1114,11 @@ sub update_tactical_map {
                     source => 'uninitialised',
                 };
                 bless $tme, "TAEB::AI::Planar::TacticsMapEntry";
-                $self->get_tactical_plan("MoveTo", [$level,$tx,$ty])->
-                    check_possibility($tme);
-                $self->get_tactical_plan("MoveFrom", [$level,$tx,$ty])->
-                    check_possibility($tme);
+                # Although notionally object methods, they don't
+                # actually care about the object, so call them as
+                # class methods to save time.
+                TAEB::AI::Planar::Plan::MoveTo->check_possibility($tme);
+                TAEB::AI::Planar::Plan::MoveFrom->check_possibility($tme);
             });
         }
     }
@@ -1125,6 +1128,7 @@ sub update_tactical_map {
     # TMEs in the world, TMEs on the current level, or TMEs near
     # changed chokepoints.
     my $clu = $self->chokepoint_last_updated;
+    my @deltas = deltas;
     for my $iter ('tct', @seed_locations) {
         my $is_tct = !blessed $iter;
         my $seed = $is_tct ? $tct : $iter;
@@ -1187,7 +1191,7 @@ sub update_tactical_map {
 
             if (defined $dir) {
                 # We're moving one step within the level.
-                my ($dx, $dy) = @{[deltas]->[$dir]};
+                my ($dx, $dy) = @{$deltas[$dir]};
                 $px = $tx - $dx; # if moving (+1,+1), we're coming from (-1,-1)
                 $py = $ty - $dy;
                 $pl = $tl;
@@ -2450,6 +2454,19 @@ sub handle_tile_changes {
 subscribe tile_type_change => \&handle_tile_changes;
 subscribe boulder_change   => \&handle_tile_changes;
 
+has (interesting_tiles => (
+    isa     => 'HashRef[TAEB::World::Tile]',
+    is      => 'rw',
+    default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+));
+
+subscribe tile_became_interesting => sub {
+    my $self = shift;
+    my $what = shift;
+    my $tile = $what->tile;
+    $self->interesting_tiles->{refaddr $tile} = $tile;
+};
 
 sub safe_to_travel {
     my $self = shift;
@@ -2487,6 +2504,26 @@ sub item_subtype {
     $cache->{refaddr $item} = $subtype;
     return $subtype;
 }
+# Likewise, about 10% of the time is spent counting the number of
+# hands an item needs to hold, without this optimisation.
+has (item_hands_cache => (
+    isa     => 'HashRef[Int]',
+    is      => 'rw',
+    default => sub { {} },
+    traits  => [qw/TAEB::AI::Planar::Meta::Trait::DontFreeze/],
+));
+sub item_hands {
+    my $self = shift;
+    my $item = shift;
+    my $cache = $self->item_hands_cache;
+    return $cache->{refaddr $item} if exists $cache->{refaddr $item};
+    my $subtype = undef;
+    if ($item->can('hands')) {
+        $subtype = $item->hands;
+    }
+    $cache->{refaddr $item} = $subtype;
+    return $subtype;
+}
 
 # XXX XXX XXX We really ought to be using scarce value here, but the issues
 # involved in comparing that really mess things up.
@@ -2516,7 +2553,7 @@ sub _get_bests {
     for my $check (TAEB->inventory->items,
                    map {$_->items} (map {@$_} (@{TAEB->dungeon->levels}))) {
         if ($check->can('hands')) {
-            my $hands = $check->hands;
+            my $hands = $self->item_hands($check);
             if (defined ($hands)) {
                 if ($hands == 2) {
                     $_best_2hw_val = max(
@@ -2641,7 +2678,7 @@ sub use_benefit {
         defined $current_weapon && $current_weapon != $item and
             $damage -= TAEB::Spoilers::Combat->damage($current_weapon);
 
-        my $ih = $item->hands;
+        my $ih = $self->item_hands($item);
         my $ch = $current_weapon ? $current_weapon->hands : 0;
 
         if ($ih == 2 && $ch != 2

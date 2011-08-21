@@ -19,10 +19,7 @@ sub aim_tile {
         or return undef;
     shift->_level(TAEB->current_level);
     # Look for upstairs on this level.
-    my @stairslist = ();
-    TAEB->current_level->each_tile(sub {
-        my $tile = shift;
-        $tile->type eq 'stairsup' && push @stairslist, $tile;});
+    my @stairslist = TAEB->current_level->tiles_of('stairsup');
     # If we know the other side goes to Sokoban, use it.
     defined $_->other_side &&
         $_->other_side->known_branch && $_->other_side->branch eq 'sokoban'

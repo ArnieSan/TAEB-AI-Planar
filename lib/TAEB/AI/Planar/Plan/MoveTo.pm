@@ -32,6 +32,9 @@ sub safe_boulder_square {
     return scalar keys %xhash > 1 && scalar keys %yhash > 1;
 }
 
+# This is a class method in MoveTo for optimisation reasons, so it
+# can't use any properties of $self (which is just a string refering
+# to the class). Using tme_tile and generate_plan is fine.
 sub check_possibility {
     my $self = shift;
     my $tme  = shift;
