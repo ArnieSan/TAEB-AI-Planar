@@ -32,6 +32,8 @@ sub aim_tile {
         # Fail in favour of AskForPrice.
         return undef;
     }
+    return if $tile->type eq 'trap'
+        && $tile->trap_type =~ /^(?:pit|spiked pit|hole|trap door)$/o;
     $_ == $item and return $self->tile for $tile->items;
     $self->invalidate;
     TAEB->log->ai("Item $item has gone missing...");
