@@ -322,6 +322,20 @@ sub reactivate_dependencies {
     $_->required_success_count(-1), $_->reactivate_dependencies for @deps;
 }
 
+sub was_caused_by {
+    my $self = shift;
+    my $plan = shift;
+    my $seen = shift // {};
+    return 1 if $plan == $self; # plans cause themselves
+    # and a plan is caused by a cause if something caused by that
+    # cause depends on the plan
+    return if $seen->{$self->name}; # avoid a causality loop
+    $seen->{$self->name} = 1;
+    $_->was_caused_by($plan,$seen) and return 1
+        for values %{$self->reverse_dependencies};
+    return;
+}
+
 # What the AI told us our desire was, so we can spread it properly.
 has (desire => (
     isa => 'Num',

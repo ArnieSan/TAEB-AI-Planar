@@ -1939,9 +1939,14 @@ sub threat_check {
 	    my $passive_only = 1;
             $passive_only &&= ($_->{mode} eq 'passive') for @{$spoiler->attacks};
 	    next if $passive_only;
+	    $relspeed = $$spoiler{speed} / $selfspeed;
 	    # Use the built-in TAEB maximum-damage function.
 	    my $damagepotential = $enemy->maximum_melee_damage;
-	    $danger = {'Hitpoints' => $damagepotential};
+            # The threat map represents the danger per turn for
+            # staying next to the monster. For particularly slow
+            # monsters, therefore, we won't get hit as many times
+            # as we expected.
+	    $danger = {'Hitpoints' => $damagepotential * $relspeed};
 	    # We hates nymphs
 	    my $attack;
 	    if ($attack = $spoiler->has_attack('stealitem')) {
@@ -1954,7 +1959,6 @@ sub threat_check {
 		$attack->{damage} =~ /(\d+)d(\d+)/;
 		$danger->{'Time'} = $1 * ($2 + 1) / 2;
 	    }
-	    $relspeed = $$spoiler{speed} / $selfspeed;
             $nomarktile = undef if $spoiler->ignores_elbereth;
 	} else { # use a stock value as we don't know...
 	    $danger = {'Hitpoints' => 5};
