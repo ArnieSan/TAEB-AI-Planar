@@ -157,17 +157,17 @@ sub calculate_risk {
             # TODO: MSPs for aim_tile_turns-related risk
             $amount = numerical_risk_from_spending_plan(
                 $target_tme->{'make_safer_plans'}->{$planname} // {});
-            # MSPs typically want to route somewhere. That means that
-            # they may be getting risk from themselves... This is
-            # correct for aim_tile_turns, but in the case of a plan
-            # with a mobile target, not correct for routing.
-            if ($plan && $self->was_caused_by($plan) && $self->mobile_target) {
-                $risk -= $amount*$afactor;
-                # In this case, we can't possibly give the plan more
-                # desire than it already has, so don't even bother
-                # checking.
-                next;
-            }
+            # # MSPs typically want to route somewhere. That means that
+            # # they may be getting risk from themselves... This is
+            # # correct for aim_tile_turns, but in the case of a plan
+            # # with a mobile target, not correct for routing.
+            # if ($plan && $self->was_caused_by($plan) && $self->mobile_target) {
+            #     $risk -= $amount*$afactor;
+            #     # In this case, we can't possibly give the plan more
+            #     # desire than it already has, so don't even bother
+            #     # checking.
+            #     next;
+            # }
         }
 	if (!defined $plan) {
             # TODO: Figure out why this happens. I /think/ it's because
