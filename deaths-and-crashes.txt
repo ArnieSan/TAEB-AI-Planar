@@ -62,3 +62,4 @@ noticed. Things marked with a + are now fixed.
   turns)
 - Dropping food to save wait, praying too early, then starving
 - Praying too early to cure lycanthropy
+- Teleportitis into a vault, then not knowing how to leave it

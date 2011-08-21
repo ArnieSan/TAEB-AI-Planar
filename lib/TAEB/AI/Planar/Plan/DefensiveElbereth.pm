@@ -9,7 +9,7 @@ sub aim_tile {
     my $self = shift;
     my $ecount = TAEB->current_tile->elbereths;
     return undef
-        if $ecount >= 3
+        if $ecount >= 5
         || ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned');
     return undef unless TAEB::Action::Engrave->is_advisable;
     return TAEB->current_tile;
@@ -41,7 +41,7 @@ sub spread_desirability {
     my $self = shift;
     my $ecount = TAEB->current_tile->elbereths;
     $self->depends(0.5,"FallbackRest")
-        if $ecount >= 3
+        if $ecount >= 5
         || ($ecount >= 1 && TAEB->current_tile->engraving_type eq 'burned');
 }
 

@@ -43,7 +43,9 @@ sub reach_action {
     my $self = shift;
     my $ai = TAEB->ai;
     $self->turntried(TAEB->turn);
-    if (TAEB->current_tile->elbereths >= 1) {
+    # We can build up to meleeing the monster while we're scaring it,
+    # so keep stacking Elbereths in case it doesn't move.
+    if (TAEB->current_tile->elbereths >= 5) {
         return TAEB::Action->new_action('search', iterations => 1);
     }
     return TAEB::Action->new_action('engrave');

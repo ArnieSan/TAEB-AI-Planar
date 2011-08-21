@@ -1881,10 +1881,11 @@ sub threat_check {
 	}
     }
     # The current tile is impassible to monsters for the space of one
-    # action if it has at least 3 intact Elbereths.
+    # action if it has at least 5 intact Elbereths. This is so, for
+    # instance, if we stack up Elbereths while waiting for a monster
+    # we don't think we can take on in combat to move, we can fight
+    # it from them once we have enough.
     # TODO: Other tiles with Elbereth on?
-    # TODO: This is not true for attacks that would scuff an Elbereth
-    # up (noticeably melee and projectiles).
     my $tct = TAEB->current_tile;
     # No point in checking if there was no Elbereth written here
     # beforehand and we weren't alerted when we stepped on the tile,
@@ -1895,7 +1896,7 @@ sub threat_check {
         TAEB->send_message(check => 'floor');
     }
     my $ecount = $tct->elbereths;
-    if ($ecount >= 3 ||
+    if ($ecount >= 5 ||
         ($ecount >= 1 && $tct->engraving_type eq 'burned')) {
         $default_ignore = $tct;
     }

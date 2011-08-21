@@ -66,7 +66,7 @@ sub special_door_risk {
     # shopkeepers will want to kill us.
     # (TODO: It could also mean we're in Mine's End, where it's less
     # dangerous.)
-    my $level = TAEB->current_level;
+    my $level = $tile->level;
     my $mines = $level->known_branch && $level->branch eq 'mines';
     $mines and $self->cost('Impossibility', 1);
 }
