@@ -67,7 +67,7 @@ sub calculate_extra_risk {
     my $damage = TAEB::Spoilers::Combat->damage($self->get_projectile);
     my $risk = $self->cost("FightDamage", $damage);
     my $monster = $self->monster;
-    my $mhp = 4.5 * max map { $_->hitdice} $monster->possibilities;
+    my $mhp = 4.5 * ((max map { $_->hitdice} $monster->possibilities) // 1);
     my $att = max(1, $mhp / ($damage // 2.5));
     # At range, we only need to be able to survive for one throw.
     # In melee, use the same formula as the melee calculation.
