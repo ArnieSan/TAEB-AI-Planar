@@ -2734,15 +2734,16 @@ sub item_value {
     }
 
     # If the item is permafood, its value is its nutrition minus its
-    # weight; its nutrition is measured in unscarce units (twice the
-    # base value for permafood), but its weight is measured in dynamic
-    # units. (That allows us to drop things when we get burdened.)
+    # weight; its nutrition is measured in PermaNutrition units (twice
+    # the value of nutrition, but with scarcity counted differently),
+    # but its weight is measured in dynamic units. (That allows us to
+    # drop things when we get burdened.)
     if($item->isa('NetHack::Item::Food')
     &&!$item->isa('NetHack::Item::Food::Corpse')
     && $item->name !~ /\begg\b/o
     && $item->is_safely_edible) {{
 	last unless $item->nutrition;
-	return $resources->{'Nutrition'}->base_value * 2 *
+	return $resources->{'PermaNutrition'}->value *
 	    $item->nutrition * $item->quantity;
     }}
     # Gold has value measured in zorkmids.

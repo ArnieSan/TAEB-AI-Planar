@@ -18,15 +18,17 @@ sub set_arg {
 
 sub aim_tile {
     my $self = shift;
-    return undef unless defined $self->item;
-    return $self->item_tile($self->item);
+    my $item = $self->item;
+    return unless defined $item;
+    return unless $item->nutrition;
+    return $self->item_tile($item);
 }
 
 sub has_reach_action { 1 }
 sub reach_action {
     my $self = shift;
     my $item = $self->item;
-    return undef unless defined $item;
+    return unless defined $item;
     return TAEB::Action->new_action('eat', food => $item);
 }
 
