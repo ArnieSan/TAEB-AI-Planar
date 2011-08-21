@@ -1926,7 +1926,7 @@ sub threat_check {
         # through peacefuls, though.
         next if $disposition eq 'tame';
         # Record that the monster can't be routed through.
-	my $plan = $self->get_plan("Eliminate", $enemy);
+	my $plan = $self->get_plan("PathPast", $enemy);
 	my $threatmap = $self->threat_map->{refaddr($current_level)};
         $threatmap->[$tile->x]->[$tile->y]->{"-1 ".$plan->name}
             = {Impossibility => 1};
@@ -2137,7 +2137,7 @@ sub loadplans {
 	# Threat metaplans
 	"Mitigate",          # metaplan for monsters
 	"MitigateWithoutElbereth",  # and for Elbereth-ignoring monsters
-        "Eliminate",         # route past a monster
+        "PathPast",          # route past a monster
 	"Extricate",         # metaplan for traps we're in
         "Unengulf",          # (meta)plan for engulfing monsters
         "Unlevitate",        # plan for removing levitation items
