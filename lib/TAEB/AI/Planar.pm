@@ -2809,7 +2809,8 @@ sub item_drawbacks {
     my $item = shift;
     my $plan = {};
     # Weight.
-    defined $item->weight and $plan->{'CarryCapacity'} += $item->weight;
+    defined $item->weight and
+        $plan->{'CarryCapacity'} += $item->weight * $item->quantity;
     # TODO: Items with unknown weight should be marked as the maximum
     # possible weight for their type.
     # Cost.
