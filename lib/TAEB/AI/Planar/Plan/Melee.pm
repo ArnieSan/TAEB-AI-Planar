@@ -45,10 +45,7 @@ sub calculate_extra_risk {
     my $risk = 0;
     $risk = $self->cost('Impossibility', 1)
         unless $self->monster->is_meleeable;
-    # Experimentally, try 1 rather than $ttk, so that we can, say,
-    # alternately attack and kill. As it is, Planar is too scared of
-    # monsters it can run away from onto a previous level.
-    $risk += $self->aim_tile_turns(1); #$ttk);
+    $risk += $self->aim_tile_turns($ttk);
     $risk += $self->attack_monster_risk($monster)
         // $self->cost('Hitpoints', 5); # stock value for hallu
 

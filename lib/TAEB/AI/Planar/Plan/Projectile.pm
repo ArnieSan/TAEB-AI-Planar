@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 package TAEB::AI::Planar::Plan::Projectile;
 use TAEB::OO;
-use TAEB::Util qw/delta2vi/;
+use TAEB::Util qw/delta2vi max/;
 use TAEB::AI::Planar::Resource::FightDamage;
 use POSIX qw/ceil/;
 use Moose;
@@ -64,10 +64,11 @@ sub reach_action {
 
 sub calculate_extra_risk {
     my $self = shift;
-    my $risk = $self->cost("FightDamage",
-        TAEB::Spoilers::Combat->damage($self->get_projectile));
+    my $damage = TAEB::Spoilers::Combat->damage($self->get_projectile);
+    my $risk = $self->cost("FightDamage", $damage);
     my $monster = $self->monster;
-    $risk += $self->aim_tile_turns(1);
+    my $mhp = 4.5 * max map { $_->hitdice} $monster->possibilities;
+    $risk += $self->aim_tile_turns(max(1, $mhp / ($damage // 2.5)));
     # Chasing unicorns is fruitless
     $risk += $self->cost("Impossibility", 1) if $monster->is_unicorn &&
 	$self->aim_tile_cache != $self->aim_tile;
