@@ -25,9 +25,13 @@ sub planspawn {
     my $self = shift;
     my $ai = TAEB->ai;
     my $item = $self->item;
-    # Create plans to eat corpses.
+    # Create plans to eat food.
     if ($item->isa("TAEB::World::Item::Food::Corpse")) {
 	$ai->get_plan('FloorFood',$item)->validate;
+    } elsif ($item->isa("TAEB::World::Item::Food") &&
+             $item->name !~ /\begg\b/o &&
+             $item->is_safely_edible) {
+        $ai->get_plan('PermaFloorFood',$item)->validate;
     }
     # Pick up items if they seem useful.
     if ($ai->item_value($item) > 0) {
@@ -39,7 +43,8 @@ sub planspawn {
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Doing something with an item on the ground';
-use constant references => ['PickupItem','BuyItem','FloorFood'];
+use constant references => ['PickupItem','BuyItem',
+                            'FloorFood','PermaFloorFood'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
