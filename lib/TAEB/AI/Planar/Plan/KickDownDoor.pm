@@ -30,6 +30,8 @@ sub check_possibility {
 	$self->validity(0);
 	return;
     }
+    # We can't open a locked door.
+    $tile->is_locked and $self->door_action eq 'open' and return;
     # OK, this plan is possible, mark it as possible and calculate its
     # risk.
     $self->add_directional_move($tme, $tile->x, $tile->y);
