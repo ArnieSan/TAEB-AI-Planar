@@ -43,7 +43,8 @@ sub spread_desirability {
                 $self->depends($mines ? 0.7 : 1, "Search", $tile);
         }
     });
-    $self->depends(0.8, "ExploreViaTeleport");
+    $self->depends(0.8, "ExploreViaTeleport")
+        if $level == TAEB->current_level;
     # if we're even considering this, also recheck stairs after the
     # next action. TODO: I don't get why this is necessary; when we
     # discover why it is, presumably a less hacky version can be
