@@ -69,7 +69,7 @@ sub aim_tile {
             && (!$self->mimictile->has_monster || $self->mimictile->glyph eq 'I')
             && $self->push_turn + $self->push_backoff >= TAEB->turn;
     # To an empty square?
-    return $nexttile unless $nexttile->has_boulder;
+    return $nexttile unless TAEB::Spoilers::Sokoban->probably_has_genuine_boulder($nexttile);
     # Or to push a boulder?
     $self->bouldertile($nexttile);
     # If there's a monster beyond the boulder, get rid of it.
@@ -93,6 +93,8 @@ sub reach_action {
     return TAEB::Action->new_action('ascend')
         if TAEB->current_tile->type eq 'stairsup';
     # Otherwise, push the boulder.
+    TAEB->log->ai("We're standing on the boulder?"),
+        return undef if $self->bouldertile == TAEB->current_tile;
     return TAEB::Action->new_action('move',
         direction => delta2vi($self->bouldertile->x - TAEB->current_tile->x,
                               $self->bouldertile->y - TAEB->current_tile->y));
