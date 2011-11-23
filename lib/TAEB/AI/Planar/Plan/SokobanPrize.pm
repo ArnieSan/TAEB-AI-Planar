@@ -18,7 +18,7 @@ sub spread_desirability {
     my $ai = TAEB->ai;
     my $cache;
     if(TAEB::Spoilers::Sokoban->number_of_solved_sokoban_levels == 4) {
-        my $sokotop = TAEB->dungeon->deepest_level(sub {
+        my $sokotop = TAEB->dungeon->lowest_dl_level(sub {
             my $level = shift;
             return $level->known_branch && $level->branch eq 'sokoban';
         });
