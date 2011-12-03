@@ -9,7 +9,7 @@ extends 'TAEB::AI::Planar::Plan::PushBoulder';
 sub calculate_risk {
     my $self = shift;
     my $tme  = shift;
-    my $tile = $self->tile;
+    my $tile = $self->tile($tme);
     $self->cost("Time",5); # add a large don't-do-this penalty
     $self->level_step_danger($tile->level) for 1..5;
 }

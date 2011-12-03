@@ -90,6 +90,7 @@ sub reach_action_succeeded {
 sub invalidate {shift->validity(0);}
 
 use constant description => 'Dropping an unwanted item';
+use constant references => ['SokobanPrize'];
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
